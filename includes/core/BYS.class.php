@@ -45,6 +45,7 @@ class BYS {
 		// 生成缓存用于模板解析
 
 		// 运行应用
+		App::run();
 	}
 
 	/** 
@@ -107,13 +108,14 @@ class BYS {
 	static private function autoMakeApp($appMap){
 		
 		foreach ($appMap as $appName => $appVal) {
-			Report::p( $appVal );
+			$app = new App($appVal);
+
 			if( is_dir(APP_PATH.$appName) ){
 				// 有该应用，初始化
-				App::init( $appVal );
+				$app->init( $appVal );
 			}else{
 				// 无该应用，生成生成应用并初始化
-				App::build( $appVal );
+				$app->build( $appVal );
 			}
 		}
 
