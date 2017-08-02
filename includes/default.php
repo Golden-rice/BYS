@@ -22,5 +22,26 @@
 				"name"    => "admin",
 				"type"    => APP_NORMAL
 			)
+		),
+
+		// 增加扩展
+		'vender'    => array(
+			// 临时使用：smarty 
+			'smarty'   => array(
+				// 应用配置
+				'path'    => VEND_PATH.'smarty/',
+				'config' => array( 
+					'name'   => 'smarty_config',
+					'file'   => 'smarty.config.php',
+					'path'   => CONF_PATH
+				),
+			)
+		),
+
+		// 应用默认值
+		'default' => array(
+			'controller' => 'index',
+			'action'     => 'index',
+			'app'        => 'admin'
 		)
 	);

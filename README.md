@@ -40,12 +40,17 @@ index.php                # 入口文件
 * 在`/webpage`中可以使用前端的库生成模板
 * 分割后台、前台
 * 后台和前台公用接口
+* 批量绑定model生成，应用command公共方法
+
 
 ## 待完成
 
 * 公共方法：functin.class.php 定义
-* url 解析
+* nginx适配、去除index.php
 * 主题更换
-* 自动加载command文件
 * debug模式
 * trace模式
+* 控制器常用的操作：可以直接使用smarty框架
+	*	display
+	*	assign
+	* 404内置
