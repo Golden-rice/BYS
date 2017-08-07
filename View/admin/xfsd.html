@@ -1,0 +1,729 @@
+<{extends file='layout.html'}>
+
+<{block name="title"}>舱位价格查询(from eterm)<{/block}>
+<{block name="content"}>
+
+<!-- 输入框 -->
+<div class="panel panel-default">
+  <div class="panel-body">
+		<div class="form-inline">
+				<label for="start">出发：</label><input type="text" name='start' id='start' value='' class='form-control' onblur="upper(this)" style='width:100px'>
+				<label for="end">到达：</label><input type="text" name='end' id='end' value='' class='form-control' placeholder='多城市","分割' onblur="upper(this)" style='width:100px'>
+				<label for="startDate">日期：</label><input type="text" name='startDate' id='startDate' value='' class='form-control'  onblur="upper(this)"  style='width:100px'>
+				<label for="aircompany">航司：</label><input type="text" name='aircompany' id='aircompany' value='' class='form-control'  onblur="upper(this)"  style='width:100px'>
+				&nbsp;
+				<input type="radio" id='allType'  class='tripType' name="tripType" value='' checked>
+				<label for="allType">全部</label>
+				<input type="radio" id='sigleLine' class='tripType' name="tripType" value='*OW'>
+				<label for="sigleLine">单程</label>
+				<input type="radio" id='cbackLine' class='tripType' name="tripType" value='*RT'>
+				<label for="cbackLine">往返</label>
+				&nbsp;					
+				<input type="text" name='private' id='private' placeholder='例如CBJS1012'  class='form-control'  onblur="upper(this)" style='width:150px'>
+				 &nbsp; / &nbsp;
+				<input type="text" name='other' id='other' placeholder='自定义' class='form-control'  onblur="upper(this)" >
+				<input type="submit" name='dosubmit' id="dosubmit" value="查询" class='btn btn-primary'>
+				
+				<hr>
+				<label for="command"> Command：</label><input type="text" name='command' id="command" onblur="upper(this)"  class='form-control'  placeholder='例如XS/FSDPEKSEA/25JUL/DL/' style='width:300px'>
+				<input type="submit" name='dosubmit' id='docommand'  value='提交' class='btn btn-default'>
+				<hr>
+				<label for="">导入</label>
+				<input type="file" id="importExl"  class='btn btn-default'/> 
+				<hr>
+				<label>工具：</label>
+				<!-- <input type="button" name="toCNY" id="toCNY" value="NUC->CNY" class='btn btn-default'> -->
+				<!-- test -->
+				<button id='test' class='btn btn-default'>test</button>
+				<!-- <button id='remove' class='btn btn-default'>remove</button> -->
+				<!-- test -->
+				<input type="submit"  id='removeAndSubmit' value="删除缓存并查询" class='btn btn-primary'>
+				<!-- <input type="button" name="allPolicy" id="allPolicy" value="读取规则" class='btn btn-primary'> -->
+				<button id='updateDB' class='btn btn-default'>同步至数据库</button>
+				<button id='mixCabin' class='btn btn-default' >混舱</button>
+				<button type="button" class="btn btn-default" id="openAddCabin">手工录入舱位</button>
+				
+		</div>
+	</div>
+</div>
+<!-- 输入框 END -->
+		
+<!-- 内容 -->
+<ul class="lab">
+	<li>默认排序（/X）</li>
+</ul>
+
+<div id='lab' style="display:none">
+	<div class="panel panel-default">
+	  <div class="panel-body">
+				<div class="time"></div>
+				<div id="labtoCNY"></div>
+		</div>
+	</div>
+	<pre class="command"></pre>
+</div>
+
+<div id="other-content"></div>
+
+<div id="content-progress"></div>
+<div id="content"></div>
+<!-- 内容 END -->
+
+<!-- 混舱弹出框 -->
+<div class="modal fade" id="mixCabinModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" style='width:1200px'>
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+                <h4 class="modal-title" id="myModalLabel">混舱</h4>
+            </div>
+            <div class="modal-body">
+            	<div id='mixCabinContent'></div>
+            </div>
+            <div class="modal-footer">
+            		
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                <button id='clearMixCabin' type="button" class="btn btn-default">清空</button>
+                <a href='mixCabin.php?display=1' target='_blank' class="btn btn-primary">生成混舱</a>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 混舱弹出框 END -->
+
+
+
+
+<script>
+
+
+require(['eterm', "xlsx"], function(eterm, xlsx){
+
+$('#myModalLabel').modal('show')
+
+var xfsdTitle = {
+	index: "序号",
+ 	fare: "FARE",
+ 	special: "特殊规则",
+ 	ADVPDay: "提前出票",
+ 	singleLineFee: "单程价格",
+ 	backLineFee: "往返价格",
+ 	seat: "舱位",
+ 	minStay: "最短停留",
+ 	maxStay: "最长停留",
+ 	allowDate: "适用截止日期",
+ 	reTicket: "退票规则",
+ 	allowWeek: "可用星期",
+ 	start: "出发",
+ 	end: "到达",
+ 	aircompany: "航空公司", // new add 
+ 	from: "来源", // new add 
+ 	direction: "方向",
+ 	setDate: "查询日期" // new add
+}
+
+var tpl = {
+	mkTable: mkTable,
+	mkMatchTable: mkMatchTable,
+	mkMixTable: mkMixTable,
+}
+
+
+function setTableFormat(d){
+	// 生成符合渲染数据格式
+	var tmp = {}, end = "";
+
+	for(var i in d){
+		d[i].allowDateStart = d[i].allowDate.substr(0, 5);
+		d[i].allowDateEnd = d[i].allowDate.substr(-3, 3);
+	}
+
+	// 设置目的城市
+	if (/\S/g.test(d[0].end)){
+		end = d[0].end;
+		tmp[end] = d
+		tmp[end].aircompany = d[0].aircompany || ""
+		tmp[end].command = ""
+		tmp[end].from = d[0].from || ""
+		tmp[end].length = d.length
+		tmp[end].startDate = d[0].setDate || ""
+	}else{
+		alert("数据错误，目的地没数据")
+	}
+
+	return tmp
+}
+
+
+
+// 导入 
+$("#importExl").change(function(){
+    // 传入数据库，获取id后再渲染
+
+        var tableMaker, data, end = "";
+
+
+        xlsx.setTitle(xfsdTitle);
+
+        xlsx.importf($(this)[0], function(data){
+
+            xlsx.saveData(data)   
+                 
+            data = xlsx.readData()
+
+            if(data.length > 0){
+
+            	xlsx.saveData(setTableFormat(data))
+
+            	// console.log("setafter", xlsx.readData())
+
+            	if(data[0].end ){
+            		end = data[0].end 
+            	}else{
+            		console.log("数据错误，目的地没数据")
+            		return;
+            	}
+
+            	// 赋值给 eterm.js
+            	eterm.eterm.xfsd = xlsx.readData()
+
+            	// 渲染
+            	eterm.eterm.target = "table"
+            	mkTable(eterm.eterm.xfsd, 'table', "#content", 'w');
+
+            	// 多选框
+							xlsx.checkbox({
+								all: 'cAll'+end,
+								select: 'cSelect'+end
+							})
+
+
+            }else{
+                alert("导入失败！没有数据！")
+            }
+        })
+    })
+
+var setCommend = function(command){
+
+	$('#removeAndSubmit').click(function(){
+
+		if( $('#command').val() !== "" ){
+			command.xfsd({
+				dosubmit: 'command',
+				remove: 1,
+				command: $('#command').val()
+			})
+		}else{
+			command.xfsd({
+					dosubmit: "",
+					remove: 1,
+					start: $('#start').val(),
+					end: $('#end').val(),
+					startDate: $('#startDate').val(),
+					aircompany: $('#aircompany').val(),
+					private: $("#private").val() || "",
+					tripType: $(".tripType:checked").val(),
+					other: $("#other").val() || ""			
+			})
+		}
+
+		$('#allPolicy').attr('removeRuntime',1);
+	})
+
+	// 输入框
+	$('#dosubmit').click(function(){
+		command.rate();
+		command.xfsd({
+			dosubmit: "",
+			start: $('#start').val(),
+			end: $('#end').val(),
+			startDate: $('#startDate').val(),
+			aircompany: $('#aircompany').val(),
+			private: $("#private").val() || "",
+			tripType: $(".tripType:checked").val(),
+			other: $("#other").val() || ""
+		});
+	})
+
+	// 命令行
+	$('#docommand').click(function(){
+		command.rate();
+		command.xfsd({
+			dosubmit: 'command',
+			command: $('#command').val()
+		})
+	})
+
+	$('#allPolicy').click(function(){
+		var remove = $('#allPolicy').attr('removeRuntime') || '0';
+
+		command.selected('cSelect');
+		command.fliterFare();
+		command.getFliterPolicy(remove);
+	})
+
+	$('#updateDB').click(function(){
+		var remove = $('#allPolicy').attr('removeRuntime') || '0';
+		
+		command.selected('cSelect');
+		command.updataDB(remove);
+	})
+
+	$('#openAddCabin').click(function(){
+		
+		$(this).data('add',"1")
+		$(this).attr('add',"1")
+
+		let html = `
+			<table class="table-addCabin table table-hover table-bordered table-responsive add-cabin-table" >
+					<tr>
+						<th>fare</th>
+						<th>出发</th>
+						<th>到达</th>
+						<th>航空公司</th>
+						<th>提前出票</th>
+						<th>单程价格</th>
+						<th>往返价格</th>
+						<th>舱位</th>
+						<th>最短停留</th>
+						<th>最长停留</th>
+						<th>适用截止日期</th>
+						<th>可用星期</th>
+					</tr>
+					<tr class='line'>
+						<td class='fare'><input type="text" class="add-fare" style="width:130px" onblur="upper(this)"></td>
+						<td class='start'><input type="text" class="add-start" style="width:130px" onblur="upper(this)"></td>
+						<td class='end'><input type="text" class="add-end" style="width:130px" onblur="upper(this)"></td>
+						<td class='aircompany'><input type="text" class="add-aircompany" style="width:130px" onblur="upper(this)"></td>
+						<td class='ADVPDay'><input type="text" class="add-ADVPDay" style="width:130px" onblur="upper(this)"></td>
+						<td class='singleLineFee'><input type="text" class="add-singleLineFee" style="width:130px" onblur="upper(this)"></td>
+						<td class='backLineFee'><input type="text" class="add-backLineFee" style="width:130px" onblur="upper(this)"></td>
+						<td class='seat'><input type="text" class="add-seat" style="width:130px" onblur="upper(this)"></td>
+						<td class='minStay'><input type="text" class="add-minStay" style="width:130px" onblur="upper(this)"></td>
+						<td class='maxStay'><input type="text" class="add-maxStay" style="width:130px" onblur="upper(this)"></td>
+						<td class='allowDate'><input type="text" class="add-allowDate" style="width:130px" placeholder="例如：06MAY-O7MAY" onblur="upper(this)"></td>
+						<td class='allowWeek'><input type="text" class="add-allowWeek" style="width:130px" onblur="upper(this)"></td>
+					</tr>
+					</table>
+		`
+		$("#other-content").append(html)
+	})
+
+	$('#mixCabin').click(function(){
+
+		if($('#openAddCabin').attr('add') === '1'){
+
+			// 混入手填字段数据
+			var array = [], i = 0,  end = $(".add-cabin-table").find(".add-end").val(), length = 0, startDate = "", from = "", data= {};
+			data[end]= {}
+			$('.add-cabin-table').each(function(){
+
+				data[end][i++] = {
+					aircompany: $(this).find(".add-aircompany").val(),
+					start: $(this).find(".add-start").val(),
+					end: $(this).find(".add-end").val(),
+					fare: $(this).find(".add-fare").val(),
+					ADVPDay: $(this).find(".add-ADVPDay").val(),
+					singleLineFee: $(this).find(".add-singleLineFee").val(),
+					backLineFee: $(this).find(".add-backLineFee").val(),
+					seat: $(this).find(".add-seat").val(),
+					minStay: $(this).find(".add-minStay").val(),
+					maxStay: $(this).find(".add-maxStay").val(),
+					allowDateStart: $(this).find(".add-allowDate").val().substr( 0, 5),
+					allowDateEnd:  $(this).find(".add-allowDate").val().substr( 6, 5),
+					allowWeek: $(this).find(".add-allowWeek").val()
+				};
+
+				array.push({
+					aircompany: $(this).find(".add-aircompany").val(),
+					start: $(this).find(".add-start").val(),
+					end: $(this).find(".add-end").val(),
+					fare: $(this).find(".add-fare").val(),
+					ADVPDay: $(this).find(".add-ADVPDay").val(),
+					singleLineFee: $(this).find(".add-singleLineFee").val(),
+					backLineFee: $(this).find(".add-backLineFee").val(),
+					seat: $(this).find(".add-seat").val(),
+					minStay: $(this).find(".add-minStay").val(),
+					maxStay: $(this).find(".add-maxStay").val(),
+					allowDateStart: $(this).find(".add-allowDate").val().substr( 0, 5),
+					allowDateEnd:  $(this).find(".add-allowDate").val().substr( 6, 5),
+					allowWeek: $(this).find(".add-allowWeek").val()
+				})
+			})
+
+			// data[end] = array;
+
+			data[end].startDate = startDate;
+			data[end].from = from;
+			data[end].length = i;
+			
+			command.addCabin(data)
+
+		}else{
+
+			command.selected('cSelect');
+			command.mixCabin({
+				modal: '#mixCabinModal',
+				container: '#mixCabinContent',
+				deleter:　'.delete'
+			});
+			
+		}
+
+		// setTimeout(function(){
+
+		$("#mixCabinModal").modal()
+		// },1000)
+	})
+
+	$('#clearMixCabin').click(function(){
+		command.clearMixCabin({
+			modal: '#mixCabinModal',
+		});
+	})
+
+	// 测试
+	$('#test').click(function(){
+			command.rate();
+
+			command.xfsd({
+				dosubmit: "",
+				start: 'BJS',
+				end: 'DXB',
+				startDate: '25JUL',
+				aircompany: 'EK',
+				private: '',
+				tripType:"",
+				other: ""
+			})
+
+				console.log(eterm.eterm)
+	})
+
+	$('#remove').click(function(){
+		if( $('#command').val() !== "" ){
+
+		}else{
+
+			// command.xfsd({
+			// 	dosubmit: "",
+			// 	remove: 1,
+			// 	start: 'BJS',
+			// 	end: 'NGO',
+			// 	startDate: '15FEB',
+			// 	aircompany: 'EY',
+			// 	private: 'C*BNK73'
+			// })
+
+			command.xfsd({
+				dosubmit: "",
+				remove: 1,
+				start: 'PEK',
+				end: 'CDG',
+				startDate: '28FEB',
+				aircompany: 'AF',
+				private: ''
+			})
+
+		}
+
+		$('#allPolicy').attr('removeRuntime',1);
+	})
+
+}
+
+// 配置setCommand()
+// 装载模板mkTable()
+setCommend(eterm.createCommand(eterm.eterm, tpl));
+
+function mkTable(array, dom, wrap, type){
+	// array: 返回数据中待渲染数组
+	// dom: 为渲染模板起名
+	// context: 指定渲染容器
+	// appendType: 回填模式 w代表覆盖，a代表追加
+
+		"use strict";
+		// ES6 
+
+		let html = '',
+				appendType = type !== ""? type : 'w',
+			  context = wrap !== "" ? wrap : document;
+
+		for(let arr in array){
+			html += `<table class="${dom} table-hover table-bordered table-responsive">
+				<tr>
+					<th>序号</th>
+					<th><input type="checkbox" id='cAll${arr}'></th>
+					<th>fare</th>
+					<th>特殊规则</th>
+					<th>提前出票</th>
+					<th>单程价格</th>
+					<th>往返价格</th>
+					<th>舱位</th>
+					<th>最短停留</th>
+					<th>最长停留</th>
+					<th>适用截止日期</th>
+					<th>退票规则</th>
+					<th>可用星期</th>
+					<th>出发</th>
+					<th>到达</th>
+					<th>航空公司</th>
+					<th>来源</th>
+					<th>方向</th>
+					<th>查询日期</th>
+					<th>操作</th>
+				</tr>`
+				
+			for(let line =0; line< array[arr]['length']; line++){
+				html += `
+				<tr class='line'>
+					<td class='index' >${array[arr][line]['index']}</td>
+					<td><input type="checkbox" id="c${arr}${array[arr][line]['index']}" class="cSelect cSelect${arr}" value="${array[arr][line]['fare']}"></td>
+					<td class='fare'>${array[arr][line]['fare']}</td>
+					<td class='special'>${array[arr][line]['special']}</td>
+					<td class='ADVPDay'>${array[arr][line]['ADVPDay']}</td>
+					<td class='singleLineFee'>${array[arr][line]['singleLineFee']}</td>
+					<td class='backLineFee'>${array[arr][line]['backLineFee']}</td>
+					<td class='seat'>${array[arr][line]['seat']}</td>
+					<td class='minStay'>${array[arr][line]['minStay']}</td>
+					<td class='maxStay'>${array[arr][line]['maxStay']}</td>
+					<td class='allowDate'>${array[arr][line]['allowDateStart']} - ${array[arr][line]['allowDateEnd']}</td>
+					<td class='reTicket'>${array[arr][line]['reTicket']}</td>
+					<td class='allowWeek'>${array[arr][line]['allowWeek']}</td>
+					<td class='start'>${array[arr][line]['start']}</td>
+					<td class='end'>${array[arr][line]['end']}</td>
+					<td class='aircompany'>${array[arr]['aircompany']}</td>`
+					if(array[arr]['from'] == ''){
+						html += `<td class='from'>公布运价</td>`
+					}else{
+						html += `<td class='from'>${array[arr]['from']}</td>`
+					}
+					html += `<td class='direction'> ${array[arr][line]['direction']}</td>
+					<td class='setDate'>${array[arr]['startDate']}</td>
+					<td class=''><a href="fare.php?display=1&fare=${array[arr][line]['fare']}&start=${array[arr][line]['start']}&end=${array[arr][line]['end']}&startDate=${array[arr]['startDate']}&aircompany=${array[arr]['aircompany']}&from=${array[arr]['from']}"> 使用规则</a>
+					</td>
+				</tr>
+				`
+			}
+			html += `</table>`
+		}
+
+		if(appendType === 'w'){
+			$(context).html(html);
+		}
+		else if(appendType === 'a'){
+			$(context).append(html);
+		}
+}
+
+// 获取正则匹配后的数据
+function mkMatchTable(array, dom, wrap, type){
+	// array: 返回数据中待渲染数组
+	// dom: 为渲染模板起名
+	// context: 指定渲染容器
+	// appendType: 回填模式 w代表覆盖，a代表追加
+
+		"use strict";
+		// ES6 
+
+		let html = '',
+				appendType = type !== ""? type : 'w',
+			  context = wrap !== "" ? wrap : document;
+
+		for(let arr in array){
+			if(arr === 'totalFliterLength'){
+				continue;
+			}
+
+			html += `<table class="${dom} table-hover table-bordered table-responsive" style="width:2310px">
+				<tr>
+					<th>序号</th>
+					<th>fare</th>
+					<!-- <th>特殊规则</th> -->
+					<th>提前出票</th>
+					<th>单程价格</th>
+					<th>往返价格</th>
+					<th>舱位</th>
+					<th>最短停留</th>
+					<th>最长停留</th>
+					<th>旅行日期</th>
+					<th>旅行限制</th>
+					<th>出境除外日期</th>
+					<th>入境除外日期</th>
+					<th>销售日期</th>
+					<!-- <th>出票日期</th> -->
+					<th>改期</th>
+					<th>退票</th>
+					<!-- <th>退票规则</th> -->
+					<th>可用星期</th>
+					<th>加钱</th>
+					<th>出发</th>
+					<th>到达</th>
+					<th>航空公司</th>
+					<th>来源</th>
+					<th>方向</th>
+					<th>查询日期</th>
+					<th>操作</th>
+				</tr>`
+			for(let line =0;line< array[arr]['length']; line++){
+				html += `
+				<tr class='line'>
+					<td class='index'>${array[arr][line]['index']}</td>
+					<td class='fare'>${array[arr][line]['fare']}</td>
+					<!--  <td class='special'>${array[arr][line]['special']}</td> -->
+					<td class='ADVPDay'>${array[arr][line]['ADVPDay']}</td>
+					<td class='singleLineFee'>${array[arr][line]['singleLineFee']}</td>
+					<td class='backLineFee'>${array[arr][line]['backLineFee']}</td>
+					<td class='seat'>${array[arr][line]['seat']}</td>
+					<td class='minStay'>${array[arr][line]['minStay']}</td>
+					<td class='maxStay'>${array[arr][line]['maxStay']}</td>
+					<td class='allowDate'>${array[arr][line]['allowDateStart']} - ${array[arr][line]['allowDateEnd']} </td> <!-- -->
+					<td class='travelRestrict'>${array[arr][line]['travelRestrict']}</td>
+					<td class='fliterDateOutbound'>${array[arr][line]['fliterDateOutbound']}</td>
+					<td class='fliterDateInbound'>${array[arr][line]['fliterDateInbound']}</td>
+					<td class='saleDate'>${array[arr][line]['saleDate']}</td>
+					<!-- <td class='ticketDate'>${array[arr][line]['ticketDate']}</td> -->
+					<td class='change'>${array[arr][line]['change']}</td>
+					<td class='cancel'>${array[arr][line]['cancel']}</td>
+					<!-- <td class='reTicket'>${array[arr][line]['reTicket']}</td> -->
+					<td class='allowWeek'>${array[arr][line]['allowWeek']}</td>
+					<td class='addMoney'>${array[arr][line]['addMoney']}</td>
+					<td class='start'>${array[arr][line]['start']}</td>
+					<td class='end'>${array[arr][line]['end']}</td>
+					<td class='aircompany'>${array[arr]['aircompany']}</td>`
+					if(array[arr]['from'] == ''){
+						html += `<td class='from'>公布运价</td>`
+					}else{
+						html += `<td class='from'>${array[arr]['from']}</td>`
+					}
+					html += `<td class='direction'> ${array[arr][line]['direction']}</td>
+					<td class='setDate'>${array[arr]['startDate']}</td>
+					<td class=''><a href="fare.php?display=1&fare=${array[arr][line]['fare']}&start=${array[arr][line]['start']}&end=${array[arr][line]['end']}&startDate=${array[arr]['startDate']}&aircompany=${array[arr]['aircompany']}&from=${array[arr]['from']}"> 使用规则</a>
+					</td>
+				</tr>
+				`
+			}
+			html += `</table>`
+		}
+
+		if(appendType === 'w'){
+			$(context).html(html);
+		}
+		else if(appendType === 'a'){
+			$(context).append(html);
+		}
+}
+
+// 混舱数据
+function mkMixTable(array, dom, wrap, type){
+	// array: 返回数据中待渲染数组
+	// dom: 为渲染模板起名
+	// context: 指定渲染容器
+	// appendType: 回填模式 w代表覆盖，a代表追加
+	// n: session 序号
+
+		"use strict";
+		// ES6 
+		console.log(array)
+		let html = '',
+				appendType = type !== ""? type : 'w',
+			  context = wrap !== "" ? wrap : document;
+
+		for(let n in array){
+			// 控制面板
+			html += `
+			<div class="panel panel-default"> 
+				<div class="panel-body">
+					<button num="${n}" class="delete btn btn-default">删除</button>
+					</div>
+			</div>
+			`
+			// 混舱：按目的地划分表格
+			for(let arr in array[n]){
+
+				html += `<table class="${dom} table-hover table-bordered table-responsive">
+					<tr>
+						<th>fare</th>
+						<th>提前出票</th>
+						<th>单程价格</th>
+						<th>往返价格</th>
+						<th>舱位</th>
+						<th>最短停留</th>
+						<th>最长停留</th>
+						<th>适用截止日期</th>
+						<th>可用星期</th>
+						<th>航程</th>
+					</tr>`
+
+				for(let line =0; line< array[n][arr]['length']; line++){
+					html += `
+					<tr class='line'>
+						<td class='fare'>${array[n][arr][line]['fare']}</td>
+						<td class='ADVPDay'>${array[n][arr][line]['ADVPDay']}</td>
+						<td class='singleLineFee'>${array[n][arr][line]['singleLineFee']}</td>
+						<td class='backLineFee'>${array[n][arr][line]['backLineFee']}</td>
+						<td class='seat'>${array[n][arr][line]['seat']}</td>
+						<td class='minStay'>${array[n][arr][line]['minStay']}</td>
+						<td class='maxStay'>${array[n][arr][line]['maxStay']}</td>
+						<td class='allowDate'>${array[n][arr][line]['allowDateStart']} - ${array[n][arr][line]['allowDateEnd']}</td>
+						<td class='allowWeek'>${array[n][arr][line]['allowWeek']}</td>
+						<td class='airRrange'>${array[n][arr][line]['start']}`
+						if (array[n][arr][line]['stay'] && array[n][arr][line]['stay'] !== ""){
+							html +=` - ${array[n][arr][line]['stay']} - ${array[n][arr][line]['end']} - ${array[n][arr][line]['stay']} - `;
+						}else{
+							html +=` - ${array[n][arr][line]['end']} - `;
+						}
+						html +=`${array[n][arr][line]['start']}</td>
+					</tr>
+					`
+				}
+
+				html += `</table>`
+			}
+
+		}
+
+		if(appendType === 'w'){
+			$(context).html(html);
+		}
+		else if(appendType === 'a'){
+			$(context).append(html);
+		}
+}
+
+
+// 根据汇率改变价格
+// $('#toCNY').click(function(){
+
+// 	$.ajax({
+// 		type: "POST",
+// 		url: "/eterm/admin/xfsd.php?",
+// 		data: "toCNY=&command=XS FSC NUC/CNY",
+// 		success: function(msg){
+//     	msg = eval('['+msg+']')[0];
+// 			var rate = msg.rate - 0;
+
+// 			if(rate != 0){
+// 				$('.singleLineFee, .backLineFee').each(function(){
+// 					var price = $(this).text() - 0;
+// 					var rs = price*rate;
+// 					if(rs) $(this).text( Math.ceil(rs/10)*10 );
+// 				})
+// 				$('#labtoCNY').html("当前汇率："+msg.rate+'<br>');
+// 			}
+// 		},
+// 		error: function(msg){
+// 			console.log(msg);
+// 		} 
+// 	})
+// })
+
+$(function(){
+	$('.nav>li').removeClass('active');
+	$('.nav>.xfsd').addClass('active');
+})
+
+})
+</script>
+<{/block}>

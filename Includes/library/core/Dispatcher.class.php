@@ -2,7 +2,7 @@
 
 namespace BYS;
 /**
- * ThinkPHP内置的Dispatcher类
+ * Dispatcher类
  * 完成URL解析、路由和调度
  * URL 匹配模式： App/Module/Controller/Action
  */
@@ -15,7 +15,6 @@ class Dispatcher {
    */
 	static public function dispatch(){
 
-
 		$host = $_SERVER['HTTP_HOST'];
 		$url = array(
 			$host => array(
@@ -27,14 +26,23 @@ class Dispatcher {
 		// 是否为URL伪静态访问
 		if(isset($_SERVER['PATH_INFO'])) {
 			$_SERVER['PATH_INFO'] = trim($_SERVER['PATH_INFO'], '/');
-			$paths = explode("/", $_SERVER['PATH_INFO']);
 
-			// 加载应用
-			$app = $paths[0];
-			// 加载控制器
-			$controller = $paths[1];
-			// 加载方法
-			$action = $paths[2];
+			if ($_SERVER['PATH_INFO'] != ""){
+				$paths = explode("/", $_SERVER['PATH_INFO']);
+				// 加载应用
+				$app = $paths[0];
+				// 加载控制器
+				$controller = $paths[1];
+				// 加载方法
+				$action = $paths[2];
+			}
+			// 默认设置
+			elseif(BYS::$default['default']){
+				$app = BYS::$default['default']['app'];
+				$controller = BYS::$default['default']['controller'];
+				$action = BYS::$default['default']['action'];
+			}
+
 			// 加载参数
 			if($_SERVER['QUERY_STRING']) $params = $_SERVER['QUERY_STRING'];
 
@@ -51,7 +59,6 @@ class Dispatcher {
 				BYS::$_GLOBAL['act'] = $action;
 
 				BYS::$_GLOBAL['con_path'] = $localfiles.$path;
-				// define("AB_CONTROLLER_PATH", )
 
 			}else{ 
 				if( !is_dir("/app/$app")){
@@ -65,20 +72,12 @@ class Dispatcher {
 
 		}
 
-
-
 		// 拆分APP、模块、控制器、动作
-
 
 		// 映射到应用
 
 		// 映射到控制器
 		
-		// [DOCUMENT_URI] => /dm.eterm/index.php
-		// [REQUEST_URI]  => /dm.eterm/
-		// [SCRIPT_NAME]  => /dm.eterm/app/admin/controller/indexController.class.php
-	  // [REQUEST_URI]  => /dm.eterm/app/admin/controller/indexController.class.php
-		// [PHP_SELF]     => /dm.eterm/app/admin/controller/indexController.class.php
 	}
 	
 }

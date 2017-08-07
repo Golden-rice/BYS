@@ -1,0 +1,254 @@
+<{extends file='layout.html'}>
+
+<{block name="title"}>舱位查询（sabre）<{/block}>
+<{block name="content"}>
+<div class="panel panel-default">
+	<!-- <form action="" method='POST' onsubmit='return check()'> -->
+    <div class="panel-body">
+			<div class="form-inline">
+					<label for="airline">航班：</label><input type="text" name='airline' id='airline' value='' class='form-control'  onblur="upper(this)"  style='width:100px'>
+					<label for="start">出发：</label><input type="text" name='start' id='start' value='' class='form-control'  onblur="upper(this)"  style='width:100px'>
+					<label for="end">到达：</label><input type="text" name='end' id='end' value='' class='form-control'  onblur="upper(this)"  style='width:100px'>
+					<label for="startDate">起始日期</label><input type="text" data-date="" name='startDate' id='startDate' value='' class='form-control datetimepicker'  onblur="upper(this)"  style='width:100px'>
+					<label for="endDate">结束日期：</label><input type="text" data-date="" name='endDate' id='endDate' value='' class='form-control datetimepicker'  onblur="upper(this)"  style='width:100px'>
+					<input type="submit" id="dosubmit" name='dosubmit' value='查询' class='btn btn-primary'>
+					<span class="addBtn"><a class="btn btn-default" data-toggle="modal" data-target="#setCabin">设置舱位等级</a></span>
+					<!-- <button id='test' class='btn btn-default'>test</button> -->
+			</div>
+		</div>
+	<!-- </form> -->
+</div>
+
+<div id="content-progress"></div>
+<div class="content" id='content'></div>
+
+<div class="modal fade" id="setCabin" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+      <div class="modal-content">
+          <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+              <h4 class="modal-title" id="myModalLabel">设置舱位等级</h4>
+          </div>
+          <div class="modal-body">
+							<div class="form-group col-lg-6" id='seatLevel' style="display:none;">
+								<select multiple="multiple"  class="form-control" style="height:210px">
+		            </select>
+							</div>
+          		<div class="col-lg-6">
+								<div class="form-group">
+									<label for="" class="control-label" >头等舱</label>
+									<input type="text" class="form-control" id='f-cabin' onblur="upper(this)" >
+								</div>
+								<div class="form-group">
+									<label for="" class="control-label">商务舱</label>
+									<input type="text" class="form-control" id='b-cabin' onblur="upper(this)" >
+								</div>
+								<div class="form-group">
+									<label for="" class="control-label">经济舱</label>
+									<input type="text" class="form-control" id='e-cabin' onblur="upper(this)" >
+								</div>
+          		</div>
+					<p>逗号分隔</p>
+          </div>
+          <div class="modal-footer">
+              <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+              <button type="button" class="btn btn-primary" id='mkTable'>生成</button>
+          </div>
+      </div>
+  </div>
+</div>
+<script>
+require(['eterm'], function(eterm){
+
+$(function(){
+	// 导航
+	$('.nav>li').removeClass('active');
+	$('.nav>.cabinSabre').addClass('active');
+})
+ 
+
+var setCommend = function(command){
+
+	$('#test').click(function(){
+		command.avSabre({
+			dosubmit: 'cabin',
+			start: 'PEK',
+			end: 'TYO',
+			startDate: "18FEB",
+			endDate: "20FEB",
+			airline: 'HU7919'
+		},true)
+	})
+
+	$('#dosubmit').click(function(){
+		command.avSabre({
+			dosubmit: 'cabin',
+			start: $('#start').val(),
+			end: $('#end').val(),
+			startDate: $('#startDate').val(),
+			endDate: $('#endDate').val(),
+			airline: $('#airline').val()
+		}, true)
+	})
+
+}
+
+var tpl = {
+	mkTable:mkTable,
+	mkSeatLevel: mkSeatLevel
+}
+
+// 配置setCommand()
+// 装载模板mkTable()
+setCommend(eterm.createCommand(eterm.eterm, tpl));
+
+
+function mkTable(array, dom, wrap, type){ 
+	
+	var airline = $('#airline').val(), start = $('#start').val(), end = $('#end').val();
+	// 绘制表格
+	var html = "", 
+			fcabin = ($('#f-cabin').val()).split(',')[0] !== ""? ($('#f-cabin').val()).split(',') : [],
+			bcabin = ($('#b-cabin').val()).split(',')[0] !== ""? ($('#b-cabin').val()).split(',') : [],
+			ecabin = ($('#e-cabin').val()).split(',')[0] !== ""? ($('#e-cabin').val()).split(',') : [],
+
+			// fcabin = ('C,D,I,R,J,Y,B,H').split(','),
+			// bcabin = ('U,E,G,S,O').split(','),
+			// ecabin = ('K,L,M,X,V,N,W,Q,T').split(','),
+
+			fcabinhtml = "", bcabinhtml = "", ecabinhtml = "";
+
+	var totalcabin = [].concat(fcabin,bcabin,ecabin);
+	var	appendType = type !== ""? type : 'w',
+		context = wrap !== "" ? wrap : document;
+
+	html = '<table class="'+dom+' table table-hover table-bordered table-responsive" id="origData">';
+
+	if( totalcabin.length > 0 ){
+		html += '<tr><th rowspan=2 >日期</th><th rowspan=2>航班</th><th rowspan=2>行程</th>';
+		if(fcabin.length > 0){
+			html += '<th colspan='+fcabin.length+'>头等舱</th>';
+			for( var f in fcabin){
+				fcabinhtml += '<th>'+fcabin[f]+'</th>';
+			}
+		}
+		if(bcabin.length > 0){
+			html += '<th colspan='+bcabin.length+'>商务舱</th>';
+			for( var b in bcabin){
+				bcabinhtml += '<th>'+bcabin[b]+'</th>';
+			}
+		}
+		if(ecabin.length > 0){
+			html += '<th colspan='+ecabin.length+'>经济舱</th>';
+			for( var e in ecabin){
+				ecabinhtml += '<th>'+ecabin[e]+'</th>';
+			}
+		}
+		html += '</tr>';
+		html += '<tr>'+fcabinhtml+bcabinhtml+ecabinhtml+'</tr>';
+	}
+
+	for( var i in array ){
+		html += "<tr>";
+		html += "<td>"+array[i].date+"</td> <td>"+array[i].airline+"</td><td>"+array[i].start+"-"+array[i].end+"</td>";
+		if(totalcabin.length===0){
+			for(var o in array[i].cabin){
+				html += "<td>"+o+":"+array[i].cabin[o]+"</td>";
+			}
+		}else{
+			if(array[i].cabin.length !== 0){
+				for(var o in totalcabin){
+						html += "<td>"+array[i].cabin[(totalcabin[o])]+"</td>";
+				}
+			}
+		}
+		html += "</tr>";
+	}
+	html += '</table>';
+	
+	if(appendType === 'w'){
+		$(context).html(html);
+	}
+	else if(appendType === 'a'){
+		$(context).append(html);
+	}
+
+}
+
+
+function mkSeatLevel(data){
+	if(!data){  return; }
+	var longestCabinId = 0;
+	var html = "";
+	for( var i in data ){
+		if(data[i].cabinLength > data[longestCabinId].cabinLength){
+			longestCabinId = i;
+		}
+	}
+	
+	for(var i in data[longestCabinId].cabin){
+		html += '<option>'+i+'</option>';
+	}
+
+	$('#seatLevel').show().children('select').append(html);
+}
+
+})
+
+// $('.datetimepicker').datetimepicker({
+// 		format:'	ddM',
+//      weekStart: 1,
+//      startDate: 'Beginning of time',
+//      autoclose: 1,
+//      todayHighlight: 1,
+//      startView: 2,
+//      minView: 2,
+//      todayBtn: 'linked',
+//      forceParse: 0
+//  });
+
+
+// function getData(query){
+// 	$('#content').html('<div class="progress progress-striped active"> <div class="progress-bar" style="width: 2%"></div></div>')
+// 	var $progress = $('.progress'),
+// 			$bar = $('.progress>.progress-bar');
+
+// 	$progress.show();
+// 	$.ajax({
+// 		url: '/eterm/admin/av.sabre.php',
+// 		type: 'POST',
+// 		data: query,
+// 		success: function(){
+// 			$bar.css('width','100%');
+// 			// $('#lab').show();
+// 		},
+// 		error: function(msg){
+// 			console.log(msg);
+// 		}
+// 	})
+// 	.done(function(msg){
+// 			setTimeout(function(){
+// 				$progress.hide();
+// 				$bar.css('width','2%');
+
+// 				msg = eval('['+msg+']')[0];
+// 				console.log(msg)
+// 				mkSeatLevel(msg.arr);
+// 				rmTable('table-1');
+// 				mkTable( msg.arr, 'table-1');
+
+// 			},600);
+
+// 			$('#mkTable').click(function(){
+// 				rmTable('table-1');
+// 				mkTable(msg.arr, 'table-1');
+// 			})
+// 	})
+// }
+
+
+
+
+
+</script>
+<{/block}>

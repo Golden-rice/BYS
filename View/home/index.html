@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>机票查询</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link href="<{$_public}>css/bootstrap.min.css" rel="stylesheet">
+<link href="<{$_public}>css/bootstrap-responsive.min.css" rel="stylesheet">
+<link href="<{$_public}>css/style.css" rel="stylesheet">
+
+<script src='<{$_public}>js/autocomplete.js'></script>
+<!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
+<!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+<![endif]-->
+
+<script src="<{$js_act_src}>"></script>
+<script src="<{$js_jquery_src}>"></script>
+
+</head>
+<body>
+<{include './nav.html'}>
+
+<!-- /subnavbar -->
+<div class="main">
+  <div class="main-inner">
+    <div class="container">
+      <div class="row">
+
+        <!-- /span6 -->
+        <div class="span12">
+        <div class="widget widget-table action-table " style='overflow:visible'>
+            <div class="widget-header"> <i class="icon-th-list"></i>
+              <h3>搜索面板</h3>
+            </div>
+            <!-- /widget-header -->
+            <div class="widget-content form form-inline ">
+              <form action="" method='GET' onsubmit='return check()' class='pd-10'>
+
+                <div class="autoComplete" id='autoComplete_start' style='z-index:10'>
+                <label for="start">出发：</label><input type="text" name='start' id='start' value='<{$start}>' class='form-control' autocomplete="off" onblur="upper(this)" style='width:100px'>
+                <ul style='display:none'><li></li></ul>
+                </div>
+                <div class="autoComplete" id='autoComplete_end' style='z-index:10'>
+                <label for="end">到达：</label><input type="text" name='end' id='end' value='<{$end}>' class='form-control' autocomplete="off"  onblur="upper(this)" style='width:100px'>
+                <ul style='display:none'><li></li></ul>
+                </div>
+                <div class="autoComplete" id='autoComplete_setDate' style='z-index:10'>
+                <label for="setDate">查询日期：</label><input type="text" name='setDate' id='setDate' value='<{$setDate}>' class='form-control' autocomplete="off"  onblur="upper(this)"  style='width:100px'>
+                <ul style='display:none'><li></li></ul>
+                </div>
+                <div class="autoComplete" id='autoComplete_aircompany' style='z-index:10'>
+                <label for="aircompany">航司：</label><input type="text" name='aircompany' id='aircompany' value='<{$aircompany}>' class='form-control' autocomplete="off"  onblur="upper(this)"  style='width:100px'>
+                <ul style='display:none'><li></li></ul>
+                </div>
+                &nbsp;
+                <input type="submit" name='dosubmit' value="查询" class='btn btn-primary'> 
+                <{if count($arr)>0}>     
+                <input type="button" name='downloadEXCEL' value='导出EXCEL' class='btn btn-default' onclick='window.open("<{URL}>home/downloadEXCEL.php?target=org&start=<{$start}>&end=<{$end}>&setDate=<{$setDate}>&aircompany=<{$aircompany}>")' >
+                <input type="button" name='downloadEXCEL' value='生成携程EXCEL数据' class='btn btn-default' onclick='window.open("<{URL}>home/downloadEXCEL.php?target=xc&start=<{$start}>&end=<{$end}>&setDate=<{$setDate}>&aircompany=<{$aircompany}>")' >
+               
+                <{/if}>
+              </form>
+            </div>
+            <!-- /widget-content --> 
+          </div>
+          <!-- /widget --> 
+
+          <div class="widget widget-table action-table">
+            <div class="widget-header"> <i class="icon-th-list"></i>
+              <h3>机票查询</h3>
+            </div>
+            <!-- /widget-header -->
+            <div class="widget-content">
+              
+              <table class="table table-striped table-bordered">
+                <thead>
+                  <tr>
+                    <th>序号</th>
+                    <th> Fare</th>
+                    <th> 特殊规则 </th>
+                    <th> 提前出票 </th>
+                    <th> 单程价格 </th>
+                    <th> 往返价格 </th>
+                    <th> 舱位 </th>
+                    <th> 最短停留 </th>
+                    <th> 最长停留 </th>
+                    <th> 适用截止日期 </th>
+                    <th> 退票规则 </th>
+                    <th> 可用星期 </th>
+                    <th> 出发 </th>
+                    <th> 到达 </th>
+                    <th> 航空公司 </th>
+                    <th> 来源 </th>
+                    <th> 查询日期 </th>
+                    <!-- <th class="td-actions"> </th> -->
+                  </tr>
+                </thead>
+                <{if count($arr)>0}>
+                <tbody>
+                  <{foreach $arr as $line}>
+                  <tr>
+                    <td><{$line._index}></td>
+                    <td><{$line.fare}></td>
+                    <td><{$line.special}></td>
+                    <td><{$line.ADVP}></td>
+                    <td><{$line.singleLineFee}></td>
+                    <td><{$line.backLineFee}></td>
+                    <td><{$line.seat}></td>
+                    <td><{$line.minStay}></td>
+                    <td><{$line.maxStay}></td>
+                    <td><{$line.allowDate}></td>
+                    <td><{$line.reTicket}></td>
+                    <td><{$line.allowWeek}></td>
+                    <td><{$line.start}></td>
+                    <td><{$line.end}></td>
+                    <td><{$line.aircompany}></td>
+                    <td><{$line.comefrom}></td>
+                    <td><{$line.setDate}></td>
+                    <!-- <td>&nbsp;</td> -->
+                  </tr>
+                  <{/foreach}>
+                  <tr>
+                    <td colspan='17'> <{$page}> </td>
+                  </tr>
+<!--                   <tr>
+                    <td> Fresh Web Development Resources </td>
+                    <td> http://www.cssmoban.com/ </td>
+                    <td class="td-actions"><a href="javascript:;" class="btn btn-small btn-success"><i class="btn-icon-only icon-ok"> </i></a><a href="javascript:;" class="btn btn-danger btn-small"><i class="btn-icon-only icon-remove"> </i></a></td>
+                  </tr> -->
+                </tbody>
+                <{else}>
+                <td colspan='17'>未查询到数据</td>
+                <{/if}>
+              </table>
+
+            </div>
+            <!-- /widget-content --> 
+          </div>
+          <!-- /widget --> 
+        </div>
+        <!-- /span6 --> 
+      </div>
+      <!-- /row --> 
+    </div>
+    <!-- /container --> 
+  </div>
+  <!-- /main-inner --> 
+</div>
+<!-- /main -->
+
+
+<div class="footer">
+  <div class="footer-inner">
+    <div class="container">
+      <div class="row">
+        <div class="span12"> &copy; 2015 中航逸翔 -机票预订查询平台 <a href="<{$URL}>" target="_blank" >后台</a>. </div>
+        <!-- /span12 --> 
+      </div>
+      <!-- /row --> 
+    </div>
+    <!-- /container --> 
+  </div>
+  <!-- /footer-inner --> 
+</div>
+<!-- /footer --> 
+<!-- Le javascript
+================================================== --> 
+<!-- Placed at the end of the document so the pages load faster --> 
+<script>
+function _$(dom){
+  return document.getElementById(dom);
+}
+addEvent.call(null,'load',function(){
+  autoComplete.call( _$('autoComplete_start'), {
+    ajax:{ type:'post',url:'<{URL}>home/fetch.php?target=start&search='},
+    elemCSS:{ focus:{'color':'#000','background':'#ccc'}, blur:{'color':'#ccc','background':'transparent'} },
+    input:'input',
+    popup:'ul'
+  });
+  autoComplete.call( _$('autoComplete_end'), {
+    ajax:{ type:'post',url:'<{URL}>home/fetch.php?target=end&search='},
+    elemCSS:{ focus:{'color':'#000','background':'#ccc'}, blur:{'color':'#ccc','background':'transparent'} },
+    input:'input',
+    popup:'ul'
+  });
+  autoComplete.call( _$('autoComplete_setDate'), {
+    ajax:{ type:'post',url:'<{URL}>home/fetch.php?target=setDate&search='},
+    elemCSS:{ focus:{'color':'#000','background':'#ccc'}, blur:{'color':'#ccc','background':'transparent'} },
+    input:'input',
+    popup:'ul'
+  });
+  autoComplete.call( _$('autoComplete_aircompany'), {
+    ajax:{ type:'post',url:'<{URL}>home/fetch.php?target=aircompany&search='},
+    elemCSS:{ focus:{'color':'#000','background':'#ccc'}, blur:{'color':'#ccc','background':'transparent'} },
+    input:'input',
+    popup:'ul'
+  });
+});
+
+
+
+</script>
+
+</body>
+</html>

@@ -51,7 +51,11 @@ class [MODEL]Model extends Model {
 				);
 				break;
 		}
+
 		$this->siteMap = $siteMap;
+
+		// 暴露到全局
+		BYS::$sitemap = $this->siteMap;
 	}
 
 	/** 
@@ -112,13 +116,6 @@ class [MODEL]Model extends Model {
 
 		// 启用控制器
 		if( isset(BYS::$_GLOBAL['con_path']) && BYS::$_GLOBAL['con_path'] != null){
-			self::activeController();
-		}elseif( !isset(BYS::$_GLOBAL['con_path']) && BYS::$default['default'] ){
-			BYS::$_GLOBAL['con_path'] = 'app/'.BYS::$default['default']['app']."/Controller/".BYS::$default['default']['controller']."Controller.class.php";
-			BYS::$_GLOBAL['app'] = BYS::$default['default']['app'];
-			BYS::$_GLOBAL['con'] = BYS::$default['default']['controller'];
-			BYS::$_GLOBAL['act'] = BYS::$default['default']['action'];
-
 			self::activeController();
 		}else{
 			Report::error("无控制器");
@@ -215,7 +212,7 @@ class [MODEL]Model extends Model {
 	    if(!is_dir($dir)){
 	      mkdir($dir, 0755, true);
 	    }
-	    file_put_contents($file,$content);
+	    file_put_contents($file, $content);
     }
 	}
 }

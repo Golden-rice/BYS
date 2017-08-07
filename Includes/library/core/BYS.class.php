@@ -16,6 +16,9 @@ class BYS {
   // 配置
   public static $default;
 
+  // 站点地图
+  public static $sitemap;
+
 	/** 
 	 * 应用初始化
    * @access public 
@@ -35,27 +38,24 @@ class BYS {
 		$default = include INCLUDES.'default.php';
 		self::$default = $default;
 
-		// 加载配置文件
-		$config = self::autoReadConfig($default);
+		// 加载用户配置
+		self::autoReadClass( $default["config"] );
 
 		// 读取核心类库
-		self::autoReadRefer( $default["core"], constant('NAMESPACE')."\\" );
+		self::autoReadClass( $default["core"], constant('NAMESPACE')."\\" );
 
 		// 加载smarty扩展
 		if( isset($default['vender']) && isset($default['vender']['smarty']) ){
-			// smarty 
-			self::autoReadRefer( $default['vender']['smarty'] );
+			// 读取smarty核心类库
+			self::autoReadClass( $default['vender']['smarty'] );
 		}	
 
 		// Report::p(self::$map);
 
-		// 初始化文件存储方式？
+		// 初始化文件存储方式
 
 		// 检查应用目录结构 如果不存在则自动创建 sitemap
 		self::autoMakeApp($default['appMap']);
-
-		// 绑定app
-		// $app     =   defined('BIND_APP') ? BIND_APP : "admin";
 
 		// 记录加载文件时间，切面
 
@@ -99,7 +99,7 @@ class BYS {
 	}
 
 	/** 
-	 * 应用扩展 返回扩展的库
+	 * 返回扩展的库的实例
 	 * @access public 
 	 * @param  string $class  待加载类名
 	 * @param  array  $config 配置
@@ -119,6 +119,18 @@ class BYS {
     return $instance;
 	}
 
+	/** 
+	 * 返回类的实例
+	 * @access public 
+	 * @param  string $class  待加载类名
+	 * @param  array  $config 配置
+   * @return object
+	 */
+	static public function callClass($class, $config = array()){
+		$class = "BYS\\$class";
+		$instance = new $class($config);
+		return $instance;
+	}
 
 	/** 
 	 * 返回配置
@@ -127,16 +139,16 @@ class BYS {
 	 * @param  string $configType  配置类型
    * @return object
 	 */
-	static public function callConfig( $config, $configType){
+	static public function callConfig( $config = "", $configType = ""){
 		$default = self::$default;
 
 		switch ( $configType ) {
 			case 'vender':
-				$config_result =  self::autoReadConfig( $default['vender'][$config] ); 
+				$config_result = self::readConfig( $default['vender'][$config] ); 
 				break;
 			
 			default:
-				$config_result = self::autoReadConfig( $default['core'] ); 
+				$config_result = self::readConfig( $default ); 
 				break;
 		}
 		return $config_result;
@@ -145,11 +157,11 @@ class BYS {
 	/** 
 	 * 自动读取类库
 	 * @access private 
-	 * @param $config    扩展的配置
-	 * @param $namespace 命名空间
+	 * @param  $config    扩展的配置
+	 * @param  $namespace 命名空间
    * @return void
 	 */
-	static private function autoReadRefer($config, $namespace = ""){
+	static private function autoReadClass($config, $namespace = ""){
 		if( is_dir($config['path']) && $handle = opendir($config['path']) ){
 			while( ($file = readdir($handle)) !== false ){
 				if( $file!='.' && $file!='..' ){
@@ -166,11 +178,11 @@ class BYS {
 
 	/** 
 	 * 自动读取配置
-	 * @access private 
-	 * @param $config    待读取的扩展
-   * @return void
+	 * @access public 
+	 * @param  $config    待读取的扩展
+   * @return array
 	 */
-	static public function autoReadConfig($config){
+	static public function readConfig($config){
 		if( is_file($config['config']['path'].$config['config']['file']) && $file = $config['config']['path'].$config['config']['file'] ){
 			return include $file;
 		}else{
@@ -179,6 +191,32 @@ class BYS {
 		}
 
 	}
+
+	/** 
+	 * 根据用户配置使用
+	 * @access private 
+	 * @param $config    读取的配置
+   * @return void
+	 */
+	// static private function useAppConfig($config){
+	// 	if(!isset($config)) {
+	// 		Report::error('没有配置');
+	// 		return;
+	// 	}
+
+	// 	// 公共配置
+	// 	if(isset($config['COMMON'])){
+	// 		// TPL_VAR 扩展
+	// 		Using::commoning($config['COMMON']);
+	// 	}
+
+	// 	// 各个应用配置
+	// 	foreach ($config as $name => $set) {
+	// 		if( preg_match("/^APP_/", $name) ){
+	// 			Using::privating($set, $appName);
+	// 		}
+	// 	}
+	// }
 
 	/** 
 	 * 自动生成应用

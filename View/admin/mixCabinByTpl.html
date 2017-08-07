@@ -1,0 +1,50 @@
+<{extends file='layout.html'}>
+
+<{block name="content"}>
+
+<h3>模板混舱合成结果</h3>
+<hr>
+<div id="content">  mixCabinByTpl </div>
+
+<!-- 加载OTA模板 -->
+<script src='<{$_PUBLIC}>/js/otaTpl.js'></script>
+<script>
+var data = eval(<{$data}>);
+var tplMatch = eval(<{$tplMatch}>);
+
+require(['eterm'], function(eterm){
+console.log(data);
+console.log(tplMatch);
+
+renderTpl(translate[tplMatch.tplName], data)
+
+
+function renderTpl(translate, data){
+
+	'use strict';
+
+	if(translate == undefined || data == undefined ){ return ; }
+
+	let html = "";
+	html += `<table class="table table-hover table-bordered table-responsive" style="width:8000px">`
+	
+	html += `<tr>`
+	for(var name in translate){
+		html += `<th>${translate[name]}</th>`
+	}
+	html += `</tr>`
+
+	for(var i in data){
+		html += `<tr>`
+		for (var name in data[i]){
+			html += `<td>${data[i][name]}</td>`
+		}
+		html += `</tr>`
+	}
+	html += `</table>`
+	
+	$('#content').html(html)
+}
+})
+</script>
+<{/block}>

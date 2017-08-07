@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>查看</title>
+	<link rel="stylesheet" href='<{$css_src}>'> 
+	<link rel="stylesheet" href='<{$css_src_boot}>'>
+</head>
+<body>
+	<form action="" metho='post' class='form-inline'>
+		<input type="submit" value='下载' name='download' class='btn btn-primary'>		
+	</form>
+	<{if count($tit)>0}>
+	<table class='table-1' width='6000'>
+		<tr>
+			<{foreach $tit as $val}>
+				<th><{$val}></th>
+				
+			<{/foreach}>
+		<tr>
+		<{foreach $content as $row}>
+		<tr>
+			<{foreach $tit as $val}>
+
+				<td><{$row[$val@index]}></td>
+			<{/foreach}>
+		</tr>
+		<{/foreach}>
+		
+	</table>
+	<{/if}>
+</body>
+</html>

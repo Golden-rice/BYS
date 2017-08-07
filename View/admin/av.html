@@ -1,0 +1,60 @@
+<{extends file='layout.html'}>
+
+<{block name="title"}>av价格查询<{/block}>
+<{block name="content"}>
+
+	<div class="div-1 form-inline">
+
+
+			<label for="aircompany">航司：</label><input type="text" name='aircompany' id='aircompany' value='<{$aircompany}>' class='form-control'  onblur="upper(this)"  style='width:100px'>
+			<label for="num1">起始数字：</label><input type="text" name='num1' id='num1' value='' class='form-control'  onblur="upper(this)"  style='width:100px'>
+			<label for="num2">结束数字：</label><input type="text" name='num2' id='num2' value='' class='form-control'  onblur="upper(this)"  style='width:100px'>
+			<input type="submit" name='dosubmit' value='查询' class='btn btn-primary'>
+		</form>
+
+	</div>
+
+		
+<div class="time"><{$time}></div>
+<br>
+
+<table class="table-1 table table-hover">
+	<tr>
+		<th>命令</th>
+		<th>出发</th>
+		<th>出发时间</th>
+		<th>到达</th>
+		<th>到达时间</th>
+		<th>星期</th>
+		<th>飞行时间</th>
+		<th>GROUNP</th>
+		<th>TEAM</th>
+		<th>机型</th>
+		<th>餐食</th>
+		<th>飞行距离</th>
+		<th>共享航班</th>  <!-- OPE -->
+	</tr>
+
+
+
+<script>
+let = `${for(var i = 0 ; i< 3; i++){ }<a>click</a>${}}`;
+
+require(['eterm'], function(eterm){
+
+var tpl = {
+
+}
+
+var setCommend = function(command){
+
+}
+
+setCommend(eterm.createCommand(eterm.eterm,tpl));
+
+
+
+})
+	
+</script>
+<{/block}>

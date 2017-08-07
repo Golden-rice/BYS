@@ -1,0 +1,37 @@
+<{extends file='layout.html'}>
+
+<{block name="title"}>校验客票状态<{/block}>
+<{block name="content"}>
+<div class="panel panel-default">
+	<div class="panel-body">
+		<form action="check.php?checkOpen&" method="POST" enctype="multipart/form-data">
+			<div class="row">
+				<div class="col-lg-3">
+					
+					<input type="file" name="file_ticketNumber" id='file_ticketNumber' />
+				</div>
+				<div class="col-lg-3">
+					<input type="submit" name='dosubmit' id="dosubmit" value='导入票号' class='btn btn-primary'>
+				</div>
+			</div>
+		</form>
+	</div>
+</div>
+
+<div id="content-progress"></div>
+<div id="content"></div>
+
+<script>
+require(['eterm'], function(eterm){
+var setCommend = function(command){
+
+	// $('#dosubmit').click(function(){
+	// 	command.checkOpen($('#file_ticketNumber').val());
+	// })
+
+}
+
+setCommend(eterm.createCommand(eterm.eterm));
+})
+</script>
+<{/block}>

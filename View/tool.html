@@ -1,0 +1,80 @@
+<div class="form-group">
+    <label class="control-label" for="input">输入：</label>
+   	<textarea class="form-control" id='input' cols="30" rows="5">	
+   	</textarea>
+    <label class="control-label" for="output">输出：</label>
+    <textarea class="form-control" name="" id="output" cols="30" rows="5">
+    </textarea>
+    <hr>
+		<button id='btn' class="btn btn-primary col-lg-offset-10">转换</button>
+</div>
+    <script>
+    btn.onclick = function(){
+        var str = document.getElementById('input').value;
+        var out = document.getElementById('output');
+        var output = "";
+
+        if(/(http|https)/gi.test(str)){
+            // 格式化 url
+            console.log(str)
+            var url = parseURL(str);
+            url
+        }else{
+            // 匹配多地点
+            var input = str.match(/\w{3}/g);
+            for (var i = input.length - 1; i >= 0; i--) {
+                input[i] = input[i]+',';
+                output += input[i];
+            };
+        }
+        out.innerHTML = output;
+    }
+
+	</script>
+
+
+
+
+<!-- <div class='fix-tr div-2' id='tool' style='resize:auto'> -->
+	<!-- <p>工具 <a href="javascript:void(0)" id="closeTool">关闭</a> </p> -->
+	
+	<!-- <ul > -->
+		<!-- <li id='tool-1' onclick='openTool(this)'><button>格式化多地点</button></li> -->
+
+	<!-- </ul> -->
+	<!-- <iframe src="<{URL}>/view/tool/fliterCode.html" frameborder="0" class="toolContainer"></iframe> -->
+<!-- </div> -->
+<script>
+// var iframeName = '';
+
+// 	function openTool(dom){
+// 		var id = dom.id;
+		
+// 		var tool = document.getElementById('tool');
+// 		var iframe = document.createElement('iframe');
+
+// 		iframeName = iframe.className = 'toolContainer';
+// 		iframe.style.overflow = 'auto';
+
+// 		if(id == 'tool-1'){
+// 			iframe.src = './tool/fliterCode.html';
+// 		}
+
+// 		tool.appendChild(iframe);
+// 	}
+// 	var closeTool = document.getElementById('closeTool');
+
+// 	closeTool.onclick = function(){
+		
+// 		var toolContainer = document.getElementsByTagName('iframe');
+// 		var tool = document.getElementById('tool');
+// 		var length = toolContainer.length;
+// 		for(var i = 0; i< length; i++){
+// 			if(toolContainer[i] && toolContainer[i].getAttribute('class') == iframeName ){
+// 				tool.removeChild(toolContainer[i]);
+// 			}
+
+// 		}
+		
+// 	}
+</script>

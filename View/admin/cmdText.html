@@ -1,0 +1,40 @@
+<{extends file='layout.html'}>
+
+<{block name="title"}>命令池<{/block}>
+<{block name="content"}>
+<form method='POST' >
+<div class="row">
+	<label for="textArea" class="col-lg-2 control-label">Command</label>
+	<div class="col-lg-12">
+		<div class="well bs-component">
+
+		<textarea id='input' class="form-control" cols="50" rows="10" name='command' placeholder="用===隔开命令"></textarea>
+			
+		</div>
+	</div>
+	<div class="col-lg-12">
+	<input type="submit" class="col-lg-12 btn btn-primary" name='dosubmit'>
+	</div>
+</div>
+</form>
+<br>
+<{if count($arr)>0 }>
+<{foreach $arr as $result}>
+<pre>
+<{foreach $result as $line}>
+<{$line@key}>: <{$line}>
+<{/foreach}>
+</pre>
+<{/foreach}>
+<{/if}>
+<script>
+require(['eterm'], function(){
+	$(function(){
+		// 导航
+		$('.nav>li').removeClass('active');
+		$('.nav>.cmdText').addClass('active');
+	})
+	})
+</script>
+
+<{/block}>
