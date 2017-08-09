@@ -7,7 +7,6 @@ abstract class Controller {
 
 	// 重构控制器类
   public function __construct() {
-    // Hook::listen('action_begin',$this->config);
 
     // 实例化BYS视图类
     // $this->viewObject = BYS::instance('BYS\View');
@@ -18,9 +17,12 @@ abstract class Controller {
     // 应用的驱动
     $this->drive = BYS::callClass( 'Drive', BYS::callConfig() );
 
+    // 将系统函数暴露给Controller
+    // $this->compose("\Drive\import");
+      
+    
   }
 
-  // 
   /**
    * 扩展smarty的display方法: 为空则以当前方法位命名
    * @access protected
@@ -40,32 +42,23 @@ abstract class Controller {
     $default_act  = BYS::$_GLOBAL['act'];
 
     // 模板初始地址为以APP命名为准
-    $base_path   = "{$default_path}{$default_app}/";
-    $tpl         = "{$base_path}{$tpl}";
-    
-    // 默认模板路径
     if($tpl == "" ){
-
-      $default_tpl = "{$base_path}{$default_con}/{$default_act}";
-      $runtime_path = "{$default_app}/{$default_con}/";
-
-      $tpl = $default_tpl;
+      $default_tpl = "{$default_path}{$default_app}/{$default_con}/{$default_act}";
+    }else{
+      $default_tpl = "{$default_path}{$default_app}/{$tpl}";
     }
     
+    $tpl = $default_tpl;
+
     if( is_file($tpl.$ext) ) {
 
-      $content = $this->drive->replaceVarContent( $tpl.$ext );
-      $runtime_path = isset($runtime_path) ? BYS::$sitemap['runtime'].$runtime_path : $tpl;
-      $runtime_tpl = $runtime_path.$default_act.$ext;
-
-      if( !is_file($runtime_tpl) && mkdir($runtime_path, 0777, true) ) {
-        $handle = fopen($runtime_tpl, "w", TRUE ) or die("Unable to open file!");
-        fclose($handle);
-      }
+      $this->drive->supportSmartyTpl($tpl.$ext);
+      // 生成路由缓存
+      $r = Cache::router();
+      // 执行驱动
+      $this->drive->support($tpl.$ext);
       
-      file_put_contents( $runtime_tpl, $content);
-
-      $this->smarty->display( $runtime_tpl );
+      $this->smarty->display( $r );
     }else{
       Report::error('没有模板');
     }
@@ -87,22 +80,21 @@ abstract class Controller {
    * @return mixed
    */
   public function __call($method, $args) {
-      if( 0 === strcasecmp($method, ACTION_NAME.C('ACTION_SUFFIX'))) {
-          if(method_exists($this,'_empty')) {
-              // 如果定义了_empty操作 则调用
-              $this->_empty($method,$args);
-          }elseif(file_exists_case($this->view->parseTemplate())){
-              // 检查是否存在默认模版 如果有直接输出模版
-              $this->display();
-          }else{
-              E(L('_ERROR_ACTION_').':'.ACTION_NAME);
-          }
-      }else{
-          E(__CLASS__.':'.$method.L('_METHOD_NOT_EXIST_'));
-          return;
-      }
+
+    if(method_exists($this,'_empty')) {
+        // 如果定义了_empty操作 则调用
+        $this->_empty($method,$args);
+    }elseif(file_exists_case($this->view->parseTemplate())){
+        // 检查是否存在默认模版 如果有直接输出模版
+        $this->display();
+    }
+
   }
 
+  // 将系统函数暴露给控制器
+  public function compose($action, $args = array()){
+    return call_user_func($action, $args);
+  }
 
 
 }

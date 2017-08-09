@@ -7,7 +7,8 @@
 		'COMMON' => array(
 			// 模板变量替换
 			'TPL_VAR' => array(
-				'__PUBLIC__' => 'public/'
+				'__PUBLIC__' => URL.'public/',
+				'__URL__' => URL.'index.php/'
 			)
 		),
 

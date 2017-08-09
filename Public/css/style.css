@@ -173,10 +173,89 @@ div:after{
 }
 
 /*------------------------------------------------------------------
+[0-2. nav]
+*/
+.navbar {
+    position: relative;
+    min-height: 30px;
+    margin-bottom: 20px;
+}
+
+.navbar-top{
+		background-color: #23282d;
+}
+
+.nav {
+    padding-left: 0;
+    margin-bottom: 0;
+    list-style: none;
+}
+.nav-main{
+	background-color: #fff;
+}
+
+.navbar-static-top {
+    z-index: 1000;
+    border-width: 0 0 1px;
+}
+
+.navbar-right-bm {
+	float: right!important;
+}
+.navbar-top-links {
+    margin-right: 0;
+    float: right;
+}
+
+.navbar-top>ul>li>a{
+	color: #fff;
+}
+
+.navbar-top-links>li:last-child {
+    margin-right: 15px;
+}
+
+.navbar-top-links>li {
+    display: inline-block;
+}
+
+
+.navbar-top>.nav>li>a:focus, .navbar-top>.nav>li>a:hover{
+    background-color: #444;
+}
+.nav-title{
+	color: #777;
+	line-height: 50px;
+}
+
+.nav-main{
+	margin-top: 20px;
+}
+.navbar-default .navbar-nav>.active>a, .navbar-default .navbar-nav>.active>a:focus, .navbar-default .navbar-nav>.active>a:hover {
+    color: #555;
+    background-color: #e7e7e7;
+}
+/*------------------------------------------------------------------
+[0-2. panel]
+*/
+.panel-default{
+	border-color: #e7e7e7;
+}
+.input-group {
+	margin: 10px;
+}
+.hr{
+	height: 0;
+	margin: 10px;
+	border: 0;
+  border-top: 1px solid #eee;
+}
+/*------------------------------------------------------------------
 [1. Global]
 */
 
 body {
+	color: #555;
 	background: #f9f6f1;
 	font: 13px/1.7em 'Open Sans','Microsoft Yahei','Heiti';
 }
@@ -254,7 +333,7 @@ textarea {
 .navbar .nav a {
 	font-size: 11px;
 }
-.navbar .nav>li>a { color:#fff !important;}
+/*.navbar .nav>li>a { color:#fff;}*/
 .navbar .brand {
 	font-weight: 600;
 	position: relative;

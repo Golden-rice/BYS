@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+	<meta charset="UTF-8">
+	<title><{block name="title"}><{/block}></title>
+	<link rel="stylesheet" href='__PUBLIC__css/bootstrap.min.css'> 
+	<link rel="stylesheet" href='__PUBLIC__css/style.css?randowId='> 
+	<link rel="stylesheet" href="__PUBLIC__css/font-awesome/css/font-awesome.min.css"  >
+
+	<script src="__PUBLIC__js/require.js" data-main="__PUBLIC__js/eterm.js?randowId="></script>
+
+	<script>
+	function upper(target){
+  	if(target.value!=target.value.toUpperCase()) target.value=target.value.toUpperCase();
+	}
+	</script>
+	<style>
+		body{ overflow: auto !important;}
+	</style>
+</head>
+<body >
+	<{include './admin-bar.html'}>
+	<div class='contain'>
+		<{include './nav.html'}>
+		<{block name="content"}><{/block}>
+	</div>
+</body>
+</html>

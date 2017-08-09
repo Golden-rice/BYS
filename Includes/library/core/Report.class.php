@@ -6,12 +6,12 @@ class Report {
 		echo "Class Template config success!";
 	}
 
-	static public function error($word){
-		echo $word;
+	static public function error($words){
+		echo $words;
 	}
 
-	static public function warning($word){
-		echo $word;
+	static public function warning($words){
+		echo $words;
 	}
 
 	static public function p($target){
@@ -22,5 +22,9 @@ class Report {
 			var_dump($target);
 		}
 		echo "</pre>";
+	}
+
+	static public function log($words){
+
 	}
 }

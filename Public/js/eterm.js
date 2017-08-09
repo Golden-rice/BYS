@@ -872,7 +872,7 @@ var createCommand = function(recevier, tpl){
 			console.log(data)
 			if(data !== undefined && data.status === 1){
 				alert("登录账号："+data.res.name+"，配置号："+data.res.resource);
-				document.location.href="admin/xfsd.php?display=1";
+				document.location.href="index.php/admin/eterm/xfsd";
 			}else if(data.status === 0){
 				alert("登录账号不正确，请重新登录");
 				signin.name.val("");

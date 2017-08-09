@@ -6,7 +6,7 @@
 	default.php              # 框架配置
 	/library                 # 框架依赖  
 		/vender  
-			/smarty
+			/smarty              # smarty 框架
 			/eterm               # 编写 eterm 命令
 				/command
 					av.class.php   
@@ -50,6 +50,9 @@ index.php                  # 入口文件
 * 根据app名称生成相应目录及文件，例如admin
 
 ## 待完成
+
+* 支持引用其他框架
+* 支持引用其他控制器
 
 * 支持前端开发框架：react.js
 * 支持前端脚手架：webpack/gulp/grunt

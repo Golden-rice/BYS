@@ -1,65 +1,104 @@
-<{extends file='layout.html'}>
+<{extends file='../layout.html'}>
 
 <{block name="title"}>舱位价格查询(from eterm)<{/block}>
 <{block name="content"}>
 
-<!-- 输入框 -->
-<div class="panel panel-default">
-  <div class="panel-body">
-		<div class="form-inline">
-				<label for="start">出发：</label><input type="text" name='start' id='start' value='' class='form-control' onblur="upper(this)" style='width:100px'>
-				<label for="end">到达：</label><input type="text" name='end' id='end' value='' class='form-control' placeholder='多城市","分割' onblur="upper(this)" style='width:100px'>
-				<label for="startDate">日期：</label><input type="text" name='startDate' id='startDate' value='' class='form-control'  onblur="upper(this)"  style='width:100px'>
-				<label for="aircompany">航司：</label><input type="text" name='aircompany' id='aircompany' value='' class='form-control'  onblur="upper(this)"  style='width:100px'>
-				&nbsp;
-				<input type="radio" id='allType'  class='tripType' name="tripType" value='' checked>
-				<label for="allType">全部</label>
-				<input type="radio" id='sigleLine' class='tripType' name="tripType" value='*OW'>
-				<label for="sigleLine">单程</label>
-				<input type="radio" id='cbackLine' class='tripType' name="tripType" value='*RT'>
-				<label for="cbackLine">往返</label>
-				&nbsp;					
-				<input type="text" name='private' id='private' placeholder='例如CBJS1012'  class='form-control'  onblur="upper(this)" style='width:150px'>
-				 &nbsp; / &nbsp;
-				<input type="text" name='other' id='other' placeholder='自定义' class='form-control'  onblur="upper(this)" >
-				<input type="submit" name='dosubmit' id="dosubmit" value="查询" class='btn btn-primary'>
-				
-				<hr>
-				<label for="command"> Command：</label><input type="text" name='command' id="command" onblur="upper(this)"  class='form-control'  placeholder='例如XS/FSDPEKSEA/25JUL/DL/' style='width:300px'>
-				<input type="submit" name='dosubmit' id='docommand'  value='提交' class='btn btn-default'>
-				<hr>
-				<label for="">导入</label>
-				<input type="file" id="importExl"  class='btn btn-default'/> 
-				<hr>
-				<label>工具：</label>
-				<!-- <input type="button" name="toCNY" id="toCNY" value="NUC->CNY" class='btn btn-default'> -->
-				<!-- test -->
-				<button id='test' class='btn btn-default'>test</button>
-				<!-- <button id='remove' class='btn btn-default'>remove</button> -->
-				<!-- test -->
-				<input type="submit"  id='removeAndSubmit' value="删除缓存并查询" class='btn btn-primary'>
-				<!-- <input type="button" name="allPolicy" id="allPolicy" value="读取规则" class='btn btn-primary'> -->
-				<button id='updateDB' class='btn btn-default'>同步至数据库</button>
-				<button id='mixCabin' class='btn btn-default' >混舱</button>
-				<button type="button" class="btn btn-default" id="openAddCabin">手工录入舱位</button>
-				
+<div class="row">
+	<!-- 输入框 -->
+	<div class="col-lg-8">
+		<div class="panel panel-default">
+		  <div class="panel-body">
+				<div class="form-inline">
+						<div class="input-group">
+							<span class="input-group-addon" id="input-start">出发</span><input type="text" name='start' id='start' value='' aria-describedby="input-start" class='form-control' onblur="upper(this)" style='width:100px'>
+
+							<span class="input-group-addon" id="input-end">到达</span><input type="text" name='end' id='end' value='' aria-describedby="input-end" class='form-control' placeholder='多城市","分割' onblur="upper(this)">
+
+							<span class="input-group-addon" id="input-startDate">日期</span><input type="text" name='startDate' id='startDate' value='' aria-describedby="input-startDate" class='form-control'  onblur="upper(this)"  style='width:100px'>
+
+							<span class="input-group-addon" id="input-aircompany">航空公司</span><input type="text" name='aircompany' id='aircompany' value='' aria-describedby="input-aircompany" class='form-control'  onblur="upper(this)"  style='width:100px'>
+						</div>
+							
+						<div class="input-group">
+							<label class="radio-inline">
+								<input type="radio" id='allType'  class='tripType' name="tripType" value='' checked> 全部
+							</label>
+
+							<label class="radio-inline">
+								<input type="radio" id='sigleLine' class='tripType' name="tripType" value='*OW'> 单程
+							</label>
+								
+							<label class="radio-inline">
+								<input type="radio" id='cbackLine' class='tripType' name="tripType" value='*RT'> 往返
+							</label>	
+						</div>
+						
+						<div class="input-group">
+							<input type="text" name='private' id='private' placeholder='例如CBJS1012'  class='form-control'  onblur="upper(this)" style='width:150px'>
+							<span class="input-group-addon" id="input-other">/</span>
+							<input type="text" name='other' id='other' placeholder='自定义' class='form-control'  onblur="upper(this)" >
+						</div>	
+							
+						<div class="input-group">
+							<input type="submit" name='dosubmit' id="dosubmit" value="查询" class='btn btn-primary'>
+						</div>	
+							
+						<div class="hr"></div>
+						
+						<div class="input-group">
+							<span class="input-group-addon" id="input-command">COMMAND</span><input type="text" name='command' id="command" onblur="upper(this)" aria-describedby="input-command"  class='form-control'  placeholder='例如XS/FSDPEKSEA/25JUL/DL/' style='width:300px'>
+						</div>
+
+						<div class="input-group">
+							<input type="submit" name='dosubmit' id='docommand'  value='查询' class='btn btn-default'>
+						</div>
+						
+				</div>
+			</div>
 		</div>
 	</div>
-</div>
-<!-- 输入框 END -->
+	<!-- 输入框 END -->
 		
-<!-- 内容 -->
-<ul class="lab">
-	<li>默认排序（/X）</li>
-</ul>
+	<div class="col-lg-4">
+
+		<!-- 工具 -->
+		<div class="panel panel-default">
+			<div class="panel-body">
+
+						<label for="">导入</label>
+						<input type="file" id="importExl"  class='btn btn-default'/> 
+						<hr>
+						<!-- <input type="button" name="toCNY" id="toCNY" value="NUC->CNY" class='btn btn-default'> -->
+						<!-- test -->
+						<button id='test' class='btn btn-default'>test</button>
+						<!-- <button id='remove' class='btn btn-default'>remove</button> -->
+						<!-- test -->
+						<input type="submit"  id='removeAndSubmit' value="删除缓存并查询" class='btn btn-primary'>
+						<!-- <input type="button" name="allPolicy" id="allPolicy" value="读取规则" class='btn btn-primary'> -->
+						<button id='updateDB' class='btn btn-default'>同步至数据库</button>
+						<button id='mixCabin' class='btn btn-default' >混舱</button>
+						<button type="button" class="btn btn-default" id="openAddCabin">手工录入舱位</button>
+			</div>
+		</div>
+		<!-- 工具结束 -->
+
+		<!-- 提醒 -->
+		<ul class="list-group">
+		  <li class="list-group-item">默认排序（/X）</li>
+		  <li class="list-group-item time">时间</li>
+		  <li class="list-group-item" id="labtoCNY">汇率</li>
+		</ul>
+		<!-- 提醒结束 -->
+	</div>
+</div>
 
 <div id='lab' style="display:none">
-	<div class="panel panel-default">
+<!-- 	<div class="panel panel-default">
 	  <div class="panel-body">
 				<div class="time"></div>
 				<div id="labtoCNY"></div>
 		</div>
-	</div>
+	</div> -->
 	<pre class="command"></pre>
 </div>
 

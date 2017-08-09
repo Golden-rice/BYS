@@ -5,7 +5,7 @@ const APP_NORMAL        =   0;  //普通模式
 
 // 系统常量
 defined('ROOT')      or define('ROOT', dirname($_SERVER['SCRIPT_FILENAME']).'/');
-defined('URL')       or define('URL', $_SERVER['HTTP_HOST'].rtrim($_SERVER['SCRIPT_NAME'], 'index.php'));
+defined('URL')       or define('URL', 'http://'.$_SERVER['HTTP_HOST'].rtrim($_SERVER['SCRIPT_NAME'], 'index.php')); 
 defined('INCLUDES')  or define('INCLUDES',  ROOT.'Includes/'); // 依赖地址
 defined('NAMESPACE') or define('NAMESPACE',  'BYS'); // 框架命名空间
 
