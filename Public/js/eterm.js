@@ -25,6 +25,8 @@ var	progress = progress.progress,
 	copy     = extend.copy,
 	getElementsByClassName = extend.getElementsByClassName;
 
+var Controller = /^\/(.)+\//.exec(window.location.pathname)[0]
+
 // eterm 解析，依赖jQuery
 var eterm = {
 	data: null,       // 数据
@@ -180,8 +182,15 @@ var createCommand = function(recevier, tpl){
 		}
 
 		// 请求数据
+		var url = '';
+		if ( query.dosubmit === 'command' ){
+			url = Controller + 'searchXfsdByCommand';
+		}else{
+			url = Controller + 'searchXfsdByInput';
+		}
+
 		recevier.progress.create('#content-progress');
-		recevier.getData('/admin/xfsd.php', query,
+		recevier.getData(url, query,
 			// 回调函数
 			function(){
 				var _arg = arguments;
@@ -199,7 +208,8 @@ var createCommand = function(recevier, tpl){
 					var command = "";
 					console.log(recevier.xfsd)
 					for(var arr in data.array){
-						command += data.array[arr].command.replace(/</,"&lt;")+'<br>';
+						// command += data.array[arr].command.replace(/</,"&lt;")+'<br>';
+						command += '<kbd>'+data.array[arr].command.replace(/</,"&lt;")+'</kbd>&nbsp;';
 					}
 
 					recevier.lab.time.html(data.time);
@@ -369,6 +379,8 @@ var createCommand = function(recevier, tpl){
 					from: recevier.fareArray[end].from,
 					remove: remove // 删除缓存开关
 				}
+
+				// Controller
 				
 				!function(end, i){
 					recevier.getData('/admin/fare.php', query, function(){
@@ -616,7 +628,7 @@ var createCommand = function(recevier, tpl){
 
 		recevier.cnyLab = $('#labtoCNY')
 
-		recevier.link('/admin/xfsd.php', {toCNY: "", command: "XS FSC NUC/CNY"}, function(msg){
+		recevier.link(Controller + 'toCNY', {toCNY: "", command: "XS FSC NUC/CNY"}, function(msg){
 			recevier.rate =  msg.rate - 0;
 			recevier.cnyLab.html("当前汇率："+msg.rate+'<br>');
 
@@ -684,7 +696,8 @@ var createCommand = function(recevier, tpl){
 
 		// 请求数据
 		recevier.progress.create('#content-progress');
-		recevier.getData('/admin/avh.php', query,
+
+		recevier.getData( Controller + 'searchAvhByInput', query,
 			// 回调函数
 			function(){
 				var _arg = arguments;
@@ -868,7 +881,7 @@ var createCommand = function(recevier, tpl){
 			resource: signin.resource.val() || ""
 		} 
 
-		recevier.link('index.php/admin/user/login', query, function(data){
+		recevier.link( Controller+'index.php/admin/user/login', query, function(data){
 			console.log(data)
 			if(data !== undefined && data.status === 1){
 				alert("登录账号："+data.res.name+"，配置号："+data.res.resource);

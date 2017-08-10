@@ -114,6 +114,9 @@ class [MODEL]Model extends Model {
 			BYS::$_GLOBAL['view_path'] = ROOT.'View/';
 		}
 
+		// 启动Session
+		session_start();
+
 		// 启用控制器
 		if( isset(BYS::$_GLOBAL['con_path']) && BYS::$_GLOBAL['con_path'] != null){
 			self::activeController();
@@ -138,7 +141,6 @@ class [MODEL]Model extends Model {
 		include_once BYS::$_GLOBAL['con_path'];
 		
 		$controller = BYS::$_GLOBAL['app']."\\Controller\\".BYS::$_GLOBAL['con'].'Controller';
-
 		// 方法
 		if(class_exists($controller)) self::invokeControllerAction(new $controller, BYS::$_GLOBAL['act']);
 

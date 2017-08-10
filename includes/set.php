@@ -15,6 +15,7 @@ define('CONF_PATH', INCLUDES.'config/');  // 应用配置文件目录
 define('LIB_PATH',  INCLUDES.'library/'); // 依赖应用目录
 define('CORE_PATH', LIB_PATH.'core/');    // 核心应用目录
 define('VEND_PATH', LIB_PATH.'vender/');  // 第三方应用目录
+define('COMMON_PATH', INCLUDES.'common/');// 公共系统函数目录
 define('VIEW_TYPE', 'public');            // view 视图模式：public/private
 define('VIEW_EXD',  '.html');             // view 模板
 

@@ -1,6 +1,6 @@
 <?php
-include 'eterm.class.php';
-class AV extends eterm{
+use Eterm\Eterm;
+class Av extends Eterm{
 	private $arr = array();      // 储存数组信息
 	public function analysis($switch){
 		// 解析文件，并返回解析后的结果

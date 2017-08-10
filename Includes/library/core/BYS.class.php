@@ -38,6 +38,9 @@ class BYS {
 		$default = include INCLUDES.'default.php';
 		self::$default = $default;
 
+		// 加载系统函数
+		include COMMON_PATH.'function.php';
+
 		// 加载用户配置
 		self::autoReadClass( $default["config"] );
 

@@ -1,4 +1,5 @@
 <?php
+namespace Eterm;
 	set_time_limit(0); // 无时间限制
 	class Eterm{
 		public $name;
@@ -43,11 +44,11 @@
 			if(!file_exists($this->tmp) || !filesize($this->tmp)>150 ){
 		 		$requestURL='http://eterm.cctba.com:8350/COMMAND?USER='.$this->name.'&PASSWORD='.$this->password.'&RESOURCEETERM-SHARE-'.$this->resource.'&COMMAND='.urlencode($command);
 		 	 	$file = file_get_contents($requestURL);
-
-		 	 	if($this->runDir !== ""){
-		 	 		$this->download($file, $type, $add);
-		 	 	}
-		 	 	// $this->saveStr($file, $type);
+		 	 	
+		 	 	// if($this->runDir !== ""){
+		 	 	// 	$this->download($file, $type, $add);
+		 	 	// }
+		 	 	$this->saveStr($file, $type);
 			}
 	  }
 
@@ -136,8 +137,8 @@
 
 	    $requestURL='http://eterm.cctba.com:8350/COMMAND?USER='.$this->name.'&PASSWORD='.$this->password.'&RESOURCEETERM-SHARE-BJS248&COMMAND='.urlencode($command);
 		 	$file = file_get_contents($requestURL);
-			$this->download($file, $type);
-			// $this->saveStr($file, $type);
+			// $this->download($file, $type);
+			$this->saveStr($file, $type);
 
 	  }
 
@@ -153,8 +154,8 @@
 
 		protected function initFile($fileName, $rangeStart = 0, $rangeEnd = 0){
 			// 格式化成数组，并截取rangeStart至总长度-rangeEnd的长度
-	    $file = file_get_contents($fileName); // 文件下载方式
-	    // $file = $fileName;
+	    // $file = file_get_contents($fileName); // 文件下载方式
+	    $file = $fileName;
 			$arr_tmp = array();
 			preg_match_all("/\[CDATA\[(.*?)\]\]/is", $file, $newFile);
 			foreach ($newFile[1] as $pageNum => $Page) {

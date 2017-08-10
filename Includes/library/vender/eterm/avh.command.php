@@ -1,6 +1,6 @@
 <?php
-include 'eterm.class.php';
-class AVH extends Eterm{
+use Eterm\Eterm;
+class Avh extends Eterm{
 	private $data;                     // 录入数据
 	private $arr = array();            // eterm返回数据
 	private $arr_allow_seat = array(); // 航空公司下的舱位对照表
@@ -47,13 +47,18 @@ class AVH extends Eterm{
   			$curDate = substr($arr[$i], 1, 5); // 不带星期
   		}
   		$j = $i+1;
+
+  		var_dump($j, $arr[$j]);
+  		if(!isset($arr[$j]) || !strlen($arr[$j]) >2 ) continue;
+
+
   		if(substr($arr[$j],0,1) !=" " && $j < count($arr)){
   			$cur = substr($arr[$j], 0, 1);
 
     		$arr_date[$curDate][$cur][] = $arr[$j];
     		$j++;
 
-    		while(substr($arr[$j],0,2) == '  '){
+    		while(substr($arr[$j], 0, 2) == '  '){
     			$arr_date[$curDate][$cur][] = $arr[$j];
     			$j++;
     		}

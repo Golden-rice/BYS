@@ -4,8 +4,8 @@
 <{block name="content"}>
 
 <div class="row">
-	<!-- 输入框 -->
 	<div class="col-lg-8">
+		<!-- 输入框 -->
 		<div class="panel panel-default">
 		  <div class="panel-body">
 				<div class="form-inline">
@@ -56,9 +56,22 @@
 				</div>
 			</div>
 		</div>
-	</div>
-	<!-- 输入框 END -->
+		<!-- 输入框 END -->
 		
+		<!-- ETERM输入命令 -->
+		<div id='lab' style="display:none">
+		<!-- 	<div class="panel panel-default">
+			  <div class="panel-body">
+						<div class="time"></div>
+						<div id="labtoCNY"></div>
+				</div>
+			</div> -->
+			<div class="command"></div>
+		</div>
+		<!-- ETERM输入命令END -->
+	</div>
+	
+	<!-- 侧边辅助栏 -->
 	<div class="col-lg-4">
 
 		<!-- 工具 -->
@@ -90,17 +103,11 @@
 		</ul>
 		<!-- 提醒结束 -->
 	</div>
+	<!-- 侧边辅助栏END -->
+
+
 </div>
 
-<div id='lab' style="display:none">
-<!-- 	<div class="panel panel-default">
-	  <div class="panel-body">
-				<div class="time"></div>
-				<div id="labtoCNY"></div>
-		</div>
-	</div> -->
-	<pre class="command"></pre>
-</div>
 
 <div id="other-content"></div>
 
@@ -437,7 +444,6 @@ var setCommend = function(command){
 				other: ""
 			})
 
-				console.log(eterm.eterm)
 	})
 
 	$('#remove').click(function(){

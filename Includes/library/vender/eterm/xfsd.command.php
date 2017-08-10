@@ -1,6 +1,6 @@
 <?php
-include 'eterm.class.php';
-class XFSD extends Eterm{
+use Eterm\Eterm;
+class Xfsd extends Eterm{
 	private $arr = array();      // 储存数组信息
     private $org_arr = array();  // 原始数组信息
 	private $date;
@@ -252,6 +252,7 @@ class XFSD extends Eterm{
     		$pageCur++;
     	}
 	}
+
 	private function inputSeat($pageline){
 		if(intval(substr($pageline, 0, 3)) > 99){
 			$pos = 3;
@@ -266,6 +267,7 @@ class XFSD extends Eterm{
 			}
 		}
 	}
+
 	private function getSeat($page, $isF){
 		// 传递该页page所含舱位，判断是否为第一页
 		$pageArr = explode("\r",$page);
@@ -279,7 +281,7 @@ class XFSD extends Eterm{
                     $this->startKey = $pageArr[$fkey];
 	    		}
 	    		if(!empty($fkey) && $key > $fkey ){
-					if(substr($pageArr[$key+1], 0,4) == '    ' ){  // 带有星期
+					if(isset($pageArr[$key+1]) && substr($pageArr[$key+1], 0,4) == '    ' ){  // 带有星期
 						$pageline = $pageline.substr($pageArr[$key+1], 1);
 						$this->inputSeat($pageline);
 					}else if(substr($pageArr[$key], 0,4) != '    '){
@@ -290,7 +292,7 @@ class XFSD extends Eterm{
 		}else{
 			$pageArr = array_slice($pageArr, 1, count($pageArr));
 			foreach ($pageArr as $key => $pageline) {
-				if(substr($pageArr[$key+1], 0,4) == '    ' ){  // 带有星期
+				if(isset($pageArr[$key+1]) && substr($pageArr[$key+1], 0,4) == '    ' ){  // 带有星期
 					$pageline = $pageline.substr($pageArr[$key+1], 1);
 					$this->inputSeat($pageline);
 				}else if(substr($pageArr[$key], 0,4) != '    '){
@@ -300,9 +302,10 @@ class XFSD extends Eterm{
 			}
 		}
 	}
+
 	private function getAllSeat($fileName){
-		$file = file_get_contents($fileName);
-        // $file = $fileName;
+		// $file = file_get_contents($fileName);
+        $file = $fileName;
         
     	preg_match_all("/\[CDATA\[(.*?)\]\]/is", $file, $newFile);
 		foreach ($newFile[1] as $pageNum => $Page) {
@@ -332,7 +335,7 @@ class XFSD extends Eterm{
             $fare = preg_replace('/\s*/', "", substr($dataline, $pos, 8));                // fare 
             $special = substr($dataline, $pos+9,1);            // 特殊规则
             preg_match_all("/ADVP\s*([0-9]{1,2}D)/",$dataline, $advp);
-            $ADVPDay = $advp[1][0];             // ADVP 
+            $ADVPDay = isset($advp[1][0])? $advp[1][0] : '';             // ADVP 
 
             if(substr($dataline, $pos+23, 6) != "      "){
                 $singleLineFee = "";
@@ -348,14 +351,14 @@ class XFSD extends Eterm{
             $allowDateEnd = substr($dataline, $pos+46, 5);     // 适用截止结束日期
             $reTicket = substr($dataline, $pos+52, 5);         // 退票规则
             preg_match_all('/[D]\s\d+/', substr($dataline, $pos+58), $arrWeek);
-            $allowWeek  = $arrWeek[0][0] == NULL? '1234567':substr($arrWeek[0][0],2);            // 可用周期
+            $allowWeek  = isset($arrWeek) ? '1234567':substr($arrWeek[0][0], 2);            // 可用周期
             
             // 回填数据
             $this->arr[$key] = array(
                 'index'=>$index, 
                 'fare'=>$fare, 
                 'special'=>$special=='*'?'YES':'NO',
-                'ADVP'=>$ADVP ? $ADVP :'', 
+                // 'ADVP'=>$ADVP ? $ADVP :'', 
                 'ADVPDay'=>$ADVPDay ? $ADVPDay :'', 
                 'singleLineFee'=>preg_replace("/\s/", "", $singleLineFee), //str_replace('      ','',$singleLineFee)
                 'backLineFee'=>$backLineFee, 
@@ -411,9 +414,9 @@ class XFSD extends Eterm{
 	}
     public function changePrice(){
         $f_page = parent::initFile($this->tmp, 0, 1);
+
         preg_match('/1NUC=(.*)CNY/', $f_page[1], $str);
         $rate = floatval($str[1]);
         return $rate;
     }
 }
-?>

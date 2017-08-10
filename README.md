@@ -4,6 +4,7 @@
 /includes                  # 框架库
 	set.php                  # 框架设置文件 
 	default.php              # 框架配置
+	/common                  # 系统函数
 	/library                 # 框架依赖  
 		/vender  
 			/smarty              # smarty 框架
@@ -50,6 +51,31 @@ index.php                  # 入口文件
 * 根据app名称生成相应目录及文件，例如admin
 
 ## 待完成
+
+* 将eterm所有的功能移植到dm.eterm后，在更新框架？一天完成
+* 重新建Eterm，Url 规则：admin/eterm/price (xfsd form db)
+	
+	* 重写 eterm.class.php
+	* 重写 xfsd.command.php
+	* 重写 av.command.php
+	* 将 使用规则 从xfsd.command.php 取出，写成fsn.command.php
+	* 新建 ss.command.php
+	* EtermController.class.php 作为路由，请求分配到 Event/xfsdEvent.class.php 中
+
+* Eterm 库使用
+
+	* Eterm 自动加载command.php后缀，并生成实例 √
+	* 生成数据库 Model 类，两个表 source, detail, 解析规则另外生成
+	* Controller:
+
+		* import(eterm) 以实例化eterm，利用绑定的session eterm账号
+
+				* 实例 xfds 时，调用model类，自动生成数据表	
+
+		* eterm->xfsd->display(queryArr); 返回数组
+		* display:
+
+				* insertDB source by tmp -> $this->analysis() insert detail -> select detaili 
 
 * 支持引用其他框架
 * 支持引用其他控制器

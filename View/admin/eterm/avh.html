@@ -1,35 +1,44 @@
 <{extends file='../layout.html'}>
 
 <{block name="title"}>AVH舱位查询(from eterm)<{/block}>
-
 <{block name="content"}>
+<div class="row">
+	<div class="col-lg-12">
+		
+	</div>
+</div>
 <div class="panel panel-default">
 	<div class="panel-body">
 
 		<div class="form-inline">
-			航空公司：<input type="text" name="airCompany" id="airCompany" placeholder="航空公司代码" class='form-control' onblur="upper(this)" style='width:100px' >
-			起始日期：<input type="text" name="startDate" id="startDate" class='form-control' onblur="upper(this)" style='width:100px' value="">
-			结束日期：<input type="text" name="endDate" id="endDate" class='form-control' onblur="upper(this)" style='width:100px' value="">
-			出发地：<input type="text" name="start" id="start" placeholder="机场代码" class='form-control' onblur="upper(this)" style='width:100px'>
-			到达地：<input type="text" name='end' id='end' placeholder="机场代码" class='form-control' onblur="upper(this)" style='width:100px'>
-			附加参数：<input type="text" name='other' id='other' class='form-control' onblur="upper(this)" style='width:100px'>
 
-			<input type="submit" value="查询" name='dosubmit' id='dosubmit' class="btn btn-primary">
-			<button id='test' class='btn btn-default'>test</button>
-			<br>
-		</div>
-
-		<hr>
-		<div class="row">
-			<div class="col-lg-12">
-				<span class="addBtn"><a class="btn btn-default" data-toggle="modal" data-target="#setCabin">设置舱位等级</a></span>
-
+			<div class="input-group">
+					<span class="input-group-addon" id="input-airCompany">航空公司</span><input type="text" name="airCompany" id="airCompany" placeholder="航空公司代码" class='form-control' onblur="upper(this)" style='width:100px' aria-describedby="input-airCompany">
+					<span class="input-group-addon" id="input-startDate">起始日期</span><input type="text" name="startDate" id="startDate" class='form-control' onblur="upper(this)" style='width:100px' value="" aria-describedby="input-startDate">
+					<span class="input-group-addon" id="input-endDate">结束日期</span><input type="text" name="endDate" id="endDate" class='form-control' onblur="upper(this)" style='width:100px' value="" aria-describedby="input-endDate">
+					<span class="input-group-addon" id="input-start">出发地</span><input type="text" name="start" id="start" placeholder="机场代码" class='form-control' onblur="upper(this)" style='width:100px' aria-describedby="input-start">
+					<span class="input-group-addon" id="input-end">到达地</span><input type="text" name='end' id='end' placeholder="机场代码" class='form-control' onblur="upper(this)" style='width:100px' aria-describedby="input-end">
+					<span class="input-group-addon" id="input-other">附加参数：</span><input type="text" name='other' id='other' class='form-control' onblur="upper(this)" style='width:100px' aria-describedby="input-other">
 			</div>
+
+			<div class="input-group">
+				<input type="submit" value="查询" name='dosubmit' id='dosubmit' class="btn btn-primary">
+			</div>
+
+			<div class="input-group">
+				<button id='test' class='btn btn-default'>test</button>
+			</div>
+
+			<div class="input-group">
+				<span class="addBtn"><a class="btn btn-default" data-toggle="modal" data-target="#setCabin">设置舱位等级</a></span>
+			</div>
+
 		</div>
+		<!-- form-inline -->
 	</div>
-
+	<!-- "panel-body -->
 </div>
-
+<!-- panel -->
 
 <div id="content-progress"></div>
 <div id="content"></div>
@@ -91,7 +100,8 @@ var setCommend = function(command){
 			end: 'NYC',
 			startDate: "05JUN",
 			endDate: "06JUN",
-			airCompany: 'UA'
+			airCompany: 'UA',
+			other: ''
 		}, true)
 	})
 

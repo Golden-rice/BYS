@@ -73,25 +73,10 @@ class Drive {
 		return str_replace( array_keys($replace), array_values($replace), file_get_contents($filePath) );
 	}
 
-	/**
-   * 引入第三方库
-   * @access public
-   * @param  $path   路径
-   * @return classObject 
-   */
-	public function import($path){
-		if(!is_string($path) || $path == "") return;
-		if( is_file(LIB_PATH.$path) ){
-			return include LIB_PATH.$path;
-		}elseif( is_file(LIB_PATH.$path.'.class.php') ){
-			return include LIB_PATH.$path.'.class.php';
-		}else{
-			Report::error('无该路径的第三方库');
-		}
-	}
+
 
 	/**
-   * 支持smarty模板引擎的继承功能
+   * 支持smarty模板引擎的继承功能，将相应文件复制至缓存文件夹中
    * @access public
    */
 	public function supportSmartyTpl($filePath){
