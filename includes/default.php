@@ -6,7 +6,6 @@
 
 		// 应用配置
 		'config' => array( 
-			'name'   => 'default_config',
 			'path'   => CONF_PATH,
 			'file'   => 'config.php'
 		),
@@ -31,7 +30,6 @@
 				// 应用配置
 				'path'    => VEND_PATH.'smarty/',
 				'config' => array( 
-					'name'   => 'smarty_config',
 					'file'   => 'smarty.config.php',
 					'path'   => CONF_PATH
 				),

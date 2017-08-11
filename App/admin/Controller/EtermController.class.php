@@ -240,4 +240,152 @@ class EtermController extends Controller {
 			}	
 
 		}
+
+		// 新增混舱
+		public function addMixCabin(){
+			if(isset($_POST['data']) && $_POST['action'] == 'add'){
+				if(isset($_SESSION['data']) && count($_SESSION['data']) < 2  ){ // 只允许2个航段
+					$_SESSION['data'][] = $_POST['data'];
+				}
+			}
+
+			if(isset($_SESSION['data'])){
+				echo json_encode($_SESSION['data']);
+			}
+		}
+
+		// 删除混舱
+		public function deleteMixCabin(){
+			if( isset($_GET['delete']) ){
+				unset($_SESSION['data'][$_GET['delete']]);
+			}
+		}
+
+		// 清空混舱数据
+		public function clearMixCabin(){
+			if(isset($_POST['clear'])){
+				unset($_SESSION['data']);
+			}
+		}
+
+		public function showMixCabinTpl(){
+			if($_GET['display'] == 1){
+					$smarty->assign('nav', 'no');
+
+					$data = $_SESSION['data'];
+					$array = array(); // 混舱后
+
+					if(empty($data)) {
+						echo 'ERROR: No Session Data !';
+						exit;
+					}
+
+
+					if(count($data) == 2){ // 最多2个航段
+
+						// 合并航段 (A+B)
+						foreach ($data as $num => $value) {
+							foreach ($data[$num] as $end => $arr) {
+
+								for ($line = 0; $line < $arr['length']; $line++) {
+									$data_end_merge[] = $arr[$line];
+								}
+							}
+						}
+
+						// (A+B)^2
+						for ($line = 0; $line < count($data_end_merge); $line++) {
+							for($line_match = 0; $line_match < count($data_end_merge); $line_match++){
+									$array[] = matchRule($data_end_merge[$line], $data_end_merge[$line_match]);
+							}
+						}
+
+					}else if(count($data) == 1 ){
+						// A^2: $data[0] * $data[0] 不一定是0，中间存在删除操作时
+						foreach ($data as $num => $value) {
+							$data[0] = $data[$num];
+						}
+
+						foreach ($data[0] as $end => $arr) {
+							for ($line = 0; $line < $arr['length']; $line++) {
+								for($line_match = 0; $line_match < $arr['length']; $line_match++){
+										$array[] = matchRule($data[0][$end][$line], $data[0][$end][$line_match]);
+								}
+							}
+						}	
+
+					}else{
+						echo 'ERROR: Not True Count of Session !';
+					}
+
+				if(isset($_GET['action']) && $_GET['action'] == 'byTpl'){
+					if(isset($_POST['tpl']) && isset($_SESSION['data'])){
+						$tpl = json_decode($_POST['tpl'], true);
+
+						$tplName = $_POST['tplName'];
+						$typeName = $_POST['typeName'];
+
+						if( preg_match("/taobao/", $tplName) ){
+							foreach ($array as $key => $value) {
+								// $arrayByTpl[] = $array[$key];
+								$tpl['outFileCode']   = "";
+								$tpl['originLand']    = $array[$key]['start'];
+								$tpl['destination']   = $array[$key]['end'];
+								$tpl['cabin']         = $array[$key]['seat'];
+								$tpl['FareBasis']      = $array[$key]['fare'];
+								$tpl['flightDateRestrict4Dep']   = $array[$key]['allowWeek_1'];
+								$tpl['flightDateRestrict4Ret']   = $array[$key]['allowWeek_2'];
+								$tpl['minStay']       = $array[$key]['minStay'];
+								$tpl['maxStay']       = $array[$key]['maxStay'];
+								$tpl['ticketPrice']   = $array[$key]['backLineFee'] != ''? $array[$key]['backLineFee'] : $array[$key]['singleLineFee'];  
+								$tpl['childPrice']    = $tpl['ticketPrice'];
+								$arrayByTpl[] = $tpl;
+								
+							}
+						}else if( preg_match("/xiecheng/", $tplName) ){
+							foreach ($array as $key => $value) {
+								$tpl['outFileCode']    = "";
+								$tpl['DepartCity']     = $array[$key]['start'];
+								$tpl['ArriveCity']     = $array[$key]['end'];
+								// Routing 航路
+								preg_match_all("/(\w)\,(\w)/",$array[$key]['seat'], $s);
+								$seat = $s[1][0] == $s[2][0] ? $s[1][0]: $array[$key]['seat'];
+								$tpl['RoutingClass']   = $seat;
+								$tpl['FareBasis']      = $array[$key]['fare'];
+								$tpl['OutboundDayTime']= $array[$key]['allowWeek_1'];
+								$tpl['InboundDayTime'] = $array[$key]['allowWeek_2'];
+								// 去程旅行日期
+								// 回程旅行日期
+								// 销售日期
+								// 乘客资质
+								$tpl['MinStay']        = $array[$key]['minStay'];
+								$tpl['MaxStay']        = $array[$key]['maxStay'];
+								$tpl['SalesPrice']     = $array[$key]['backLineFee'] != ''? $array[$key]['backLineFee'] : $array[$key]['singleLineFee'];  
+								// 出票时限
+								// 成人去程行李额
+								// 成人回程行李额
+								$arrayByTpl[] = $tpl;
+							}
+						}
+
+						$smarty->assign('data', json_encode($arrayByTpl));
+						$smarty->assign('tplMatch', json_encode(array('tplName'=>$tplName, 'typeName'=>$typeName)));
+					}
+
+					$smarty->display('admin/mixCabinByTpl.html');
+
+				}else{
+					$smarty->assign('data', json_encode($array));
+					$smarty->assign('org_data', json_encode($data));
+
+					$smarty->display('admin/mixCabin.html');
+				}
+				// echo '<pre>';
+				// print_r( $data_end_merge );
+				// echo '</pre>';
+
+				// 垃圾回收
+				// unset($_SESSION['data']);
+			}			
+		}
 }

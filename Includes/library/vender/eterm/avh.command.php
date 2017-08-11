@@ -48,9 +48,7 @@ class Avh extends Eterm{
   		}
   		$j = $i+1;
 
-  		var_dump($j, $arr[$j]);
   		if(!isset($arr[$j]) || !strlen($arr[$j]) >2 ) continue;
-
 
   		if(substr($arr[$j],0,1) !=" " && $j < count($arr)){
   			$cur = substr($arr[$j], 0, 1);
@@ -58,7 +56,7 @@ class Avh extends Eterm{
     		$arr_date[$curDate][$cur][] = $arr[$j];
     		$j++;
 
-    		while(substr($arr[$j], 0, 2) == '  '){
+    		while(isset($arr[$j]) && substr($arr[$j], 0, 2) == '  '){
     			$arr_date[$curDate][$cur][] = $arr[$j];
     			$j++;
     		}

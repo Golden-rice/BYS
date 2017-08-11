@@ -383,7 +383,7 @@ var createCommand = function(recevier, tpl){
 				// Controller
 				
 				!function(end, i){
-					recevier.getData('/admin/fare.php', query, function(){
+					recevier.getData( '/admin/fare.php', query, function(){
 
 						var policy = [].shift.call(arguments);
 
@@ -546,9 +546,8 @@ var createCommand = function(recevier, tpl){
 
 		}	
 
-
-		recevier.link('/admin/mixCabin.php?forAction', {'data': recevier.xfsdJson, 'aricompany': aircompany, 'action': action}, function(msg){
-
+		recevier.link( Controller + 'addMixCabin', {'data': recevier.xfsdJson, 'aricompany': aircompany, 'action': action}, function(msg){
+			// '/admin/mixCabin.php?forAction'
 
 			$(container).html("");
 
@@ -559,7 +558,8 @@ var createCommand = function(recevier, tpl){
 		}).done(function(){
 
 			$(config.deleter).click(function(){
-				recevier.link('/admin/mixCabin.php?delete='+$(this).attr('num'),{}, function(){
+				recevier.link( Controller + 'deleteMixCabin?delete='+$(this).attr('num'), {}, function(){
+					// '/admin/mixCabin.php?delete='+$(this).attr('num')
 						alert('删除成功！')
 						$(modal).modal('hide')
 						// 关闭模态窗口
@@ -599,7 +599,8 @@ var createCommand = function(recevier, tpl){
 		}
 
 		console.log(json)
-		recevier.link('/admin/mixCabin.php?forAction', {'data': json, 'aricompany': aircompany, 'action': action}, function(msg){
+		recevier.link( Controller + 'addMixCabin', {'data': json, 'aricompany': aircompany, 'action': action}, function(msg){
+			// '/admin/mixCabin.php?forAction'
 
 			console.log(msg)
 			// 展示session
@@ -612,7 +613,8 @@ var createCommand = function(recevier, tpl){
 	var clearMixCabin = function(config){
 		var modal = config.modal;
 
-		recevier.link('/admin/mixCabin.php', {'clear': ""}, function(){
+		recevier.link( Controller + 'clearMixCabin', {'clear': ""}, function(){
+			// '/admin/mixCabin.php'
 			alert('清空成功！');
 
 			// 关闭模态窗口
@@ -621,7 +623,8 @@ var createCommand = function(recevier, tpl){
 	}
 
 	var mixCabinByTpl = function(tpl, tplName, typeName){
-		recevier.submit('mixCabin.php?display=1&action=byTpl', {'tpl': tpl, 'tplName': tplName, 'typeName': typeName});
+		recevier.submit( Controller + 'showMixCabinTpl?display=1&action=byTpl' , {'tpl': tpl, 'tplName': tplName, 'typeName': typeName});
+		// 'mixCabin.php?display=1&action=byTpl'
 	}
 
 	var rate = function(){

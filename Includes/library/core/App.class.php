@@ -27,28 +27,21 @@ class [MODEL]Model extends Model {
 	 */
 	public function __construct($app){
 		// 文件夹
+		$defaultMap = array(
+					$app['name'] =>APP_PATH.$app['name']."/",
+					"Model"      =>APP_PATH.$app['name']."/Model/",
+					"View"       =>APP_PATH.$app['name']."/View/",
+					"Controller" =>APP_PATH.$app['name']."/Controller/",
+					"runtime"    =>ROOT.'~Runtime/',
+					'view'       =>ROOT.'View/'
+				);
+
 		switch ($app['type']) {
 			case 0: 
-				$siteMap = array(
-					$app['name'] =>APP_PATH.$app['name']."/",
-					"Model"      =>APP_PATH.$app['name']."/Model/",
-					"View"       =>APP_PATH.$app['name']."/View/",
-					"Controller" =>APP_PATH.$app['name']."/Controller/",
-					"Drive"      =>APP_PATH.$app['name']."/Drive/",
-					"runtime"    =>ROOT.'~Runtime/',
-					'view'       =>ROOT.'View/'
-				);
+				$siteMap = $defaultMap;
 				break;
 			default:
-				$siteMap = array(
-					$app['name'] =>APP_PATH.$app['name']."/",
-					"Model"      =>APP_PATH.$app['name']."/Model/",
-					"View"       =>APP_PATH.$app['name']."/View/",
-					"Controller" =>APP_PATH.$app['name']."/Controller/",
-					"Drive"      =>APP_PATH.$app['name']."/Drive/",
-					"runtime"    =>ROOT.'~Runtime/',
-					'view'       =>ROOT.'View/'
-				);
+				$siteMap = $defaultMap;
 				break;
 		}
 
@@ -67,7 +60,6 @@ class [MODEL]Model extends Model {
 	public function init($app){
 		// 初始化内容
 		$is_right_build = false;
-
 
 		foreach ($this->siteMap as $module => $dirName) {
 			if ( is_dir($dirName) && $module == "Controller") {
@@ -108,22 +100,13 @@ class [MODEL]Model extends Model {
 		Dispatcher::dispatch();
 
 		// 确定视图模式路径，默认 public 模式
-		if ( constant('VIEW_TYPE') == 'private' ){
-			BYS::$_GLOBAL['view_path'] = BYS::$_GLOBAL['app'].'View/';
-		}else{
-			BYS::$_GLOBAL['view_path'] = ROOT.'View/';
-		}
+		BYS::$_GLOBAL['view_path'] = constant('VIEW_TYPE') == 'private' ? BYS::$_GLOBAL['app'].'View/' : ROOT.'View/';
 
 		// 启动Session
 		session_start();
 
-		// 启用控制器
-		if( isset(BYS::$_GLOBAL['con_path']) && BYS::$_GLOBAL['con_path'] != null){
-			self::activeController();
-		}else{
-			Report::error("无控制器");
-		}
-
+		// 启用控制器基类
+		( isset(BYS::$_GLOBAL['con_path']) && BYS::$_GLOBAL['con_path'] != null) ? self::activeController() : Report::error("无控制器");
 
 
 		// 安全过滤 $_GET $_POST $_REQUEST

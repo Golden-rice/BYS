@@ -50,11 +50,16 @@ index.php                  # 入口文件
 * `Includes/default.php` 是本框架的相关设置
 * 根据app名称生成相应目录及文件，例如admin
 
-## 待完成
 
-* 将eterm所有的功能移植到dm.eterm后，在更新框架？一天完成
+## 待完成
+ 
+* 业务流程：
+	
+	* 提交计划->放置计划表中-> 查询结果放置 download 表中，并将解析结果放置 detail表中，当发出计划时，等待结果，隔一定时间查询结果。
+
 * 重新建Eterm，Url 规则：admin/eterm/price (xfsd form db)
 	
+	* 混舱：利用session cache 无法跨方法
 	* 重写 eterm.class.php
 	* 重写 xfsd.command.php
 	* 重写 av.command.php
@@ -64,7 +69,6 @@ index.php                  # 入口文件
 
 * Eterm 库使用
 
-	* Eterm 自动加载command.php后缀，并生成实例 √
 	* 生成数据库 Model 类，两个表 source, detail, 解析规则另外生成
 	* Controller:
 

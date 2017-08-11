@@ -35,8 +35,7 @@ class BYS {
 		header('Content-Type:text/html; charset=utf-8');
 		
 		// 加载框架基础配置
-		$default = include INCLUDES.'default.php';
-		self::$default = $default;
+		self::$default = $default = include INCLUDES.'default.php';
 
 		// 加载系统函数
 		include COMMON_PATH.'function.php';
@@ -176,7 +175,6 @@ class BYS {
 			// 报错: 没有该类库
 			Report::error("没有该类库");
 		}
-
 	}
 
 	/** 
@@ -192,34 +190,8 @@ class BYS {
 			// 报错: 没有该配置
 			Report::error("没有该配置");
 		}
-
 	}
 
-	/** 
-	 * 根据用户配置使用
-	 * @access private 
-	 * @param $config    读取的配置
-   * @return void
-	 */
-	// static private function useAppConfig($config){
-	// 	if(!isset($config)) {
-	// 		Report::error('没有配置');
-	// 		return;
-	// 	}
-
-	// 	// 公共配置
-	// 	if(isset($config['COMMON'])){
-	// 		// TPL_VAR 扩展
-	// 		Using::commoning($config['COMMON']);
-	// 	}
-
-	// 	// 各个应用配置
-	// 	foreach ($config as $name => $set) {
-	// 		if( preg_match("/^APP_/", $name) ){
-	// 			Using::privating($set, $appName);
-	// 		}
-	// 	}
-	// }
 
 	/** 
 	 * 自动生成应用
@@ -243,26 +215,5 @@ class BYS {
 
 	}
 
-	/**
-   * 返回对象实例 可调用类的静态方法
-   * @param string $class  对象类名
-   * @param string $method 类的静态方法名
-   * @return object
-   */
-  static public function instance($class, $method='') {
-      $identify   =   $class.$method;
-      if(!isset(self::$_instance[$identify])) {
-          if(class_exists($class)){
-              $o = new $class();
-              if(!empty($method) && method_exists($o, $method))
-                  self::$_instance[$identify] = call_user_func(array(&$o, $method));
-              else
-                  self::$_instance[$identify] = $o;
-          }
-          else
-              self::warning('不存在该类：'.$class);
-      }
-      return self::$_instance[$identify];
-  }
 
 }

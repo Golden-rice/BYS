@@ -7,9 +7,9 @@ class Drive {
 	// 设置
 	public $set = array();
 
-	// 模板
-	public $content = '';
-
+	/**
+   * @param  $config    用户配置
+   */
 	function __construct ($config, $filePath = ''){
 		if(!isset($config)) {
 			Report::error('没有配置');
@@ -27,7 +27,11 @@ class Drive {
 				$this->privating($set, $str[1] ? $str[1] : "");
 		}
 
-		if(is_file($filePath)) $this->content = file_get_contents($filePath);
+		// 驱动数据模块
+		if( isset($this->set['DB_CONFIG']) && Db::connect($this->set['DB_CONFIG']) ){
+			var_dump( Db::$link );
+			
+		}
 	}
 
 	// COMMON 配置应用
@@ -145,7 +149,7 @@ class Drive {
 	}
 
 	/**
-	 * 判断模板中是否还有标签
+	 * 判断模板中是否有标签，没有返回false，有则返回标签属性
 	 * @access private
 	 * @param  $content  模板内容
 	 * @param  $tag      标签
@@ -161,7 +165,7 @@ class Drive {
     $find       =   preg_match_all('/'.$begin.$tag.'\s(.+?)\s*?'.$end.'/is',$content, $matches);
 
     if($find && count($matches) == 2){
-		    return $matches[1];
+		  return $matches[1];
     }else{
     	return false;
     }

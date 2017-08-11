@@ -16,10 +16,6 @@ abstract class Controller {
    
     // 应用的驱动
     $this->drive = BYS::callClass( 'Drive', BYS::callConfig() );
-
-    // 将系统函数暴露给Controller
-    // $this->compose("\Drive\import");
-      
     
   }
 
@@ -29,34 +25,21 @@ abstract class Controller {
    * @param  string $tpl 模板名
    */
   protected function display($tpl = ""){
-
     // 模板后缀
-    if(!preg_match('/\.html$/', $tpl))
-      $ext = constant('VIEW_EXD');
-    else
-      $ext = "";
-
+    $ext          = preg_match('/\.html$/', $tpl) ? "" : constant('VIEW_EXD');
     $default_path = BYS::$_GLOBAL['view_path'];
     $default_app  = BYS::$_GLOBAL['app'];
     $default_con  = BYS::$_GLOBAL['con'];
     $default_act  = BYS::$_GLOBAL['act'];
-
     // 模板初始地址为以APP命名为准
-    if($tpl == "" ){
-      $default_tpl = "{$default_path}{$default_app}/{$default_con}/{$default_act}";
-    }else{
-      $default_tpl = "{$default_path}{$default_app}/{$tpl}";
-    }
-    
-    $tpl = $default_tpl;
+    $tpl = $default_tpl = $tpl == "" ? "{$default_path}{$default_app}/{$default_con}/{$default_act}" : "{$default_path}{$default_app}/{$tpl}";
 
     if( is_file($tpl.$ext) ) {
-
       $this->drive->supportSmartyTpl($tpl.$ext);
       // 生成路由缓存
       $r = Cache::router();
       // 执行驱动
-      $this->drive->support($tpl.$ext);
+      $this->drive->support( $tpl.$ext );
       
       $this->smarty->display( $r );
     }else{
@@ -80,7 +63,6 @@ abstract class Controller {
    * @return mixed
    */
   public function __call($method, $args) {
-
     if(method_exists($this,'_empty')) {
         // 如果定义了_empty操作 则调用
         $this->_empty($method,$args);
@@ -88,12 +70,6 @@ abstract class Controller {
         // 检查是否存在默认模版 如果有直接输出模版
         $this->display();
     }
-
-  }
-
-  // 将系统函数暴露给控制器
-  public function compose($action, $args = array()){
-    return call_user_func($action, $args);
   }
 
 
