@@ -29,8 +29,10 @@ class Drive {
 
 		// 驱动数据模块
 		if( isset($this->set['DB_CONFIG']) && Db::connect($this->set['DB_CONFIG']) ){
-			var_dump( Db::$link );
-			
+			// var_dump( Db::$link );
+			// 通过系统函数获得数据表对象实例
+
+			// 扩展数据表动作
 		}
 	}
 

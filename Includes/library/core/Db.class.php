@@ -6,6 +6,9 @@ class Db {
 	// 数据库连接
   static public $link;
 
+  // 设置
+  static public $options = array();
+
 	/**
 	 * 链接数据库并使用相关设置
    * @param  $config    用户配置
@@ -18,31 +21,37 @@ class Db {
 		BYS::$_GLOBAL['db_prefix'] = isset($config['DB_PREFIX']) ? $config['DB_PREFIX'] : "";
 		
 		// 生成pdo配置
-		$pdoConfig = self::parseConfig($config);
+		$dbConfig = self::parseConfig($config);
 		// 生成pdo的dsn 
-		$pdoConfig['dsn'] = self::parseDsn( $pdoConfig );
-
+		$dbConfig['dsn'] = self::parseDsn( $dbConfig );
 		
     try{
-        if(empty($pdoConfig['dsn'])) {
-            $pdoConfig['dsn']  =   self::parseConfig($config);
+        if(empty($dbConfig['dsn'])) {
+            $dbConfig['dsn']  =   self::parseConfig($config);
         }
-        if(version_compare(PHP_VERSION,'5.3.6','<=')){ //禁用模拟预处理语句
-            $this->options[PDO::ATTR_EMULATE_PREPARES]  =   false;
+        // 当版本低于时，禁用模拟预处理语句
+        if(version_compare(PHP_VERSION,'5.3.6','<=')){
+            self::$options[\PDO::ATTR_EMULATE_PREPARES]  =   false;
         }
-        self::$link = new \PDO( $pdoConfig['dsn'], $pdoConfig['username'], $pdoConfig['password']);
+        // fetch 方式
+        self::$options[\PDO::ATTR_DEFAULT_FETCH_MODE]  = \PDO::FETCH_ASSOC;
+        
+        // 链接数据库，并将对象暴露至全局
+        self::$link = new \PDO( $dbConfig['dsn'], $dbConfig['username'], $dbConfig['password']);
     }catch (\PDOException $e) {
-        Report::error('数据库连接错误');
+        Report::error($e->getMessage());
     }
 
 		return true;
 	}
 
+
+
   /**
    * 数据库连接参数解析
    * @static
    * @access private
-   * @param mixed $config
+   * @param  mixed $config
    * @return array
    */
 	static private function parseConfig( $config=array() ){

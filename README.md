@@ -53,13 +53,13 @@ index.php                  # 入口文件
 
 ## 待完成
  
+* 关闭 query 执行，防止注入。用预处理方法占位回填数据。
 * 业务流程：
 	
 	* 提交计划->放置计划表中-> 查询结果放置 download 表中，并将解析结果放置 detail表中，当发出计划时，等待结果，隔一定时间查询结果。
 
 * 重新建Eterm，Url 规则：admin/eterm/price (xfsd form db)
 	
-	* 混舱：利用session cache 无法跨方法
 	* 重写 eterm.class.php
 	* 重写 xfsd.command.php
 	* 重写 av.command.php
