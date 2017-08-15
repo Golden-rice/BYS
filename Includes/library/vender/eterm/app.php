@@ -45,5 +45,66 @@ function autoload($map){
   }
 }
 
-// 创建表单
 $a = new Eterm\CommandModel();
+// 创建表单 source 及 detail 
+$a->build('xfsd', array(
+	'Id'         => 'bigint(20) NOT NULL AUTO_INCREMENT',
+	// 关键字
+	'FareKey'    => 'varchar(100) NOT NULL', 
+	// 命令
+	'Command'    => 'varchar(100) NOT NULL',
+	// 状态：-2 已知错误发生 -1 失败 0 等待 1 进行中 2 成功
+	'Status'     => 'int(1) NOT NULL',
+	// OFFICE 号
+	'Office'     => 'char(10) DEFAULT NULL',
+	// source id
+	'Sid'        => 'bigint(20) NOT NULL',
+	// fare FareBasis
+	'FareBasis'      => 'varchar(10) NOT NULL',
+	// special 特殊规则
+	'xfsd_Special'   => 'varchar(3) DEFAULT NULL',
+	// advp 提前出票
+	'xfsd_Advp'      => 'varchar(10) DEFAULT NULL',
+	// allowDateStart 适用日期起始
+	'xfsd_DateStart' => 'datetime DEFAULT NULL',
+	// allowDateEnd 适用日期结束
+	'xfsd_DateEnd'   => 'datetime DEFAULT NULL',
+	// backLineFee 往返费用
+	'xfsd_RoundFee'  => 'int(10) NOT NULL',
+	// singleLineFee 单程费用
+	'xfsd_SingleFee' => 'int(10) NOT NULL',
+	// start 出发
+	'xfsd_Dep'       => 'char(3) NOT NULL',
+	// end 到达
+	'xfsd_Arr'       => 'char(3) NOT NULL',
+	// aircompany 航空公司
+	'xfsd_Owner'     => 'char(2) NOT NULL',
+	// direction 区域
+  'xfsd_Region'    => 'char(3) NOT NULL',
+	// allowWeek 作用点
+  'xfsd_Indicator' => 'char(7) DEFAULT NULL',
+	// maxStay 最大停留
+  'xfsd_MaxStay'   => 'char(3) DEFAULT NULL',
+	// minStay 最短停留
+ 	'xfsd_MinStay'   => 'char(3) DEFAULT NULL',
+	// seat 舱位
+ 	'xfsd_Cabin'     => 'char(3) NOT NULL',
+	// fromCode
+ 	'xfsd_Code'      => 'varchar(20) DEFAULT NULL',
+	// 创建时间
+	'gmtCreate'      => 'datetime NOT NULL',
+	// 修改时间
+	'gmtModified'    => 'datetime DEFAULT NULL',
+));
+
+	// 生成携程表单： 
+	// ExternalID:"外部编号"
+  // PolicyId:"文件编号"
+ 	// 携程 Routing 航路
+	// 携程 Flight 可售航班
+	// 携程 ForbiddenFlight 禁售航班
+	// 携程 SalesDate 销售日期
+
+$a->build('av');
+
+

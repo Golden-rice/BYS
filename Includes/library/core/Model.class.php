@@ -30,12 +30,13 @@
 		 * @return bool
 		 */
 	 	public function _creat($name = '', $attr){
-	 		$str = "CREATE TABLE `{$name}` \r";
+	 		$str = "CREATE TABLE IF NOT EXISTS `{$name}` ( \r";
 	 		foreach ($attr as $key => $value) {
 	 			$str .= "`$key` $value ,\r";
 	 		}
-
-	 		Report::p($str);
+	 		$str .= "PRIMARY KEY (`id`)\r) ENGINE=InnoDB DEFAULT CHARSET=utf8;";
+	 		// Report::p($str);
+	 		return $this->query($str);
 	 	}
 
 
@@ -49,10 +50,12 @@
 
 		 	try{
 	        $rows = Db::$link -> query($sql); // 返回类似于数组
-	        foreach ($rows as $row) {
-	        	$result[] = $row;
+	        if($rows && $result = array()){
+		        foreach ($rows as $row) {
+		        	$result[] = $row;
+		        }
+		        return $result;
 	        }
-	        return $result;
 	    }catch(PDOException $e){
 	        echo '错误是：'.$e->getMessage();
 	    }

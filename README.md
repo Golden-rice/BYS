@@ -52,11 +52,13 @@ index.php                  # 入口文件
 
 
 ## 待完成
- 
+
 * 关闭 query 执行，防止注入。用预处理方法占位回填数据。
+* PriceSouce 保持和 燕峰一致，为了可以同步进去
+* PriceSouce -> 混舱表PriceResult 
 * 业务流程：
 	
-	* 提交计划->放置计划表中-> 查询结果放置 download 表中，并将解析结果放置 detail表中，当发出计划时，等待结果，隔一定时间查询结果。
+	* 提交 -> source 生成 -> 将所有数据收集全后-> update source表 -> 分解生成 result，返回 result 结果 -> 同基础数据合并至 PriceSource 中 -> 生成混舱数据
 
 * 重新建Eterm，Url 规则：admin/eterm/price (xfsd form db)
 	

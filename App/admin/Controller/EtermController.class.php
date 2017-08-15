@@ -6,9 +6,10 @@ class EtermController extends Controller {
 		// xfsd 前台展示
     public function xfsd(){
     	import('vender/eterm/app.php');
-    	$m = model('PrivateOwPolicy');
-    	$m->prepare('SELECT * FROM e_ctrip_private_ow_policy WHERE id = 12140;');
+    	// $m = model('PrivateOwPolicy');
+    	// $m->prepare('SELECT * FROM e_ctrip_private_ow_policy WHERE id = 12140;');
     	// var_dump( $m->execute() );
+    	
     	$this->display();
     }
 
