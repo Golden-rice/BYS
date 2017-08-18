@@ -7,6 +7,8 @@
 
 	 	// 表单前缀
 	 	protected $tablePrefix      =   '';
+	 	// 自动添加数据
+	 	protected $_validate        = array();
 
 	 	function __construct($className = ""){
 		 	// 声明全局变量
@@ -30,18 +32,104 @@
 		 * @return bool
 		 */
 	 	public function _creat($name = '', $attr){
+
 	 		$str = "CREATE TABLE IF NOT EXISTS `{$name}` ( \r";
 	 		foreach ($attr as $key => $value) {
 	 			$str .= "`$key` $value ,\r";
 	 		}
-	 		$str .= "PRIMARY KEY (`id`)\r) ENGINE=InnoDB DEFAULT CHARSET=utf8;";
+	 		$str .= "PRIMARY KEY (`Id`)\r) ENGINE=InnoDB DEFAULT CHARSET=utf8;";
 	 		// Report::p($str);
-	 		return $this->query($str);
+	 		$this->prepare($str);
+	 		$this->execute();
 	 	}
 
+	 	/**
+		 * 新增数据，返回最后添加的id
+		 * @param  array  $data 新增的数据
+		 * @return int    
+		 */	 	
+	 	public function add($data=array()){
+	 		// 单条新增
+	 			$sql = '';
+
+			 	$val = 'VALUES(';
+	 			$sql = "INSERT INTO {$this->tableName} (";
+	 			foreach ($data as $key => $value) {
+	 				$sql .= "`{$key}`,";
+	 				$val .= is_string($value)? "'$value'," : $value.',';
+	 			}
+	 			if(count($this->_validate) >0){
+	 				foreach ($this->_validate as $key => $value) {
+	 					$sql .= "`{$key}`,";
+	 					if($value == 'TIME'){
+	 						$val .= time();
+	 					}else{
+		 					$val .= is_string($value)? "'$value'," : $value.',';
+	 					}
+	 				}
+	 			}
+	 			$sql = rtrim($sql, ',').') '.rtrim($val, ',').')';
+				$this->exec($sql);
+				$lastId = Db::$link->lastInsertId();
+				return $lastId;
+	 	}
 
 	 	/**
-		 * 直接查询
+		 * 新增多条数据
+		 * @param  array  $data 新增的数据
+		 * @return bool 
+		 */	 
+	 	public function addAll($data=array()){
+	 		if (count($data) <=0) return;
+ 			$sql = '';
+ 			foreach ($data as $index => $item) {
+
+ 				$sql .= "INSERT INTO {$this->tableName} (";
+ 				$val = 'VALUES(';
+ 				foreach ($item as $key => $value) {
+	 				$sql .= "`{$key}`,";
+	 				$val .= is_string($value)? "'$value'," : (int)$value.',';
+	 			}
+
+				if(count($this->_validate) >0){
+	 				foreach ($this->_validate as $key => $value) {
+	 					$sql .= "`{$key}`,";
+	 					if($value == 'TIME'){
+	 						$val .= time();
+	 					}else{
+		 					$val .= is_string($value)? "'$value'," : (int)$value.',';
+	 					}
+	 				}
+	 			}		
+	 			$sql = rtrim($sql, ',').') '.rtrim($val, ',').'); '; 			
+ 			}
+
+ 			$this->prepare($sql);
+ 			$this->execute();
+	 	}
+
+	 	/**
+		 * 查询数据的筛选条件
+		 * @param  string $where 筛选语句
+		 * @return thisObject
+		 */	
+	 	public function where($where = ''){
+	 		if(!is_string($where)) return;
+			$this->where = " WHERE ".$where;
+			return $this;
+	 	}
+
+	  /**
+		 * 查询数据
+		 * @return mix 结果
+		 */	 	
+	 	public function select(){
+	 		$sql = "SELECT * FROM ".$this->tableName.$this->where;
+	 		return $this->query($sql);
+	 	}
+
+	 	/**
+		 * 直接query查询: SELECT
 		 * @param  string $sql 查询语句
 		 * @return array
 		 */
@@ -49,19 +137,42 @@
 	 		if($sql == '') Report::warning('无查询语句');
 
 		 	try{
-	        $rows = Db::$link -> query($sql); // 返回类似于数组
-	        if($rows && $result = array()){
-		        foreach ($rows as $row) {
-		        	$result[] = $row;
-		        }
-		        return $result;
+		 			// Db::$link->beginTransaction(); 
+	        $rows = Db::$link->query($sql); // 返回类似于数组
+	        $lastId = Db::$link->lastInsertId();
+	        // Db::$link->commit();
+	        $result = array();
+	        foreach ($rows as $row) {
+	        	$result[] = $row;
 	        }
+	        return $result;
+
 	    }catch(PDOException $e){
+	    		Db::$link->rollback();
 	        echo '错误是：'.$e->getMessage();
 	    }
 
 	 	}
 
+	 	/**
+		 * 直接exec查询: INSERT
+		 * @param  string $sql 查询语句
+		 * @return array
+		 */
+	 	public function exec($sql = ''){
+	 		if($sql == '') Report::warning('无查询语句');
+
+		 	try{
+		 			// Db::$link->beginTransaction(); 
+	        $rows = Db::$link -> exec($sql); // 返回类似于数组
+	        // Db::$link->commit();
+
+	    }catch(PDOException $e){
+	    		Db::$link->rollback();
+	        echo '错误是：'.$e->getMessage();
+	    }
+
+	 	}
 	 	/**
 		 * 事务预处理
 		 * @param  string $sql 查询语句
@@ -87,6 +198,7 @@
 	        // 生成关联数组
 	        return $this->prepare->fetchALL();
 	    }catch(PDOException $e){
+
 	        echo '错误是：'.$e->getMessage();
 	    }
 	 	}

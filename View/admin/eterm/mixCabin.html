@@ -1,5 +1,6 @@
-<{extends file='layout.html'}>
+<{extends file='../layout.html'}>
 
+<{block name="title"}>合成结果<{/block}>
 <{block name="content"}>
 
 <div class="panel panel-default">
@@ -7,7 +8,7 @@
 				<button id='mixCabin' class='btn btn-default' data-toggle="modal" data-target="#outputTplModal">生成OTA模板</button>
 	</div>
 </div>
-<h3>合成结果</h3>
+
 <div id="content">**<{$data}>**</div>
 <hr>
 <div id="org_content"></div>
@@ -56,7 +57,7 @@
 <!-- 混舱弹出框 END -->
 
 <!-- 加载OTA模板 -->
-<script src='<{$_PUBLIC}>/js/otaTpl.js?randowId=<{$randowId}>'></script>
+<script src='__PUBLIC__js/otaTpl.js?randowId='></script>
 
 <script>
 var data = eval(<{$data}>);

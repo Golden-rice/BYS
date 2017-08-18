@@ -53,12 +53,11 @@ index.php                  # 入口文件
 
 ## 待完成
 
-* 关闭 query 执行，防止注入。用预处理方法占位回填数据。
-* PriceSouce 保持和 燕峰一致，为了可以同步进去
-* PriceSouce -> 混舱表PriceResult 
+* 基础数据
+* BUG:多地点查询会有重复数据录入
 * 业务流程：
 	
-	* 提交 -> source 生成 -> 将所有数据收集全后-> update source表 -> 分解生成 result，返回 result 结果 -> 同基础数据合并至 PriceSource 中 -> 生成混舱数据
+	* 提交 -> source 生成 -> 将所有数据收集全后-> update source表 -> 分解生成 result，返回 result 结果 -> 同基础数据合并至 PriceSource 中 -> 生成混舱数据 PriceResult : 用pdo事务来写
 
 * 重新建Eterm，Url 规则：admin/eterm/price (xfsd form db)
 	
@@ -68,20 +67,6 @@ index.php                  # 入口文件
 	* 将 使用规则 从xfsd.command.php 取出，写成fsn.command.php
 	* 新建 ss.command.php
 	* EtermController.class.php 作为路由，请求分配到 Event/xfsdEvent.class.php 中
-
-* Eterm 库使用
-
-	* 生成数据库 Model 类，两个表 source, detail, 解析规则另外生成
-	* Controller:
-
-		* import(eterm) 以实例化eterm，利用绑定的session eterm账号
-
-				* 实例 xfds 时，调用model类，自动生成数据表	
-
-		* eterm->xfsd->display(queryArr); 返回数组
-		* display:
-
-				* insertDB source by tmp -> $this->analysis() insert detail -> select detaili 
 
 * 支持引用其他框架
 * 支持引用其他控制器
@@ -98,4 +83,5 @@ index.php                  # 入口文件
 * debug模式
 * trace模式
 * 控制器常用的操作：可以直接使用smarty框架
+
 	* 404内置

@@ -1,13 +1,14 @@
-<{extends file='layout.html'}>
+<{extends file='../layout.html'}>
 
+<{block name="title"}>模板混舱合成结果<{/block}>
 <{block name="content"}>
 
-<h3>模板混舱合成结果</h3>
+
 <hr>
 <div id="content">  mixCabinByTpl </div>
 
 <!-- 加载OTA模板 -->
-<script src='<{$_PUBLIC}>/js/otaTpl.js'></script>
+<script src='__PUBLIC__js/otaTpl.js'></script>
 <script>
 var data = eval(<{$data}>);
 var tplMatch = eval(<{$tplMatch}>);

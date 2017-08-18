@@ -45,6 +45,7 @@ function autoload($map){
   }
 }
 
+// 新建数据库
 $a = new Eterm\CommandModel();
 // 创建表单 source 及 detail 
 $a->build('xfsd', array(
@@ -78,7 +79,7 @@ $a->build('xfsd', array(
 	// end 到达
 	'xfsd_Arr'       => 'char(3) NOT NULL',
 	// aircompany 航空公司
-	'xfsd_Owner'     => 'char(2) NOT NULL',
+	'xfsd_Owner'     => 'char(3) NOT NULL',
 	// direction 区域
   'xfsd_Region'    => 'char(3) NOT NULL',
 	// allowWeek 作用点
@@ -92,19 +93,9 @@ $a->build('xfsd', array(
 	// fromCode
  	'xfsd_Code'      => 'varchar(20) DEFAULT NULL',
 	// 创建时间
-	'gmtCreate'      => 'datetime NOT NULL',
+	'gmtCreate'      => 'int(13) NOT NULL',
 	// 修改时间
-	'gmtModified'    => 'datetime DEFAULT NULL',
+	'gmtModified'    => 'int(13) DEFAULT NULL',
 ));
 
-	// 生成携程表单： 
-	// ExternalID:"外部编号"
-  // PolicyId:"文件编号"
- 	// 携程 Routing 航路
-	// 携程 Flight 可售航班
-	// 携程 ForbiddenFlight 禁售航班
-	// 携程 SalesDate 销售日期
-
 $a->build('av');
-
-

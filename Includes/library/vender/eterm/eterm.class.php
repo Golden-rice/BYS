@@ -9,6 +9,7 @@ namespace Eterm;
 		private $runDir;
 		protected $config;
 		protected $tmp;
+		protected $source; 
 		public $fileTime;
 		protected $commandQueue = array(); // 2.0 命令队列
 
@@ -82,8 +83,12 @@ namespace Eterm;
 	  private function saveStr($file, $type){
     	if($type == 'w'){
 	    	$this->tmp = $file;
+	    	// $this->source = $this->readData($file);
+	    	$this->source = $file;
     	}else if($type == 'a' ){
     		$this->tmp .= $file;
+    		// $this->source .= $this->readData($file)."\r";
+    		$this->source .= $file;
     	}
     	$this->fileTime = $this->setTime($this->tmp);
 	  }
@@ -152,19 +157,26 @@ namespace Eterm;
 			return $this->tmp;
 		}
 
-		protected function initFile($fileName, $rangeStart = 0, $rangeEnd = 0){
+		protected function initFile($dataFrom, $rangeStart = 0, $rangeEnd = 0){
 			// 格式化成数组，并截取rangeStart至总长度-rangeEnd的长度
-	    // $file = file_get_contents($fileName); // 文件下载方式
-	    $file = $fileName;
+	    // $file = file_get_contents($dataFrom); // 文件下载方式
+	    $file = $dataFrom;
 			$arr_tmp = array();
 			preg_match_all("/\[CDATA\[(.*?)\]\]/is", $file, $newFile);
+
 			foreach ($newFile[1] as $pageNum => $Page) {
-	    		$pageArr = explode("\r",$Page);
-	    		$valDate = array_slice($pageArr, $rangeStart, count($pageArr)-$rangeEnd); 
-    			$arr_tmp = array_merge($arr_tmp, $valDate);
-	    	}
-	    	return $arr_tmp;
+    		$pageArr = explode("\r",$Page);
+    		$valDate = array_slice($pageArr, $rangeStart, count($pageArr)-$rangeEnd); 
+  			$arr_tmp = array_merge($arr_tmp, $valDate);
+    	}
+    	return $arr_tmp;
 		} 
+
+
+		protected function readData($file){
+			preg_match_all("/\[CDATA\[(.*?)\]\]/is", $file, $newFile);
+			return $newFile[1][0]."\r";
+		}
 
 		public function readFile($rangeStart = 0, $rangeEnd = 0){
 			$fileName = $this->tmp;

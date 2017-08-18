@@ -2,14 +2,14 @@ require.config({
 	// baseUrl: "/eterm/public/js/lib", 
 　paths: {
  			"jquery": "lib/jquery.min",
-      		"progress": "lib/bootstrap.progress",
+      "progress": "lib/bootstrap.progress",
 			'extend': "lib/extend",
 			'bootstrap': "lib/bootstrap.min",
    }
 });
 
 
-define('eterm', ['jquery', 'progress', 'extend','bootstrap'], function ($, progress, extend, bootstrap) {
+define('eterm', ['jquery', 'progress', 'extend', 'bootstrap'], function ($, progress, extend, bootstrap) {
 
 // 重置函数	
 // var $        = $.jquery;
@@ -25,8 +25,8 @@ var	progress = progress.progress,
 	copy     = extend.copy,
 	getElementsByClassName = extend.getElementsByClassName;
 
-var Controller = /^\/(.)+\//.exec(window.location.pathname)[0]
-
+var Controller = /^\/(.)+\//.exec(window.location.pathname)[0],
+		Project    = /^\/\w*[-|_|.]?\w*\//.exec(window.location.pathname)[0];
 // eterm 解析，依赖jQuery
 var eterm = {
 	data: null,       // 数据
@@ -161,6 +161,7 @@ var createCommand = function(recevier, tpl){
 		var mkSeatLevel  = tpl.mkSeatLevel ? tpl.mkSeatLevel: undefined; // 舱位等级
 		var mkCabinTpl   = tpl.mkCabinTpl ? tpl.mkCabinTpl: undefined; // 舱位生成产品数据
 	}
+
 
 	var xfsd = function(query){
 		// 初始化
@@ -623,7 +624,7 @@ var createCommand = function(recevier, tpl){
 	}
 
 	var mixCabinByTpl = function(tpl, tplName, typeName){
-		recevier.submit( Controller + 'showMixCabinTpl?display=1&action=byTpl' , {'tpl': tpl, 'tplName': tplName, 'typeName': typeName});
+		recevier.submit( Controller + 'showMixCabinTpl' , {'tpl': tpl, 'tplName': tplName, 'typeName': typeName});
 		// 'mixCabin.php?display=1&action=byTpl'
 	}
 
@@ -883,12 +884,19 @@ var createCommand = function(recevier, tpl){
 			password: signin.password.val() || "",
 			resource: signin.resource.val() || ""
 		} 
+		if (/index.php\/admin\/user/.test(Controller)){
+			var url = Controller + 'login',
+					location =  Project + 'index.php/admin/eterm/xfsd';
+		}else{
+			var url = Controller + 'index.php/admin/user/login', 
+					location = Controller + "index.php/admin/eterm/xfsd" ;
+		}
 
-		recevier.link( Controller+'index.php/admin/user/login', query, function(data){
+		recevier.link( url, query, function(data){
 			console.log(data)
 			if(data !== undefined && data.status === 1){
 				alert("登录账号："+data.res.name+"，配置号："+data.res.resource);
-				document.location.href="index.php/admin/eterm/xfsd";
+				document.location.href = location;
 			}else if(data.status === 0){
 				alert("登录账号不正确，请重新登录");
 				signin.name.val("");
@@ -1748,6 +1756,8 @@ var createCommand = function(recevier, tpl){
 			var leg = new Leg(inputArr[i]);
 		}
 	}
+
+
 
 	return {
 		xfsd: xfsd,                             // 获得xfsd数据，并用table回填到页面中

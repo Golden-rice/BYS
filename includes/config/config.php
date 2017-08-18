@@ -19,7 +19,6 @@
 					'DB_USER'   => 'dongmin',                 // 用户名
 					'DB_PWD'    => 'dongmin@123456',          // 密码
 					'DB_PORT'   => 3306,                      // 端口
-					'DB_PREFIX' => 'zaba_',                   // 数据库表前缀 
 					'DB_CHARSET'=> 'utf8',                    // 字符集
 			)
 		),

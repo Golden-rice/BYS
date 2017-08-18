@@ -33,7 +33,6 @@ abstract class Controller {
     $default_act  = BYS::$_GLOBAL['act'];
     // 模板初始地址为以APP命名为准
     $tpl = $default_tpl = $tpl == "" ? "{$default_path}{$default_app}/{$default_con}/{$default_act}" : "{$default_path}{$default_app}/{$tpl}";
-
     if( is_file($tpl.$ext) ) {
       $this->drive->supportSmartyTpl($tpl.$ext);
       // 生成路由缓存
@@ -43,6 +42,7 @@ abstract class Controller {
       
       $this->smarty->display( $r );
     }else{
+      echo $tpl.$ext;
       Report::error('没有模板');
     }
   }
@@ -52,7 +52,7 @@ abstract class Controller {
    * @access protected
    */
   protected function assign($name, $var){
-    $this->smarty->assign($name, $var);
+    return $this->smarty->assign($name, $var);
   }
 
   /**

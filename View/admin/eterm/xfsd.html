@@ -86,11 +86,11 @@
 						<button id='test' class='btn btn-default'>test</button>
 						<!-- <button id='remove' class='btn btn-default'>remove</button> -->
 						<!-- test -->
-						<input type="submit"  id='removeAndSubmit' value="删除缓存并查询" class='btn btn-primary'>
+						<!-- <input type="submit"  id='removeAndSubmit' value="删除缓存并查询" class='btn btn-primary'> -->
 						<!-- <input type="button" name="allPolicy" id="allPolicy" value="读取规则" class='btn btn-primary'> -->
-						<button id='updateDB' class='btn btn-default'>同步至数据库</button>
+						<!-- <button id='updateDB' class='btn btn-default'>同步至数据库</button> -->
 						<button id='mixCabin' class='btn btn-default' >混舱</button>
-						<button type="button" class="btn btn-default" id="openAddCabin">手工录入舱位</button>
+						<button type="button" class="btn btn-default" id="openAddCabin">录入混舱数据</button>
 			</div>
 		</div>
 		<!-- 工具结束 -->
@@ -130,7 +130,9 @@
             		
                 <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
                 <button id='clearMixCabin' type="button" class="btn btn-default">清空</button>
-                <a href='mixCabin.php?display=1' target='_blank' class="btn btn-primary">生成混舱</a>
+                <a href='__URL__admin/eterm/showMixCabin' target='_blank' class="btn btn-primary">生成混舱</a> 
+                <!-- createMixCabin -->
+                <!-- mixCabin.php?display=1 -->
             </div>
         </div>
     </div>
@@ -432,13 +434,13 @@ var setCommend = function(command){
 	// 测试
 	$('#test').click(function(){
 			command.rate();
-
+			
 			command.xfsd({
 				dosubmit: "",
 				start: 'BJS',
 				end: 'DXB',
 				startDate: '25JUL',
-				aircompany: 'EK',
+				aircompany: 'UA',
 				private: '',
 				tripType:"",
 				other: ""
@@ -523,8 +525,9 @@ function mkTable(array, dom, wrap, type){
 			for(let line =0; line< array[arr]['length']; line++){
 				html += `
 				<tr class='line'>
-					<td class='index' >${array[arr][line]['index']}</td>
-					<td><input type="checkbox" id="c${arr}${array[arr][line]['index']}" class="cSelect cSelect${arr}" value="${array[arr][line]['fare']}"></td>
+					<td class='index'>${line}</td>
+					<!--${array[arr][line]['index']}-->
+					<td><input type="checkbox" id="c${arr}${line}" class="cSelect cSelect${arr}" value="${array[arr][line]['fare']}"></td>
 					<td class='fare'>${array[arr][line]['fare']}</td>
 					<td class='special'>${array[arr][line]['special']}</td>
 					<td class='ADVPDay'>${array[arr][line]['ADVPDay']}</td>
@@ -614,7 +617,8 @@ function mkMatchTable(array, dom, wrap, type){
 			for(let line =0;line< array[arr]['length']; line++){
 				html += `
 				<tr class='line'>
-					<td class='index'>${array[arr][line]['index']}</td>
+					<td class='index'>${line}</td>
+					<!-- ${array[arr][line]['index']} -->
 					<td class='fare'>${array[arr][line]['fare']}</td>
 					<!--  <td class='special'>${array[arr][line]['special']}</td> -->
 					<td class='ADVPDay'>${array[arr][line]['ADVPDay']}</td>

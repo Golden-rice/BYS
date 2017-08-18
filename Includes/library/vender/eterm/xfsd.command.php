@@ -5,14 +5,19 @@ class Xfsd extends Eterm{
     private $org_arr = array();  // 原始数组信息
 	private $date;
     private $startKey;           // 开始匹配的起始位置
+    private $firstPage = '';
 	public function p($a){
 		parent::p($a);
 	}
     public function analysis($switch){
+
     	// 解析文件，并返回解析后的结果
     	if(empty($switch)){
 	    	$switch = array(1,2,3); // 解析参数：1.格式化 
     	}
+
+        $this->getFirstPage();
+
     	foreach ($switch as $flags) {
     		switch ($flags) {
     			case 1:
@@ -35,13 +40,20 @@ class Xfsd extends Eterm{
     				break;
     		}
     	}
-    	// parent::p($this->arr);
+    	// parent::p($this->tmp);
 
         $result = $this->arr;
         $this->arr = array();
         
 		return $result;
     } 
+
+    // 获取第一页
+    public function getFirstPage(){
+        // if( $this->firstPage == '' ) // 公用一个tmp变量会导致多地点查询无法正常返回第一页
+            $this->firstPage = $this->tmp;
+        return $this->firstPage;
+    }
 
     public function fare($switch, $date, $command){
     	// 解析政策文件，并返回解析后的结果
@@ -81,6 +93,19 @@ class Xfsd extends Eterm{
         }
     }
 
+    public function rtTmp(){
+        return $this->tmp;
+    }
+
+    public function wtTmp($str = ''){
+        if ($str != '') $this->tmp = $str;
+    }
+
+    public function readSource(){
+        // 获得全部页数
+        $this->getAllPage($this->tmp, 'xs/fspn');
+        return $this->source;
+    }
     private function f_fliter_useless($fileName){
     	$arr_tmp = parent::initFile($fileName, 0, 1);
     	// parent::p($arr_tmp);
@@ -241,11 +266,12 @@ class Xfsd extends Eterm{
     }
 
 	private function getAllPage($fileName, $command){
-		// 获取除起一页的其他页数据
-		$f_page = parent::initFile($fileName, 0, 1);
-		preg_match_all('/PAGE[\s]*(\w+)\/(\w+)/',end($f_page), $str); // 获取页码
+		// 获取除了第一页的其他页数据
+        $f = parent::initFile($fileName, 0, 1);
+		preg_match_all('/PAGE[\s]*(\w+)\/(\w+)/', end($f), $str); // 获取页码
+
 		$pageTotal = intval($str[2][0]);   // 总页码
-    	$pageCur = intval($str[1][0]);     // 当前页码
+    	$pageCur   = intval($str[1][0]);   // 当前页码
 
     	while($pageCur < $pageTotal){
     		parent::addCommand($command ,'a'); // 回填tmp文件
@@ -276,7 +302,7 @@ class Xfsd extends Eterm{
 		if($isF){ // 如果是第一页
 			$fkey = 0;
 	    	foreach ($pageArr as $key => $pageline) {
-	    		if( !$fkey && preg_match_all("/[\d]{2}[\s]{1}\w/",substr($pageline,0, 10),$arr)) {
+	    		if( !$fkey && preg_match_all("/\d{2}\s\w/",substr($pageline,0, 10),$arr)) {
 	    			$fkey = $key-1; // 开始匹配舱位的位置，通常是12
                     $this->startKey = $pageArr[$fkey];
 	    		}
@@ -303,17 +329,14 @@ class Xfsd extends Eterm{
 		}
 	}
 
-	private function getAllSeat($fileName){
-		// $file = file_get_contents($fileName);
-        $file = $fileName;
+	private function getAllSeat($dataFrom){
+		// $data = file_get_contents($dataFrom);
+        $data = $dataFrom;
         
-    	preg_match_all("/\[CDATA\[(.*?)\]\]/is", $file, $newFile);
+    	preg_match_all("/\[CDATA\[(.*?)\]\]/is", $data, $newFile);
+
 		foreach ($newFile[1] as $pageNum => $Page) {
-    		if($pageNum == 0){
-    			$this->getSeat($Page, 1);
-    		}else{
-    			$this->getSeat($Page, 0);
-    		}
+    	   $pageNum == 0 ? $this->getSeat($Page, 1) : $this->getSeat($Page, 0);
     	} 
         $this->org_arr = $this->arr;   	
 	}
@@ -339,9 +362,9 @@ class Xfsd extends Eterm{
 
             if(substr($dataline, $pos+23, 6) != "      "){
                 $singleLineFee = "";
-                $backLineFee = $res[1][0]?$res[1][0]:$res[1][1];   // 往返价格 //substr($dataline, $pos+23, 6);
+                $backLineFee = isset($res[1][0])?$res[1][0]:$res[1][1];   // 往返价格 //substr($dataline, $pos+23, 6);
             }else{
-                $singleLineFee = $res[1][0]?$res[1][0]:$res[1][1];
+                $singleLineFee = isset($res[1][0])?$res[1][0]:$res[1][1];
                 $backLineFee = "";
             }      
             $seat = substr($dataline, $pos+30, 1);             // 舱位
@@ -415,8 +438,12 @@ class Xfsd extends Eterm{
     public function changePrice(){
         $f_page = parent::initFile($this->tmp, 0, 1);
 
-        preg_match('/1NUC=(.*)CNY/', $f_page[1], $str);
-        $rate = floatval($str[1]);
+        if(isset($f_page[1])){
+            preg_match('/1NUC=(.*)CNY/', $f_page[1], $str);
+            $rate = floatval($str[1]);
+        }else{
+            $rate = 0;
+        }
         return $rate;
     }
 }

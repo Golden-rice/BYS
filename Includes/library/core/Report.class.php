@@ -2,6 +2,8 @@
 namespace BYS;
 
 class Report {
+	static public $log = array();
+
 	static public function test(){
 		echo "Class Template config success!";
 	}
@@ -25,6 +27,10 @@ class Report {
 	}
 
 	static public function log($words){
+		array_push(self::$log, $words);
+	}
 
+	static public function printLog(){
+		print_r(self::$log);
 	}
 }
