@@ -33,12 +33,51 @@ class EtermController extends Controller {
 			echo json_encode(array('rate'=>$rate));
     }
 
+    // 查看使用规则
+    public function searchFsd(){
+    	import('vender/eterm/app.php');
+
+    	$fsd = new \Fsd($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
+
+			$fare       = str_replace(' ','', $_POST['fare']);
+			$start      = $_POST['start'];
+			$end        = $_POST['end'];
+			$startDate  = $_POST['startDate'];
+			$aircompany = $_POST['aircompany'];
+			$from       = $_POST['from'];
+			$identity   = '';
+
+			// 扩展命令
+		 	if(isset($_POST['identity'])){
+		 		$identity = '<'.$_POST['identity'];
+		 	}
+
+			$date = array( 
+				'fare'=> $fare,
+				'start'=> $start,
+				'end'=> $end,
+				'startDate'=> $startDate,
+				'aircompany'=> $aircompany,
+				'from'=> $from
+			);
+
+			$command = 'XS/FSD'.$start.$end.'/'.$startDate .'/'.$aircompany.'/'.'#*'.$fare.$identity;
+
+			if($from != '公布运价'){
+				$command = $command.'///#'.$from;
+			}
+
+			$array = empty($_POST['index']) ? $fsd->fare(array(0,1,2), $date, $command) : $fsd->fare(array(0=>$_POST['index'],1,2), $date, $command); 	
+			
+			echo json_encode(array('command'=> $command,'aircompany'=> $aircompany, 'fare'=> $fare, 'array'=>$this->assignItem($array), 'data'=>$array) ); 
+
+    }
+
     // 通过输入框查询xfsd 
     public function searchXfsdByInput(){
     	import('vender/eterm/app.php');
 
-    	$xfsd = new \Xfsd($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
-
+    	$xfsd       = new \Xfsd($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
 			$start      = $_POST['start'];
 			$endMore    = $_POST['end'];
 			$startDate  = $_POST['startDate'];
@@ -46,29 +85,22 @@ class EtermController extends Controller {
 			$code       = $_POST['private'];
 			$tripType   = $_POST['tripType'];
 			$other      = $_POST['other'];
-
-			if(preg_match("/[\/]2|[\/]2[\/]|2[\/]/",$other, $str)){
-				$ab_flag = true;
-			}else{
-				$ab_flag = false;
-			}
-			
-			$endArr  = explode(',', $endMore);  // 多地点录入时
-			$array   = array();                 // 解析结果的数组，支持多个地点
+			$ab_flag    = preg_match("/[\/]2|[\/]2[\/]|2[\/]/",$other, $str) ? true:false;
+			$endArr     = explode(',', $endMore);  // 多地点录入时
+			$array      = array();                 // 解析结果的数组，支持多个地点
 			
 			foreach($endArr as $end){
-
-				// 清空
+				// 生成命令
 				$command = $this->toXfsdCommand($start, $end, $startDate, $aircompany, $tripType, $code, $other );
 
 				// 开始查询
 				$xfsd->command($command, "w");
 
-				$source = $this->hasXfsdSource(array('command' => $command, 'firstPage' => $xfsd->getFirstPage() ));
+				$result = $this->hasXfsdSource(array('command' => $command, 'firstPage' => $xfsd->getFirstPage()));
 
-				if( $source ){ 
-				// 查询旧source数据作为tmp
-					$xfsd->wtTmp($source);
+				if( $result ){ 
+				// 数据库中有数据，查询旧source数据作为tmp
+					$xfsd->wtTmp($result);
 					$resultArr = $ab_flag ? $xfsd->analysis(array(2,3,4)) : $xfsd->analysis(array(2,3));
 					// 声明
 					$array[$end] = $resultArr;
@@ -183,6 +215,7 @@ class EtermController extends Controller {
     			if ( $array['firstPage'] == substr($cols['Detail'], 0 , $flength) ) 
     				return $cols['Detail'];
     			else
+    				// 此处应该设置更新
     				return false;
     		}
     	}
@@ -198,44 +231,31 @@ class EtermController extends Controller {
     	$command = $_POST['command'];
 
 			// 匹配是否含有身份
-			if(preg_match_all('/<(SD|CH|IN|ADT|ZZ)/', $command, $str)){
-				$str = $str[1][0];
-				// $smarty->assign('identity', $str); 未增加
-			}
+			if(preg_match_all('/<(SD|CH|IN|ADT|ZZ)/', $command, $str)) $str = $str[1][0];
 
 			$str = preg_match_all('/(\/\/\/)#(\w+\*?\w+)/',substr($command, 19), $arr);
-			// $smarty->assign('from', $str ? $arr[2][0]:'公布运价'); 未增加
 
 			if($remove){
 				$xfsd->removeRuntime($command);
 			}
-
 			$xfsd->command($command, "w", false);
-			$resultArr = $xfsd->analysis(array(1,2,3));
-			$array = array(
-				"OWEND" => $resultArr
-				);
 
-			$array["OWEND"]['from'] =  $code==''?'公布运价':$code;
+			$resultArr                    = $xfsd->analysis(array(1,2,3));
+			$array                        = array( "OWEND" => $resultArr );
+			$array["OWEND"]['from']       = $code==''?'公布运价':$code;
 			$array["OWEND"]['aircompany'] = $aircompany;
-			$array["OWEND"]['startDate'] = $startDate;
-			$array["OWEND"]['length'] = count($resultArr);
-			$array["OWEND"]['command'] = $command;
+			$array["OWEND"]['startDate']  = $startDate;
+			$array["OWEND"]['length']     = count($resultArr);
+			$array["OWEND"]['command']    = $command;
     }
 
     public function toXfsdCommand( $start, $end, $startDate, $aircompany, $tripType, $code, $other ){
 			// NUC 数值
 			$other .= "/NUC";
-
 			// 根据出发到达组合成合适的命令
-			if(!empty($tripType)){
-				$tripType = '/'.$tripType;
-			}
-			if($code){
-				return $command = 'XS/FSD'.$start.$end.'/'.$startDate.'/'.$aircompany.$tripType.'/NEGO/X///#'.$code.'/'.$other;
-			}else{
-				return $command = 'XS/FSD'.$start.$end.'/'.$startDate.'/'.$aircompany.$tripType.'/X'.'/'.$other ;
-			}	
+			if(!empty($tripType)) $tripType = '/'.$tripType;
+			return $code ? 'XS/FSD'.$start.$end.'/'.$startDate.'/'.$aircompany.$tripType.'/NEGO/X///#'.$code.'/'.$other : 
+		                 'XS/FSD'.$start.$end.'/'.$startDate.'/'.$aircompany.$tripType.'/X'.'/'.$other ;
 		}
 
 
@@ -587,5 +607,124 @@ class EtermController extends Controller {
 			return $array;
 
 		}
+
+
+		// 使用规则，备注装填
+	public function assignItem($arr){
+		if(empty($arr)){
+			return;
+		}
+
+		$row = 0;   // 行号
+		$array = array(
+			1 =>array('caption' => '校验订座及出票时限，取最严格的限制'),
+			2 =>array('caption' => '校验旅行时间取最严格的限制'),
+			3 =>array('caption' => '折扣'),
+			4 =>array('caption' => '变更与换开'),
+			5 =>array('caption' => '因这个Category，常导致FSD显示金额与QTE产生的票面价有一定的价差'),
+			6 =>array('caption' => ''),  // 有备注
+			7 =>array('caption' => 'Category 17: HIP校验条件及EMA，egory 23: 混舱等杂项'),
+			8 =>array('caption' => '生成小团队运价Small Group'),
+/*			10=>array('caption' => ''),  // 有备注
+			11=>array('caption' => ''),  // 有备注*/
+			9 =>array('caption' => '')   // 有备注
+		);
+		foreach ($arr as $title => $value) {
+			$index = substr($title, 0,2);
+			$row ++;
+			if($index == '00' ){
+				$array[0][$index] = array('title'=>$title,'content'=>$value);
+				continue;
+			}
+			if($index == '01' || $index == '05' || $index == '15' || $index == '18' || $index == '35'){
+				$array[1][$index] = array('title'=>$title,'content'=>$value);
+				continue;
+			}
+			if($index == '02' || $index == '03' || $index == '04' || $index == '06' || $index == '07' || $index == '08' || $index == '09' || $index == '11' || $index == '14'){
+				$array[2][$index] = array('title'=>$title,'content'=>$value);
+				continue;
+			}
+			if($index == '19' || $index == '20' || $index == '21' || $index == '22'){
+				$array[3][$index] = array('title'=>$title,'content'=>$value);
+				continue;
+			}
+			if($index == '16' || $index == '31' ){
+				$array[4][$index] = array('title'=>$title,'content'=>$value);
+				continue;
+			}
+			if($index == '12' ){
+				$array[5][$index] = array('title'=>$title,'content'=>$value);
+				continue;
+			}
+			if($index == '10' ){
+				$array[6][$index] = array('title'=>$title,'content'=>$value);
+				continue;
+			}
+			if($index == '17' || $index == '23'){
+				$array[7][$index] = array('title'=>$title,'content'=>$value);
+				continue;
+			}
+			if($index == '13'){
+				$array[8][$index] = array('title'=>$title,'content'=>$value);
+				continue;
+			}
+			if($index == '25'){
+				$array[9][$index] = array('title'=>$title,'content'=>$value);
+				continue;
+			}
+			if($index == '33'){
+				$array[10][$index] = array('title'=>$title,'content'=>$value);
+				continue;
+			}
+			if($index == '50'){
+				$array[11][$index] = array('title'=>$title,'content'=>$value);
+				continue;
+			}
+
+			$array[$row][$index] = array('title'=>$title,'content'=>$value);
+
+			
+		}
+		// []行[][]列
+		$array[1]['01']['lab'] = '（真实内容不可读）- 用来规定票价适用的条件，如Account Code，旅客类型';
+		$array[1]['05']['lab'] = '用来规定提前订座和出票的限制';
+		$array[1]['15']['lab'] = '（销售人限制部分的内容不可读）- 用来规定票价的可用时间、地区以及销售人';
+		$array[1]['18']['lab'] = '（出票签注）- 票价签注栏信息';
+		$array[1]['35']['lab'] = '（特殊私有运价，真实内容不可读）- 用来规定定向发布私有运价的发布范围、计价法则、代理费率、开票票证限制等';
+		
+		$array[2]['02']['lab'] = '用来规定票价使用相关的航班班期限制';
+		$array[2]['03']['lab'] = '用来规定票价使用相关的季节性限制';
+		$array[2]['04']['lab'] = '用来规定票价所适用或者不适用的航班限制';
+		$array[2]['06']['lab'] = '最小停留限制，用来规定回程所允许的最早日期和指明计算最小停留时间段的基准点';
+		$array[2]['07']['lab'] = '最长停留限制，用来规定回程所允许的最晚日期和指明计算最长停留时间段的基准点';
+		$array[2]['08']['lab'] = '用来规定行程允许stopover(停留)的条件和收费';
+		$array[2]['09']['lab'] = '（签转）- 用来规定行程允许Transfer(换乘)的条件和收费';
+		$array[2]['11']['lab'] = '用来规定票价使用的除外时间';
+		$array[2]['14']['lab'] = '用来规定航程中任意两点间的旅行时间限制';
+
+		$array[3]['19']['lab'] = '（儿童婴儿的折扣）- 用来规定儿童、婴儿的折扣信息';
+		$array[3]['20']['lab'] = '用来规定票价特定的旅行折扣';
+		$array[3]['21']['lab'] = '用来规定票价特定的代理专享折扣';
+		$array[3]['22']['lab'] = '用来规定票价特定的其他折扣';
+
+		$array[4]['16']['lab'] = '用来规定票价的退改签政策';
+		$array[4]['31']['lab'] = '用来规定自动变更/签转的规则数据';
+
+		$array[5]['12']['lab'] = '用来规定票价中的附加费收取条件和费用';
+
+		$array[6]['10']['lab'] = '（运价组合）- 用来规定票价/行程所允许的组合方式。';
+
+		$array[7]['17']['lab'] = '较高点校验/里程制例外情况的设定';
+		$array[7]['23']['lab'] = 'Add-on组合、多服务等级联运等';
+
+		$array[8]['13']['lab'] = '用来规定陪伴旅行中陪伴者和被陪伴的类型和条件';
+
+		$array[9]['25']['lab'] = '（真实内容不可读）- 特殊运价的规则';
+
+		// $array[10]['33']['lab'] = '（功能正在开发中）- 用来规定自动退票的规则数据';
+
+		// $array[11]['50']['lab'] = '用来规定票价规则的名称、适用地理区域、承运限制、规则所不适用的情况、行程类型和承运类型等其他信息，不影响票价计算';
+		return $array;
+	}
 
 }

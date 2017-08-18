@@ -29,6 +29,7 @@ class Dispatcher {
 
 			if ($_SERVER['PATH_INFO'] != ""){
 				$paths = explode("/", $_SERVER['PATH_INFO']);
+
 				// 加载应用
 				$app = $paths[0];
 				// 加载控制器

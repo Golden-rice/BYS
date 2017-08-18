@@ -662,7 +662,7 @@ var createCommand = function(recevier, tpl){
 		recevier.lab.command = $('.command');
 
 		// 请求数据
-		recevier.getData('/admin/fare.php', recevier.query,
+		recevier.getData( Controller + 'searchFsd', recevier.query,
 			// 回调函数
 			function(){
 				var _arg = arguments;

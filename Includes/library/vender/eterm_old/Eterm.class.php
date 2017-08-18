@@ -93,24 +93,8 @@ namespace Eterm;
     	$this->fileTime = $this->setTime($this->tmp);
 	  }
 
-	  protected function getAllPage($fileName, $command){
-			// 获取除了第一页的其他页数据
-	    $f = $this->initFile($fileName, 0, 1);
-			preg_match_all('/PAGE[\s]*(\w+)\/(\w+)/', end($f), $str); // 获取页码
-
-			$pageTotal = intval($str[2][0]);   // 总页码
-	    	$pageCur   = intval($str[1][0]);   // 当前页码
-
-	    	while($pageCur < $pageTotal){
-	    		$this->addCommand($command ,'a'); // 回填tmp文件
-	    		$pageCur++;
-	    	}
-		}
-
 	  public function mixCommand($commandArr, $type, $p=false){
 	    	// 多条命令发送，数组包含该信息是否回填至缓存中
-	  	  $commandURL = '';
-	  	  $commandTXT = '';
 		    foreach($commandArr as $command => $addFlag){
 					$commandURL .= '&COMMAND='.urlencode($command);
 					$commandTXT .= $command;
@@ -140,8 +124,8 @@ namespace Eterm;
 			 		$requestURL='http://eterm.cctba.com:8350/COMMAND?USER='.$this->name.'&PASSWORD='.$this->password.'&RESOURCEETERM-SHARE-BJS248'.$commandURL;
 			 	 	$file = file_get_contents($requestURL);
 
-				 	// $this->download($file, $type);
-				 	$this->saveStr($file, $type);
+				 	$this->download($file, $type);
+				 	// $this->saveStr($file, $type);
 				}
 	  }
 
