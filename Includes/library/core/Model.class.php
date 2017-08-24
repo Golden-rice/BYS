@@ -9,6 +9,8 @@
 	 	protected $tablePrefix      =   '';
 	 	// 自动添加数据
 	 	protected $_validate        = array();
+	 	// WHERE
+	 	protected $where            = '';
 
 	 	function __construct($className = ""){
 		 	// 声明全局变量
@@ -52,8 +54,8 @@
 	 		// 单条新增
 	 			$sql = '';
 
-			 	$val = 'VALUES(';
 	 			$sql = "INSERT INTO {$this->tableName} (";
+			 	$val = 'VALUES(';
 	 			foreach ($data as $key => $value) {
 	 				$sql .= "`{$key}`,";
 	 				$val .= is_string($value)? "'$value'," : $value.',';
@@ -62,7 +64,7 @@
 	 				foreach ($this->_validate as $key => $value) {
 	 					$sql .= "`{$key}`,";
 	 					if($value == 'TIME'){
-	 						$val .= time();
+	 						$val .= time().',';
 	 					}else{
 		 					$val .= is_string($value)? "'$value'," : $value.',';
 	 					}
@@ -95,7 +97,7 @@
 	 				foreach ($this->_validate as $key => $value) {
 	 					$sql .= "`{$key}`,";
 	 					if($value == 'TIME'){
-	 						$val .= time();
+	 						$val .= time().',';
 	 					}else{
 		 					$val .= is_string($value)? "'$value'," : (int)$value.',';
 	 					}
@@ -125,7 +127,39 @@
 		 */	 	
 	 	public function select(){
 	 		$sql = "SELECT * FROM ".$this->tableName.$this->where;
-	 		return $this->query($sql);
+	 		$this->prepare($sql);
+	 		return $this->execute();
+	 	}
+
+	 	/**
+		 * 更新一条数据
+		 * @return mix 结果
+		 */	 	
+	 	public function update($data = array()){
+	 		if (count($data) <=0) return;
+ 			$sql = "UPDATE {$this->tableName} SET ";
+ 			foreach ($data as $attr => $val) {
+ 				$sql .= "`{$attr}` = ".(is_string($val)? "'{$val}'" : (int)$val).',';
+ 			}
+	 		$sql = rtrim($sql, ',').$this->where;
+	 		$this->prepare($sql);
+	 		$this->execute();
+	 		return $this->prepare->rowCount();
+	 	}
+
+
+	 	/**
+		 * 删除数据
+		 * @return mix 结果
+		 */	 	
+	 	public function delete(){
+ 			$sql = "DELETE FROM {$this->tableName} ";
+
+	 		$sql = $sql.$this->where;
+
+	 		$this->prepare($sql);
+	 		$this->execute();
+	 		return $this->prepare->rowCount();
 	 	}
 
 	 	/**
@@ -142,8 +176,13 @@
 	        $lastId = Db::$link->lastInsertId();
 	        // Db::$link->commit();
 	        $result = array();
-	        foreach ($rows as $row) {
-	        	$result[] = $row;
+	        if(count($rows)>1){
+		        foreach ($rows as $row) {
+		        	$result[] = $row;
+		        }
+	        } else{
+	        	var_dump($rows);
+	        	$result = $rows;
 	        }
 	        return $result;
 
@@ -174,7 +213,7 @@
 
 	 	}
 	 	/**
-		 * 事务预处理
+		 * 事务预处理：SELECT 
 		 * @param  string $sql 查询语句
 		 */
 	 	public function prepare($sql = ''){
@@ -182,6 +221,7 @@
 		 	try{
 	        $this->prepare = Db::$link -> prepare($sql); // 返回类似于数组
 	    }catch(PDOException $e){
+	    		Db::$link->rollback();
 	        echo '错误是：'.$e->getMessage();
 	    }
 	 	}
@@ -196,9 +236,13 @@
 		 	try{
 	        $this->prepare->execute($param);
 	        // 生成关联数组
-	        return $this->prepare->fetchALL();
-	    }catch(PDOException $e){
 
+	        if($this->prepare->rowCount() > 1)
+	        	return $this->prepare->fetchALL();
+	        else
+	        	return $this->prepare->fetch();
+	    }catch(PDOException $e){
+	    		Db::$link->rollback();
 	        echo '错误是：'.$e->getMessage();
 	    }
 	 	}

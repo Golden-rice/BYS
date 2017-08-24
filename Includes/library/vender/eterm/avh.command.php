@@ -9,7 +9,7 @@ class Avh extends Eterm{
   public function analysis($switch){
     // 解析文件，并返回解析后的结果
   	if(empty($switch)){
-    	$switch = array(1,2,3,4,5); 
+    	$switch = array(1,2,6); 
   	}
   	$arr_result = array();
   	foreach ($switch as $flags) {
@@ -20,7 +20,6 @@ class Avh extends Eterm{
 				case 2:
 					$this->to2Arr($this->arr);
 					continue;
-
 				case 6:
 					$this->display($this->arr);
 					continue;
@@ -28,12 +27,15 @@ class Avh extends Eterm{
   				break;
   		}
   	}
-    	// parent::p($this->arr);
+
+    // parent::p($this->arr);
 		return $this->arr;
+  }
+  public function readSource(){
+  	return $this->source;
   }
 	private function initDate($fileName){
 		$arr = parent::initFile($fileName, 0, 1);
-		
 		$this->arr = preg_grep("/\*\*\s/", $arr, PREG_GREP_INVERT);
 	}   
 

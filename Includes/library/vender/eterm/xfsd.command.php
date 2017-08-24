@@ -53,14 +53,6 @@ class Xfsd extends Eterm{
         return $this->firstPage;
     }
 
-    public function rtTmp(){
-        return $this->tmp;
-    }
-
-    public function wtTmp($str = ''){
-        if ($str != '') $this->tmp = $str;
-    }
-
     public function readSource(){
         // 获得全部页数
         $this->getAllPage($this->tmp, 'xs/fspn');
@@ -68,11 +60,8 @@ class Xfsd extends Eterm{
     }
 
 	private function inputSeat($pageline){
-		if(intval(substr($pageline, 0, 3)) > 99){
-			$pos = 3;
-		}else{
-			$pos = 2;
-		}
+		$pos = intval(substr($pageline, 0, 3)) > 99 ? 3 : 2;
+
 		if(substr($pageline, $pos,1) ==' '){  // 去除数据中混入日期
 			if(substr($pageline,0,1) == "\r"){
 				array_push($this->arr, substr($pageline,1));

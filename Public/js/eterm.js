@@ -5,11 +5,12 @@ require.config({
       "progress": "lib/bootstrap.progress",
 			'extend': "lib/extend",
 			'bootstrap': "lib/bootstrap.min",
+
    }
 });
 
 
-define('eterm', ['jquery', 'progress', 'extend', 'bootstrap'], function ($, progress, extend, bootstrap) {
+define('eterm', ['jquery', 'progress', 'extend', 'bootstrap'], function ($, progress, extend, bootstrap){
 
 // 重置函数	
 // var $        = $.jquery;
@@ -155,6 +156,7 @@ var createCommand = function(recevier, tpl){
 
 	// 生成模板
 	if(tpl){
+		var render       = tpl.render ? tpl.render: undefined; // 非表格渲染方式
 		var mkTable      = tpl.mkTable ? tpl.mkTable: undefined; // 各个页面基础 模板 等
 		var mkMatchTable = tpl.mkMatchTable ? tpl.mkMatchTable: undefined; // 使用规则模板
 		var mkMixTable   = tpl.mkMixTable ? tpl.mkMixTable: undefined; // xfsd 混舱模板
@@ -409,58 +411,6 @@ var createCommand = function(recevier, tpl){
 		}
 	}
 
-	var updataDB = function(remove){
-
-		// 存入使用规则
-		if( recevier.fareJson !== undefined ){
-
-			if( !recevier.fareArray.totalFliterLength > 0 ){
-				console.log("** Oh! No fare Policy **")
-				return ;
-			}
-
-			console.log('** Start import POLICY in database! **')
-			recevier.link('/admin/updatadb.php?xfsdAndPolicy&', {'data': recevier.fareJson, remove: remove}, function(msg){
-				// console.log('database haved:' + msg.have+', import:'+msg.import);
-				console.log('** Database Haved:' + msg[0].have+', import:'+msg[0].import);
-			}); 
-
-		}else{
-
-			recevier.xfsdJson = {};
-
-			// 获取选中的xfsd数据
-			for(var end in recevier.xfsd ){
-
-				recevier.xfsdJson[end] = {};
-
-				for( var j in recevier.selected[end]){
-					for(var i = 0; i < recevier.xfsd[end].length; i++){
-
-						if(recevier.xfsd[end][i].fare === recevier.selected[end][j]){
-							[].push.call(recevier.xfsdJson[end] ,recevier.xfsd[end][i]);
-						}
-
-					}
-				}
-
-				if(recevier.xfsdJson[end].length > 0){
-					recevier.xfsdJson[end].aircompany = recevier.xfsd[end].aircompany;
-					recevier.xfsdJson[end].from = recevier.xfsd[end].from;
-					recevier.xfsdJson[end].startDate = recevier.xfsd[end].startDate;
-				}
-
-			}
-
-			console.log('** Start import XFSD in database! **')
-
-			recevier.link('/admin/updatadb.php?xfsd&', {'data': recevier.xfsdJson, remove: remove}, function(msg){
-				// console.log('database haved:' + msg.have+', import:'+msg.import);
-				console.log('** Database Haved:' + msg[0].have+', import:'+msg[0].import);
-			});
-
-		}
-	}
 
 	var mixCabin = function(config){
 
@@ -791,12 +741,6 @@ var createCommand = function(recevier, tpl){
 			});
 	}
 
-	var checkOpen = function(address){
-		// document.location.href = 'check.php?checkOpen&'; // 下载地址
-		var filename =  address.substr(address.lastIndexOf("\\") + 1);
-
-		console.log(address);
-	}
 
 	var planAvSabre = function(query, append){
 		recevier.target = 'table-av';
@@ -1004,760 +948,102 @@ var createCommand = function(recevier, tpl){
 		 	recevier.progress.have(pi++, completePi); 
 		})
 
-		/*
-		.done(function(){
-
-
-		// 公布运价
-		recevier.getData('/admin/xfsd.php', queryPuc, function(){
-			recevier.progress.have(pi++, completePi);
-
-			xfsd_pri = recevier.data;
-
-			// recevier.mkTable(xfsd_pri.array, recevier.target, recevier.context, 'a');
-		}, false)
-
-		//	私有运价
-		recevier.getData('/admin/xfsd.php', query, function(){
-			recevier.progress.have(pi++, completePi); 
-
-			xfsd_org = recevier.data;
-
-			// recevier.mkTable(xfsd_org.array, recevier.target, recevier.context, 'a');
-		}, false)
-
-
-		// 舱位数据
-		recevier.getData('/admin/plan.php', avhPlanQuery, function(msg){
-			recevier.progress.have(pi++, completePi);
-
-			// 有错误：多条数据会覆盖（待定）
-			for(var i in msg){
-				if(msg[i].start === avhPlanQuery.start && msg[i].end === avhPlanQuery.end){ // 去程
-					avh_plan['dep'] = msg[i];
-				}
-				if(msg[i].start === avhPlanQuery.end && msg[i].end === avhPlanQuery.start){ // 回程
-					avh_plan['arr'] = msg[i];
-				}
-			}
-
-		}).done(function(){
-
-		// 获取当日舱位计划任务（ETERM）舱位数据
-		var avhDepQuery = {
-			dosubmit: 'displayCabin',
-			action: '',
-			start: avhPlanQuery.start,
-			end: avhPlanQuery.end,
-			pid: avh_plan['dep']['plan_id']
-		}
-		var avhArrQuery = {
-			dosubmit: 'displayCabin',
-			action: '',
-			start: avhPlanQuery.end,
-			end: avhPlanQuery.start,
-			pid: avh_plan['arr']['plan_id']
-		}
-
-		recevier.getData('/admin/avh.php', avhDepQuery, function(msg){
-			recevier.progress.have(pi++, completePi);
-			avh.depCabin = msg
-		}, false)
-		recevier.getData('/admin/avh.php', avhArrQuery, function(msg){
-			recevier.progress.have(pi++, completePi);
-			avh.arrCabin = msg
-		}, false)
-
-		}).done(function(){
-
-			var end = Object.keys(xfsd_org.array)
-
-			// 回填公布运价和私有运价
-			xfsd_org = xfsd_org.array[end];
-			xfsd_pri = xfsd_pri.array[end];
-			// console.log(xfsd_org);
-			// console.log(xfsd_pri);
-
-			// 打包舱位数据
-			// console.log(avh)
-			// selectCabin
-			var matchCabin = [];
-			var selectCabinMatch = {};
-			for(var x = 0 ;x < xfsd_org.length; x++){
-				console.log(xfsd_org[x].seat)
-				if(selectCabin[xfsd_org[x].seat]){
-					Array.prototype.push.call(selectCabinMatch, {
-						'cabin':xfsd_org[x].seat,
-						"fare": xfsd_org[x].fare,
-						"free": xfsd_org[x].backLineFee === ""? xfsd_org[x].singleLineFee:xfsd_org[x].backLineFee,
-						"allowWeek": xfsd_org[x].allowWeek,
-						"allowDateStart": xfsd_org[x].allowDateStart,
-						"allowDateEnd": xfsd_org[x].allowDateEnd,
-					})
-				}
-			}
-			console.log(selectCabinMatch)
-			
-
-			var a=[], b=[];
-			al = Object.keys(avh.depCabin.array);
-			bl = Object.keys(avh.arrCabin.array);
-			a = avh.depCabin.array;
-			b = avh.arrCabin.array;
-			a.length = al.length;
-			b.length = bl.length;
-
-			console.log('deplength: '+al.length+", arrlength: "+bl.length)
-			*/
-
-			/*
-			// 查询去程有无舱位
-			for(var i = 1, curj = 1; i<a.length; i++){
-				var depCabin, dep;
-
-				for(var sc in selectCabin){ // 查询固定舱位
-					if(a[i].cabin[selectCabin[sc]] && a[i].cabin[selectCabin[sc]] >0){
-						dep = a[i];
-						depCabin = selectCabin[sc];
-						break; // break select
-					}
-				}
-				
-				// console.log(depCabin)
-				// 少数据，交叉数据：同一日期对不容航班组合
-				if(depCabin){
-					// 去程有舱位，查询返程有无舱位
-					
-					for(var j = (b[i-1] && b[i-1].date === b[i].date)? i-1: i; j<b.length; j++){ // 查询固定舱位
-						var arrCabin, arr;
-
-						for(var sc in selectCabin){
-							if(b[j].cabin[selectCabin[sc]] && b[j].cabin[selectCabin[sc]] >0){
-								arr = b[j];
-								arrCabin = selectCabin[sc];
-								break;
-							}
-						}
-
-						console.log("i:"+i+",j:"+j+",curj:"+curj)
-
-						// console.log(arrCabin)
-						if(arrCabin){
-							matchCabin.push({
-								"depCabin": depCabin,
-								"dep": dep,
-								"arrCabin": arrCabin,
-								"arr": arr,
-								"val": Math.min(dep.cabin[depCabin], arr.cabin[arrCabin]),
-							})
-						}
-						
-					}
-
-				}
-			}
-
-			*/
-			
-
-
 			// console.log(matchCabin)
 			mkCabinTpl(matchCabin, recevier.target, recevier.context, 'a');
 
 
-
-
-		// })
 	}
 
-	var pnr = function(command){
-		// 1101 - 1483 = 383 
-		// 初始化
-		var _config = {              
-				progress: progress()
-		}; 
-		var completePi = 3, pi = 0; // progress 步骤
 
+	var basisAircompany = function(){
 		recevier.target = 'table';
-		recevier.context = "#content";
-		recevier.lab = "#lab";
+		recevier.context = '#content'
+		recevier.progress = progress();
 
-		// 配置模板
-		if(tpl){
-
-			var cabinSeqTpl    = tpl.cabinSeqTpl,
-					ssCabinRoutTpl = tpl.ssCabinRoutTpl,
-					mkRoutTpl      = tpl.mkRoutTpl,
-					getRoutAvhTpl  = tpl.getRoutAvhTpl;
+		// 模板
+		if(recevier.isFunction(mkTable) && typeof recevier.isFunction(rmTable)){
+			recevier.mkTable = mkTable; 
+			recevier.rmTable = rmTable; 
+		}else{
+			console.log("'mkTable' or 'rmTable' haven't added in ")
 		}
 
-		// 缓存数据
-		var cache = {
-				match: [],                 // input解析
-			  cabinSeq: [],              // 来自xfsd 舱位序列
-				indexCheap: 0,             // 最便宜舱位的指针
-			  expensiveLeg: []           // 最贵的航路
-		};
-
-		// 初始化操作
-		_config.progress.create('#content-progress');
-		$(recevier.lab).find(".panel-body").html("");
-
-		var Chain = function(fn){
-			// 执行链条
-			this.fn = fn
-			this.successor = null;
-		}
-
-
-		Chain.prototype.setNextSuccessor = function(successorFn){
-			// 配置下一个节点
-			return this.successor = successorFn
-		}
-
-		Chain.prototype.passRequest = function(){
-			// 触发链条
-			var ret = this.fn.apply(this, arguments);
-
-			if(ret === "nextSuccessorFn"){
-				return this.successor && this.successor.passRequest.apply(this.successor, arguments)
-			}
-			return ret;
-		}
-
-		Chain.prototype.next = function(){
-			// 异步，回调执行 successorFn
-			return this.successor && this.successor.passRequest.apply(this.successor, arguments)
-		}
-
-
-		// 增加进度条及打印说明
-		var logger = function(txt){
-			console.log(txt)
-			console.log('================')
-			$(recevier.lab).show().find(".panel-body").append(txt+"<br>");
-			_config.progress.have(pi++, completePi);
-		}
-
-		// 解析输入内容
-		var matchInputChain = new Chain(function(input){
-			/* match format:
-				1:"UA858"
-				2:"UA"
-				3:"G"
-				4:"APR17"
-				5:"PVG" start
-				6:"SFO" end
-			*/
-			var inputArr = input && input.split("\n");
-
-			for (var i =0; i<inputArr.length;i++) {
-				cache.match.push(/SS:((\w{2})\d+)\/(\w)\/(\d{2}\w{3})\d{2}\/(\w{3})(\w{3})/g.exec(inputArr[i]));
-			}
-
-			// 返回全局变量中
-			cache.expensiveLeg = cache.match.slice();
-			logger("已解析输入SS内容！")
-			return "nextSuccessorFn";
-		})
-
-		// 根据解析获得 xfsd 
-		var getXsfdChain = new Chain(function(){
-			var start = cache.match[0][5],
-					end =  cache.match.length > 2 ? cache.match[cache.match.length/2-1][6] : cache.match[0][6], 
-					aircompany = cache.match[0][2];
-			
-			var _self = this;
-			// 根据xsfd 获取舱位序列及运价
-			recevier.getData('/admin/xfsd.php', 
-				{
-					dosubmit: '',
-					start: start,
-					end: end, // 是否存在中转
-					startDate: cache.match[0][4],
-					aircompany: aircompany,
-					private: "",
-					tripType: "",
-				}, 
-				function(){
-
-					// xfsd 舱位排序
-					cache.xfsd = recevier.data;
-
-					for(var i = 0; i < cache.xfsd.array[end].length; i++){
-						cache.cabinSeq.push(cache.xfsd.array[end][i].seat);
-					}
-
-					cabinSeqTpl(cache.xfsd.array[end], recevier.target, recevier.context, 'w');
-
-					logger("已获得舱位序列！")
-					_self.next();
-			})
-		})
-
-		// 根据解析及xfsd舱位序列，获取最便宜航段
-		var getCheapLogChain = new Chain(function(){
-
-			var _self = this;
-			var havCheapLog = []; // 打印用
-			var expensiveLegLength = 0;
-
-			for(var c = 0; c< cache.match.length; c++){
-				if(cache.cabinSeq.indexOf(cache.match[c][3]) <= cache.indexCheap ){
-					cache.expensiveLeg[c] = undefined;
+		recevier.progress.create('#content-progress');
+		recevier.getData( Controller + 'searchAircompany', {}, function(data){
+				recevier.rmTable(recevier.target);
+				recevier.progress.complete();
+				if(data.status === 'success'){
+					recevier.mkTable(data.result, recevier.target, recevier.context, 'w');
 				}else{
-					expensiveLegLength++;
+					alert(data.msg);
 				}
-			}
-
-			for(var f = 0, curExpensiveLeg = 0; f< cache.expensiveLeg.length ;f++){
-				if( cache.expensiveLeg[f]){
 					
-					!function(f){
-						// 验证组合无最低舱位的航程，各个航段是否有最低舱位
-
-						recevier.getData('/admin/avh.php', 
-						{
-							dosubmit: 'cabin',
-							start: cache.expensiveLeg[f][5],
-							end: cache.expensiveLeg[f][6],
-							startDate: cache.expensiveLeg[f][4],
-							endDate: cache.expensiveLeg[f][4],
-							airCompany: cache.expensiveLeg[f][2],
-							other: "D",
-						}, 
-						function(msg){
-							curExpensiveLeg ++ ;
-
-							var line = msg.array[cache.expensiveLeg[f][4]];
-							var targetCabin = cache.cabinSeq[cache.indexCheap];
-
-							inner: 
-							for(var j in line){
-								if(line[j][0].cabin[targetCabin]-0>0 && line[j][0].carrier === "" ){  
-									
-									// 报告验证航段有最低舱位，排除共享航班
-									console.log("have cheapest cabin part! :"+cache.expensiveLeg[f][5] +"-"+ cache.expensiveLeg[f][6]+", cabin:"+targetCabin+":"+line[j][0].cabin[targetCabin]);
-									console.log(line[j][0])
-									havCheapLog.push(cache.expensiveLeg[f][5] +"-"+ cache.expensiveLeg[f][6]+", cabin:"+targetCabin+":"+line[j][0].cabin[targetCabin]);
-									cache.expensiveLeg[f] = undefined;
-									break inner;
-								}
-							}
-
-							console.log(f+","+curExpensiveLeg+","+expensiveLegLength)
-
-							if(expensiveLegLength === curExpensiveLeg){
-								var cheapTxt = "";
-								if(havCheapLog.length > 0){
-									for(var q in havCheapLog){
-										cheapTxt += "<br> --> " + havCheapLog[q] ;
-									}
-								}
-
-								logger("已检查航段中是否有最低舱位！"+targetCabin+cheapTxt)
-
-								_self.next();
-							}
-
-						})
-					}(f)
-				}
-			}
-
-
-		})
-
-		// 回填航段检验模板
-		var renderCheckTplChain = new Chain(function(){
-
-			ssCabinRoutTpl([cache.expensiveLeg, cache.match], recevier.target, recevier.context, 'a')
-
-			for(var i in cache.expensiveLeg){
-				if(cache.expensiveLeg[i]){
-					break;
-				}
-				if(i === cache.expensiveLeg.length -1 ){
-					alert("各个航段均有最低舱位，请在航信系统中验证!");
-					return;
-				}
-			}
-
-			return "nextSuccessorFn";
-		})
-
-		// 根据数据库组合routing 并查询avh
-		var matchRoutingChain = new Chain(function(){
-
-			var aircompany = cache.match[0][2];
-			var avhRusult, avhQuery;
-
-			function getMatchCity(start){
-				// 获得匹配的城市对
-				var result = "";
-				recevier.getData('/admin/routing.php', {
-					start: start,
-					aircompany: cache.match[0][2],
-					action: 'ss'
-				}, function(msg){
-								
-						for (var j = 0; j < msg[aircompany].length; j++) {
-							result += msg[aircompany][j].end + ","
-						};
-						result = result.substr(0, result.length - 1)
-
-				}, false)
-				return result;
-			}
-
-			function getAvh(avhQuery){
-				var result = [], out = false;
-				// 返回添加rout后的舱位结果
-					recevier.getData('/admin/avh.php', avhQuery, function(msg){
-
-						console.log("Let routing query ---> start:"+avhQuery.start+"| ---> end:"+avhQuery.end)
-						
-						for(var addRout in msg.array){
-							if(!isArray(msg.array[addRout])){		
-
-								// 一个服务器返回数据问题导致	：avh日期与当前日期不一致时，结果为空
-								if( msg.array[addRout][avhQuery.startDate] ){ // 
-									var b = msg.array[addRout][""];
-								}else{
-									var b = msg.array[addRout][avhQuery.startDate];
-								}
-
-								outloop: 
-								for(var l in b){  // 当天不同航班组合的avh
-									for (var part in b[l]){ // 航班组合下航段
-
-										var a = b[l][part];
-
-										if( a.cabin[cache.match[cache.indexCheap][3]] - 0 > 0 && a.carrier === ""){ 
-											if( a.start == avhQuery.matchStart || a.end === avhQuery.matchEnd ){
-												console.log('success get av in: ' + avhQuery.matchStart + avhQuery.matchEnd);
-												out = true;
-												result.push( msg.array[addRout] )
-												break outloop;
-											}
-										}
-
-									}
-								}
-
-							}
-						}
-
-					}, false)
-					return {
-						routed: result === []? false: result,
-						status: out
-					}
-			}
-
-			function addLegStart(leg){
-
-				return {
-					start: getMatchCity(leg.start),
-					end: leg.end,
-					transfer: leg.start,
-				}
-			}
-
-			function addLegEnd(leg){
-
-				return {
-					start: leg.start,
-					end: getMatchCity(leg.start),
-					transfer: leg.end,
-				}
-			}
-
-			function setAvhQuery(pos, specialTigger){
-
-				var query;
-
-				if(pos > (cache.match.length-1)/2 ){
-					query = addLegStart({start: cache.expensiveLeg[pos][5], end: cache.expensiveLeg[pos][6]});
-				}else if(pos < (cache.match.length-1)/2){
-					query = addLegEnd({start: cache.expensiveLeg[pos][5], end: cache.expensiveLeg[pos][6]});
-				}
-					 
-				if(specialTigger && cache.match.length > 2){
-					if(pos < (cache.match.length-1)/2 ){
-						query = addLegStart({start: cache.expensiveLeg[pos][5], end: cache.expensiveLeg[pos][6]});
-					}else if(pos > (cache.match.length-1)/2){
-						query = addLegEnd({start: cache.expensiveLeg[pos][5], end: cache.expensiveLeg[pos][6]});
-					}
-				}
-
-				return {
-					dosubmit: 'cabin',
-					startDate: cache.expensiveLeg[pos][4],
-					endDate: cache.expensiveLeg[pos][4],
-					airCompany: aircompany,
-					start: query.start,
-					end: query.end,
-					other: query.transfer,
-					matchStart: cache.expensiveLeg[pos][5],
-					matchEnd: cache.expensiveLeg[pos][6],
-				}
-			}		
-
-			for(var i = 0; i<cache.expensiveLeg.length; i++){
-				if(cache.expensiveLeg[i]){
-
-					// 存在链式关系
-					avhQuery  = setAvhQuery(i);
-					avhRusult = getAvh(avhQuery);
-
-					// special: setAvhQuery(i, true)
-					mkRoutTpl(avhQuery, recevier.target, recevier.context, 'a')
-
-					if(avhRusult.status){
-						break;
-					}
-				}
-			}
-			if(!avhRusult.status && cache.expensiveLeg.length>2){
-				for(var i = 0; i<cache.expensiveLeg.length; i++){
-					if(cache.expensiveLeg[i]){
-						// 存在链式关系
-
-						// special
-						avhQuery  = setAvhQuery(i, true);
-						avhRusult = getAvh(avhQuery);
-
-						mkRoutTpl(avhQuery, recevier.target, recevier.context, 'a')
-
-						if(avhRusult.status){
-							break;
-						}
-					}
-				}
-			}
-
-			logger("组合后的航段舱位已获取完成，有最低舱位将显示结果！")
-			if(avhRusult.status){
-				getRoutAvhTpl({routAvhQuery: avhQuery, routAvhResult: avhRusult, targetCabin: cache.match[cache.indexCheap][3]}, recevier.target, recevier.context, 'a')
-			}
-		})
-
-
-		// 设置执行链
-		matchInputChain.setNextSuccessor(getXsfdChain)
-									 .setNextSuccessor(getCheapLogChain)
-									 .setNextSuccessor(renderCheckTplChain)
-									 .setNextSuccessor(matchRoutingChain)
-
-		matchInputChain.passRequest(command.pnr);
-
+				// 垃圾回收
+				recevier.progress = null;
+				recevier.mkTable = null;
+				recevier.rmTable = null;
+		});
 	}
 
-	function ssCabin(command){
+	var findAircompany = function(query){
+		recevier.target = 'render'
+		recevier.context = '#content'
+		recevier.progress = progress();
 
-		// 公共静态方法
-		function extend(){
-			
+		// 模板
+		if(recevier.isFunction(render) && typeof recevier.isFunction(rmTable)){
+			recevier.render = render; 
+			recevier.rmTable = rmTable; 
+		}else{
+			console.log("'mkTable' or 'rmTable' haven't added in ")
 		}
 
-		// 请求类
-		var Req = function(){
-			this.url = ""
-			this.query = {} 
-			this.callback = new Function()
-			this.async = false
-		}
-
-		Req.prototype.xfsd = function(query, callback, async){
-			this.url = "/admin/xfsd.php"
-			this.query = query // dosubmit = "cabin" extend(query)
-			this.callback = callback
-			this.async = async
-
-			this.action()
-		}
-
-		Req.prototype.action = function(){
-			// 数据绑定在recevier上
-			recevier.getData(this.url, this.query, this.callback, this.async)
-		}
-
-		// 模块通信订阅对象
-		var Listener = (function(){
-			var _global = this,
-					_eventList = {},
-					listen,
-					trigger,
-					remove
-
-			// 订阅
-			listen = function(key, fn){
-				if(!_eventList[key]){
-					_eventList[key] = []
-				}
-				_eventList[key].push(fn)
-			}
-
-			// 触发
-			trigger = function(){
-				var key = Array.prototype.shift.call(arguments),
-						fns = _eventList[key];
-
-				if(!fns || fns.length === 0){
-					return false;
-				}
-
-				for(var i = 0, fn; fn = fns[i++];){
-					fn.apply(this, arguments);
-				}
-			}
-
-			// 移除
-			remove = function(keys, fn){
-				var fns = _eventList[keys];
-				if(!fns){
-					return false;
-				}
-
-				if(fn){
-					fns && (fns.length = 0);
+		recevier.progress.create('#content-progress');
+		recevier.getData( Controller + 'findAircompany', query, function(data){
+				recevier.rmTable(recevier.target);
+				recevier.progress.complete();
+				if(data.status === 'success'){
+					recevier.render( {'aircompany' : data.result, 'result_flight': data.result_flight}, recevier.target, recevier.context, 'w');
 				}else{
-					for(var l = fns.length; l > 0; l--){
-						var _fn = fns[l]
-						if(_fn === fn){
-							fns.splice(1, 1);
-						}
-					}
+					alert(data.msg);
 				}
-			}
-
-			// API
-			return {
-				listen: listen,
-				trigger: trigger,
-				remove: remove
-			}
-		})()
-
-		// 渲染模型
-		Render = function(){
-			// 渲染函数
-			this.progress = ""
-			this.lab = ""
-		}
-
-		Render.prototype.init = function(){
-			
-		}
-
-		// 航程
-		Leg = function(input){
-
-			this.start = ""
-			this.end = ""
-			this.aicompany = ""
-			this.startDate = ""
-			this.flight = ""
-			this.cabin = ""
-			this.cheapStatus = ""
-
-			// cache 部分
-			this.cache = {
-				// xfsd: {},
-				cabinSeq: [],
-				targetCabin: "",
-				avh: {},
-			}	
-
-			// 请求类
-			this.req = new Req();
-
-			// 初始化
-			this.init(input);
-		}
-
-		// 缓存
-		Leg.prototype.cache = {
-			// xfsd: {}
-		}
-
-		// 初始化
-		Leg.prototype.init = function(input){
-				/* match format:
-					1:"UA858"
-					2:"UA"
-					3:"G"
-					4:"APR17"
-					5:"PVG" start
-					6:"SFO" end
-				*/
-
-				var match = /SS:((\w{2})\d+)\/(\w)\/(\d{2}\w{3})\d{2}\/(\w{3})(\w{3})/g.exec(input);
-
-				this.start = match[5]
-				this.end = match[6]
-				this.aircompany = match[2]
-				this.startDate = match[4]
-				this.flight = match[1]
-				this.cabin = match[3]
-				
-				this.xfsd();
-				console.log(this)
-		}
-
-		// 注册监听事件
-		Leg.prototype.setListener = (function(){
-			Listener.listen("xfsdSucc", function(){
-				Leg.prototype.setCacheXfsd()
-			})
-		})()
-
-		// 保存 xfsd
-		Leg.prototype.setCacheXfsd = function(){
-			if(this.cache.xfsd){
-				return;
-			}
-			this.cache.xfsd = recevier.data.array
-		}
-
-		Leg.prototype.setCacheCabinseq = function(){
-			if(this.cache.Cabinseq){
-				return;
-			}
-			this.cache.Cabinseq = [];
-			for(var i = 0; i < cache.xfsd.array[end].length; i++){
-				this.cache.cabinSeq.push(cache.xfsd.array[end][i].seat);
-			}
-
-			this.cache.Cabinseq = recevier.data.array
-		}
-
-		// 请求 xfsd
-		Leg.prototype.xfsd = function(){
-			this.req.xfsd({
-				dosubmit: '',
-				start: this.start,
-				end: this.end,
-				startDate: this.startDate,
-				aircompany: this.aircompany,
-				private: "",
-				tripType: "",
-			}, function(data){
-				Listener.trigger("xfsdSucc", data)
-			})
-		}
-
-
-		// 工厂模式声明Leg command.pnr -> input
-		var inputArr = isString(command.pnr) && command.pnr.split("\n");
-
-		for (var i = 0; i < inputArr.length; i++){
-			var leg = new Leg(inputArr[i]);
-		}
+					
+				// 垃圾回收
+				recevier.progress = null;
+				recevier.render = null;
+				recevier.rmTable = null;
+		});
 	}
 
+	var searchRouting = function (query){
+		recevier.target = 'table-routing';
+		recevier.context = '#content'
+		recevier.progress = progress();
 
+		// 模板
+		if(recevier.isFunction(mkTable) && typeof recevier.isFunction(rmTable)){
+			recevier.mkTable = mkTable; 
+			recevier.rmTable = rmTable; 
+		}else{
+			console.log("'mkTable' or 'rmTable' haven't added in ")
+		}
+
+		recevier.progress.create('#content-progress');
+		recevier.getData( Controller + 'searchRouting', query, function(data){
+				recevier.rmTable(recevier.target);
+				recevier.progress.complete();
+				if(data.status === 'success'){
+					recevier.mkTable(data, recevier.target, recevier.context, 'w');
+				}else{
+					alert(data.msg);
+				}
+					
+				// 垃圾回收
+				recevier.progress = null;
+				recevier.mkTable = null;
+				recevier.rmTable = null;
+		});
+	}
 
 	return {
 		xfsd: xfsd,                             // 获得xfsd数据，并用table回填到页面中
@@ -1767,20 +1053,19 @@ var createCommand = function(recevier, tpl){
 		appendPolicy: appendPolicy,             // 向XFSD回填使用规则
 		fare: fare,                             // fare页面获取使用规则
 		rate: rate,                             // 汇率
-		updataDB: updataDB,                     // 上传至数据库
 		mixCabin: mixCabin,                     // 混舱
 		clearMixCabin: clearMixCabin,           // 清楚混舱数据
 		mixCabinByTpl: mixCabinByTpl,           // 通过模板混舱
 		avh: avh,                               // Eterm 的舱位查询 avh 
 		avSabre: avSabre,                       // Sabre 的舱位查询 av 
-		checkOpen: checkOpen,                   // 检查客票状态
 		planAvSabre: planAvSabre,               // sabre计划任务舱位展示
 		planAvhEterm: planAvhEterm,             // eterm计划任务舱位展示
 		checkSignin: checkSignin,               // 登录配置检查
 		productModify: productModify,           // 产品调价（淘宝）
-		pnr: pnr,                               // 解析pnr 返回ss后最低舱位
-		ssCabin: ssCabin,                       // 解析ss 返回航程最低舱位
 		addCabin: addCabin,                     // 手工添加混舱
+		basisAircompany: basisAircompany,       // 基础数据：查询全部航空公司
+		findAircompany: findAircompany,         // 基础数据：查询某航空公司
+		searchRouting: searchRouting,           // 合成数据：查询航路
 	}
 }
 

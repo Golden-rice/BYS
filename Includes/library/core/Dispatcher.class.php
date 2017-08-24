@@ -24,24 +24,25 @@ class Dispatcher {
 		);
 
 		// 是否为URL伪静态访问
-		if(isset($_SERVER['PATH_INFO'])) {
+		if ( isset($_SERVER['PATH_INFO']) )
 			$_SERVER['PATH_INFO'] = trim($_SERVER['PATH_INFO'], '/');
+		else
+			$_SERVER['PATH_INFO'] =  "";
 
 			if ($_SERVER['PATH_INFO'] != ""){
-				$paths = explode("/", $_SERVER['PATH_INFO']);
-
+				$paths      = explode("/", $_SERVER['PATH_INFO']);
 				// 加载应用
-				$app = $paths[0];
+				$app        = $paths[0];
 				// 加载控制器
 				$controller = $paths[1];
 				// 加载方法
-				$action = $paths[2];
+				$action     = $paths[2];
 			}
 			// 默认设置
 			elseif(BYS::$default['default']){
-				$app = BYS::$default['default']['app'];
+				$app        = BYS::$default['default']['app'];
 				$controller = BYS::$default['default']['controller'];
-				$action = BYS::$default['default']['action'];
+				$action     = BYS::$default['default']['action'];
 			}
 
 			// 加载参数
@@ -63,15 +64,15 @@ class Dispatcher {
 
 			}else{ 
 				if( !is_dir("/app/$app")){
+					echo $localfiles.$path;
 					Report::error("无该应用");
 				}elseif( !is_file($path) ){
+					echo $localfiles.$path;
 					Report::error("无该控制器");
 				}
 				exit;
 			}
-		}else{
 
-		}
 
 		// 拆分APP、模块、控制器、动作
 
