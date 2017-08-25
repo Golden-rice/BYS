@@ -113,7 +113,11 @@ class Xfsd extends Eterm{
     	preg_match_all("/\[CDATA\[(.*?)\]\]/is", $data, $newFile);
 
 		foreach ($newFile[1] as $pageNum => $Page) {
-    	   $pageNum == 0 ? $this->getSeat($Page, 1) : $this->getSeat($Page, 0);
+    	    if($pageNum == 0){
+                $this->getSeat($Page, 1);
+            }else{
+                $this->getSeat($Page, 0);
+            }
     	} 
         $this->org_arr = $this->arr;   	
 	}
@@ -135,13 +139,13 @@ class Xfsd extends Eterm{
             $fare = preg_replace('/\s*/', "", substr($dataline, $pos, 8));                // fare 
             $special = substr($dataline, $pos+9,1);            // 特殊规则
             preg_match_all("/ADVP\s*([0-9]{1,2}D)/",$dataline, $advp);
-            $ADVPDay = isset($advp[1][0])? $advp[1][0] : '';             // ADVP 
+            $ADVPDay = isset($advp[1][0])? $advp[1][0]:'';             // ADVP 
 
             if(substr($dataline, $pos+23, 6) != "      "){
                 $singleLineFee = "";
-                $backLineFee = isset($res[1][0])?$res[1][0]:$res[1][1];   // 往返价格 //substr($dataline, $pos+23, 6);
+                $backLineFee = $res[1][0]?$res[1][0]:$res[1][1];   // 往返价格 //substr($dataline, $pos+23, 6);
             }else{
-                $singleLineFee = isset($res[1][0])?$res[1][0]:$res[1][1];
+                $singleLineFee = $res[1][0]?$res[1][0]:$res[1][1];
                 $backLineFee = "";
             }      
             $seat = substr($dataline, $pos+30, 1);             // 舱位
@@ -151,7 +155,7 @@ class Xfsd extends Eterm{
             $allowDateEnd = substr($dataline, $pos+46, 5);     // 适用截止结束日期
             $reTicket = substr($dataline, $pos+52, 5);         // 退票规则
             preg_match_all('/[D]\s\d+/', substr($dataline, $pos+58), $arrWeek);
-            $allowWeek  = isset($arrWeek) ? '1234567':substr($arrWeek[0][0], 2);            // 可用周期
+            $allowWeek  = isset($arrWeek[0])? '1234567':substr($arrWeek[0][0],2);            // 可用周期
             
             // 回填数据
             $this->arr[$key] = array(
