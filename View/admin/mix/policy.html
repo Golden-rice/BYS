@@ -8,13 +8,13 @@
 
 				<div class="form-inline">
 						<div class="input-group">
-							<span class="input-group-addon" id="input-start">出发</span><input type="text" name='start' id='start'  aria-describedby="input-start" class='form-control' onblur="upper(this)" style='width:100px'>
+							<span class="input-group-addon" id="input-start">出发</span><input type="text" name='start' id='start'  aria-describedby="input-start" placeholder='机场代码' class='form-control' onblur="upper(this)" style='width:100px'>
 
-							<span class="input-group-addon" id="input-end">到达</span><input type="text" name='end' id='end' aria-describedby="input-end" class='form-control'  onblur="upper(this)" style='width:100px'>
+							<span class="input-group-addon" id="input-end">到达</span><input type="text" name='end' id='end' aria-describedby="input-end" placeholder='机场代码' class='form-control'  onblur="upper(this)" style='width:100px'>
 
 							<span class="input-group-addon" id="input-startDate">日期</span><input type="text" name='startDate' id='startDate'  aria-describedby="input-startDate" class='form-control datetimepicker'  onblur="upper(this)"  style='width:100px'>
 
-							<span class="input-group-addon" id="input-aircompany">航空公司</span><input type="text" name='aircompany' id='aircompany' aria-describedby="input-aircompany" class='form-control'  onblur="upper(this)"  style='width:100px'>
+							<span class="input-group-addon" id="input-aircompany">航空公司</span><input type="text" name='aircompany' id='aircompany' aria-describedby="input-aircompany" placeholder='两字码' class='form-control'  onblur="upper(this)"  style='width:100px'>
 						</div>
 							
 						<div class="input-group">
@@ -23,16 +23,19 @@
 							</label>
 
 							<label class="radio-inline">
-								<input type="radio" id='sigleLine' class='tripType' name="tripType" value='*OW'> 单程
+								<input type="radio" id='sigleLine' class='tripType' name="tripType" value='OW'> 单程
 							</label>
 								
 							<label class="radio-inline">
-								<input type="radio" id='cbackLine' class='tripType' name="tripType" value='*RT'> 往返
+								<input type="radio" id='cbackLine' class='tripType' name="tripType" value='RT'> 往返
 							</label>	
 						</div>
 							
 						<div class="input-group">
 							<input type="submit" name='dosubmit' id="dosubmit" value="查询" class='btn btn-primary'>
+						</div>	
+						<div class="input-group">
+							<input type="button" id="test" value='test' class='btn btn-default'>
 						</div>	
 						
 				</div>
@@ -53,21 +56,23 @@ var setCommend = function(command){
 
 	// 测试
 	$('#test').click(function(){
-		command.searchRouting({
-			airCompany: 'UA',
+		command.searchComposePolicy({
 			dep: 'PEK',
-			arr: 'LAX'
+			arr: 'EWR',
+			date:       '2017-09-05',
+			aircompany: 'UA',
+			tripType:   'RT',
 		})
-
-		// command.basisAircompany()
 	})
 
 	// 开始查询
 	$('#dosubmit').click(function(){
-		command.searchRouting({
-			airCompany: $('#airCompany').val(),
-			dep: $('#start').val(),
-			arr: $('#end').val()
+		command.searchComposePolicy({
+			dep:        $('#start').val(),
+			arr:        $('#end').val(),
+			date:       $('#startDate').val(),
+			aircompany: $('#aircompany').val(),
+			tripType:   $(".tripType:checked").val(),
 		})
 	})
 
@@ -277,10 +282,13 @@ function mkTable(data, dom, wrap, type){
 }
 
 
-
+$(function(){
+	$('.nav>li').removeClass('active');
+	$('.nav>.policy').addClass('active');
 })
 
 
+})
 
 </script>
 <{/block}>

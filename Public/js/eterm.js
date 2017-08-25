@@ -1045,6 +1045,37 @@ var createCommand = function(recevier, tpl){
 		});
 	}
 
+	var searchComposePolicy = function(query){
+		recevier.target = 'table-policy';
+		recevier.context = '#content'
+		recevier.progress = progress();
+
+		// 模板
+		if(recevier.isFunction(mkTable) && typeof recevier.isFunction(rmTable)){
+			recevier.mkTable = mkTable; 
+			recevier.rmTable = rmTable; 
+		}else{
+			console.log("'mkTable' or 'rmTable' haven't added in ")
+		}
+
+		recevier.progress.create('#content-progress');
+		recevier.getData( Controller + 'searchComposePolicy', query, function(data){
+				recevier.rmTable(recevier.target);
+				recevier.progress.complete();
+				if(data.status === 'success'){
+					console.log(data)
+					// recevier.mkTable(data, recevier.target, recevier.context, 'w');
+				}else{
+					alert(data.msg);
+				}
+					
+				// 垃圾回收
+				recevier.progress = null;
+				recevier.mkTable = null;
+				recevier.rmTable = null;
+		});	
+	}
+
 	return {
 		xfsd: xfsd,                             // 获得xfsd数据，并用table回填到页面中
 		selected: selected,                     // 选择
@@ -1066,6 +1097,7 @@ var createCommand = function(recevier, tpl){
 		basisAircompany: basisAircompany,       // 基础数据：查询全部航空公司
 		findAircompany: findAircompany,         // 基础数据：查询某航空公司
 		searchRouting: searchRouting,           // 合成数据：查询航路
+		searchComposePolicy: searchComposePolicy,// 合成数据：查询政策
 	}
 }
 

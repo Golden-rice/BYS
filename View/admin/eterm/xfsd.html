@@ -10,9 +10,9 @@
 		  <div class="panel-body">
 				<div class="form-inline">
 						<div class="input-group">
-							<span class="input-group-addon" id="input-start">出发</span><input type="text" name='start' id='start' value='' aria-describedby="input-start" class='form-control' onblur="upper(this)" style='width:100px'>
+							<span class="input-group-addon" id="input-start">出发</span><input type="text" name='start' id='start' placeholder='机场代码' aria-describedby="input-start" class='form-control' onblur="upper(this)" style='width:100px'>
 
-							<span class="input-group-addon" id="input-end">到达</span><input type="text" name='end' id='end' value='' aria-describedby="input-end" class='form-control' placeholder='多城市","分割' onblur="upper(this)">
+							<span class="input-group-addon" id="input-end">到达</span><input type="text" name='end' id='end' value='' aria-describedby="input-end" class='form-control' placeholder='多出发","分割' onblur="upper(this)">
 
 							<span class="input-group-addon" id="input-startDate">日期</span><input type="text" name='startDate' id='startDate' value='' aria-describedby="input-startDate" class='form-control'  onblur="upper(this)"  style='width:100px'>
 
@@ -448,35 +448,6 @@ var setCommend = function(command){
 
 	})
 
-	$('#remove').click(function(){
-		if( $('#command').val() !== "" ){
-
-		}else{
-
-			// command.xfsd({
-			// 	dosubmit: "",
-			// 	remove: 1,
-			// 	start: 'BJS',
-			// 	end: 'NGO',
-			// 	startDate: '15FEB',
-			// 	aircompany: 'EY',
-			// 	private: 'C*BNK73'
-			// })
-
-			command.xfsd({
-				dosubmit: "",
-				remove: 1,
-				start: 'PEK',
-				end: 'CDG',
-				startDate: '28FEB',
-				aircompany: 'AF',
-				private: ''
-			})
-
-		}
-
-		$('#allPolicy').attr('removeRuntime',1);
-	})
 
 }
 

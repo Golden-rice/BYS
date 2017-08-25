@@ -43,16 +43,60 @@ class BasisController extends Controller {
     }
 
     public function searchRouting(){
-        $flight     = model('flight');
-        $result_dep = $flight -> where("Fli_Airport = '{$_POST['airCompany']}' AND Fli_Dep = '{$_POST['dep']}'") -> select(); // 出发结果
-        $result_arr = $flight -> where("Fli_Airport = '{$_POST['airCompany']}' AND Fli_Arr = '{$_POST['arr']}'") -> select(); // 到达结果
+        $flight           = model('flight');
+        $toCity           = model('AirportCityCode');
+        $aircompany       = $_POST['airCompany'];
+        $dep              = $_POST['dep'];
+        $arr              = $_POST['arr'];
+        $result_out_first = $flight -> where("Fli_Airport = '{$aircompany}' AND Fli_Dep = '{$dep}'") -> select(); // 出境第一段结果
+        $result_out_second= $flight -> where("Fli_Airport = '{$aircompany}' AND Fli_Arr = '{$arr}'") -> select(); // 出境第二段结果
+        $result_in_first  = $flight -> where("Fli_Airport = '{$aircompany}' AND Fli_Dep = '{$arr}'") -> select(); // 回境第一段到达结果
+        $result_in_second = $flight -> where("Fli_Airport = '{$aircompany}' AND Fli_Arr = '{$dep}'") -> select(); // 回境第二段到达结果
 
-        if($result_dep && $result_arr) {
-            echo json_encode(array('status' => 'success', 'result_dep'=>$result_dep, 'result_arr'=>$result_arr));
+        // 转换城市代码
+        $depCityResult = $toCity -> where("`ACC_Code` = '{$dep}'")->select();
+        $arrCityResult = $toCity -> where("`ACC_Code` = '{$arr}'")->select();
+        $depCity       = $depCityResult['ACC_CityCode'];
+        $arrCity       = $arrCityResult['ACC_CityCode'];
+        // 携程低价中的航路
+        import('vender/api/OpenApi.class.php');
+        $api = new \Api\OpenApi;
+        $url = "https://Intlflightapi.ctrip.com/Intlflightapi/LowPrice.asmx?WSDL";
+        $ctripOutboundTravelDate = date('Y-m-d', time()+24*60*60); // 明天 
+        $ctripInboundTravelDate  = date('Y-m-d', time()+7*24*60*60); // 明天+ 7 
+        $query = array(
+            'TripType'=> 'RT',// OW: RT
+            'DepartCity'=> $depCity,
+            'ArriveCity'=> $arrCity,
+            'Owner'=> $aircompany,
+            'SeatGrade'=> 'Y', // F头等舱:C公务舱:W:超级经济舱:Y经济舱
+            'OutboundTravelDate'=> $ctripOutboundTravelDate, 
+            'InboundTravelDate'=> $ctripInboundTravelDate, 
+            'ProductType'=> 'ALL', // PRIFARE : PUBFARE : ALL
+            'PassengerNum'=> '1', 
+            'PassengerEligibility'=>'ADT', // ADT普通: STU学生: LAB劳工: EMI移民: SEA海员
+            'IsHasTax'=> 'False', // True: False
+            'LowPriceSort'=> 'TripType' // Price 外放总价: TripType 行程
+            );
+        $xml = $api->requestXML(9, $query, $url);
+        $result = simplexml_load_string($xml);
+        if($result_out_first && $result_out_second) {
+            echo json_encode(array(
+            'status'        => 'success', 
+            'outboundFirst' => $result_out_first, 
+            'outboundSecond'=> $result_out_second,
+            'inboundFirst'  => $result_in_first,
+            'inboundSecond' => $result_in_second, 
+            'lowprice'      => $result->LowPriceResponse->InfoList, // 
+            'ctripTravelDate' => array(
+                'outboundTravelDate' => $ctripOutboundTravelDate,
+                'inboundTravelDate'  => $ctripInboundTravelDate,
+            )
+            )); 
         }else{
             echo json_encode(array('status' => 'error', 'msg' => '出现错误'));
         }   
-
+        // fsi 检验
     }
 
     // 机场城市代码 basis_airport_city_code <- basis_country | 城市表

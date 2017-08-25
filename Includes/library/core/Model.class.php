@@ -132,6 +132,15 @@
 	 	}
 
 	 	/**
+		 * 准备查询数据
+		 * @return mix 结果
+		 */
+	 	public function preSelect(){
+	 		$sql = "SELECT * FROM ".$this->tableName.$this->where;
+	 		$this->prepare($sql);
+	 	}
+
+	 	/**
 		 * 更新一条数据
 		 * @return mix 结果
 		 */	 	
