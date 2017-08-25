@@ -142,6 +142,10 @@ class EtermController extends Controller {
   	foreach ($array as $end => $list) {
   		if(!isset($list['id'])) continue;
   		for($i = 0; $i < count($list)-6; $i++){
+  			if(!isset($list[$i])) {
+  				var_dump($list[$i]);
+  				break;
+  			}
   			$value = $list[$i];
 	    	$addAll[] = array(
 	    		//  fareKey 关键字：dep_city/arr_city/airline/pax_type/source/source_office/source_agreement/other(其他字段)/fare_date
