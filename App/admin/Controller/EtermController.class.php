@@ -56,13 +56,8 @@ class EtermController extends Controller {
 			'from'=> $from
 		);
 
-		$command = 'XS/FSD'.$start.$end.'/'.$startDate .'/'.$aircompany.'/'.'#*'.$fare.$identity;
-
-		if($from != '公布运价'){
-			$command = $command.'///#'.$from;
-		}
-
-		$array = empty($_POST['index']) ? $fsd->fare(array(0,1,2), $date, $command) : $fsd->fare(array(0=>$_POST['index'],1,2), $date, $command); 	
+		$command = 'XS/FSD'.$start.$end.'/'.$startDate .'/'.$aircompany.'/'.'#*'.$fare.$identity.($from != '公布运价' ? '///#'.$from : '');
+		$array  = empty($_POST['index']) ? $fsd->fare(array(0,1,2), $date, $command) : $fsd->fare(array(0=>$_POST['index'],1,2), $date, $command); 	
 		
 		echo json_encode(array('command'=> $command,'aircompany'=> $aircompany, 'fare'=> $fare, 'array'=>$this->assignItem($array), 'data'=>$array) ); 
   }
@@ -90,7 +85,7 @@ class EtermController extends Controller {
 			// 开始查询
 			$xfsd->command($command, "w");
 
-			$result = $this->hasXfsdSource(array('command' => $command, 'firstPage' => $xfsd->getFirstPage()));
+			$result = $this->hasXfsdSource(array('command' => $command));
 
 			if( $result ){ 
 			// 数据库中有数据，查询旧source数据作为tmp
@@ -142,22 +137,20 @@ class EtermController extends Controller {
   	foreach ($array as $end => $list) {
   		if(!isset($list['id'])) continue;
   		for($i = 0; $i < count($list)-6; $i++){
-  			if(!isset($list[$i])) {
-  				var_dump($list[$i]);
-  				break;
-  			}
+  			if(!isset($list[$i])) break;
+  			
   			$value = $list[$i];
 	    	$addAll[] = array(
 	    		//  fareKey 关键字：dep_city/arr_city/airline/pax_type/source/source_office/source_agreement/other(其他字段)/fare_date
-					'FareKey'    => "{$value['start']}/{$value['end']}/{$list['aircompany']}/ADT/{$_SESSION['resource']}/{$list['from']}/{$list['other']}/".date('Ymd',strtotime($list['startDate'])), 
+					'FareKey'        => "{$value['start']}/{$value['end']}/{$list['aircompany']}/ADT/{$_SESSION['resource']}/{$list['from']}/{$list['other']}/".date('Ymd',strtotime($list['startDate'])), 
 					// 命令
-					'Command'    => $list['command'],
+					'Command'        => $list['command'],
 					// 状态：-2 已知错误发生 -1 失败 0 等待 1 进行中 2 成功
-					'Status'     => 2,
+					'Status'         => 2,
 					// OFFICE 号
-					'Office'     => $_SESSION['resource'],
+					'Office'         => $_SESSION['resource'],
 					// source id
-					'Sid'        => $list['id'],
+					'Sid'            => $list['id'],
 					// fare FareBasis
 					'FareBasis'      => $value['fare'],
 					// special 特殊规则
@@ -200,15 +193,27 @@ class EtermController extends Controller {
 	// 查询command，如果存在，且不只一条，比较他们的firstpage，如果相同，则返回这个source。如果不相同，则返回false
 	// 更新功能
   private function hasXfsdSource($array = array()){
-  	$m_xfsd = model('xfsd_source');
-  	$result = $m_xfsd ->where('`command` ="'.$array['command'].'" ')->select();
+  	import('vender/eterm/app.php');
+
+  	
+  	$m_xfsd    = model('xfsd_source');
+  	$result    = $m_xfsd ->where('`command` ="'.$array['command'].'" ')->select();
 
   	// 为空时
   	if(!$result || count($result) == 0) return false;
 
-  	foreach ($result as $rows => $cols) {
-  		if(isset($array['firstPage']) && $flength = strlen($array['firstPage'])  ){
-  			if ( isset($cols['Detail']) && $array['firstPage'] == substr($cols['Detail'], 0 , $flength) ) 
+  	foreach ($result as $cols) {
+  		// 一天的保留时间
+  		if( $cols['GmtModified'] + 24*60*60 >= time() ) {
+  			return $cols['Detail'];
+  		}
+  		else{
+  			$xfsd       = new \Xfsd($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
+  			$firstPage = $xfsd->getFirstPage();
+  		}
+  		// 第一页
+  		if(is_string($firstPage) && $flength = strlen($firstPage)  ){
+  			if ( isset($cols['Detail']) && $firstPage == substr($cols['Detail'], 0 , $flength) ) 
   				return $cols['Detail'];
   		}
   	}
@@ -300,7 +305,7 @@ class EtermController extends Controller {
 					$command = $repeat['pos'] == 'start' ? 'AVH/'.$value.$end.$date.$startTime.$other.'/'.$airCompany : 'AVH/'.$start.$value.$date.$startTime.$other.'/'.$airCompany;
 					$result  = $this->hasAvhSource(array('command'=>$command));
 
-					if ( isset($result['GmtModified']) && $result['GmtModified'] + 24*60*6*1000 < time() ){ 
+					if ( isset($result['GmtModified']) && $result['GmtModified'] + 24*60*60 < time() ){ 
 						// 有且存储时间大于一天，更新
 						$avh->command($command, "w", false);
 						$array[$value] = array_merge($array[$value], $avh->analysis(array(1,2,6)));
@@ -308,7 +313,7 @@ class EtermController extends Controller {
 						// 更新result
 						$this->updateAvhResult($array[$value], $id, $command);
 					}
-					elseif( isset($result['GmtModified']) && $result['GmtModified'] + 24*60*6*1000 >= time()){
+					elseif( isset($result['GmtModified']) && $result['GmtModified'] + 24*60*60 >= time()){
 						// 有，但是储存时间不大于一天，读取数据库数据
 						$avh->wtTmp($result['Detail']);
 						$array[$value] = array_merge($array[$value], $avh->analysis(array(1,2,6)));
