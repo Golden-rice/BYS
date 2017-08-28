@@ -111,7 +111,7 @@ class EtermController extends Controller {
 		}
 
 		// 保存解析结果
-		$this->saveXfsdResult($array);
+		// $this->saveXfsdResult($array);
 		echo json_encode(array('array'=>$array, 'time'=>'更新时间：'.date('Y-m-d H:i:s', $xfsd->fileTime)) );
   }
 
@@ -195,14 +195,21 @@ class EtermController extends Controller {
   private function hasXfsdSource($array = array()){
   	import('vender/eterm/app.php');
 
-  	
   	$m_xfsd    = model('xfsd_source');
   	$result    = $m_xfsd ->where('`command` ="'.$array['command'].'" ')->select();
 
   	// 为空时
   	if(!$result || count($result) == 0) return false;
 
-  	foreach ($result as $cols) {
+  	if(isset($result[0])){
+  		// 不只一条
+  		$cols = $result[count($result)-1];
+  	}else{
+	  	// 仅一条
+	  	$cols = $result;
+  	}
+
+  	// foreach ($result as $cols) {
   		// 一天的保留时间
   		if( $cols['GmtModified'] + 24*60*60 >= time() ) {
   			return $cols['Detail'];
@@ -216,7 +223,7 @@ class EtermController extends Controller {
   			if ( isset($cols['Detail']) && $firstPage == substr($cols['Detail'], 0 , $flength) ) 
   				return $cols['Detail'];
   		}
-  	}
+  	// }
   	return false;
   }
 

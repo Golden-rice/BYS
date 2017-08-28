@@ -126,37 +126,36 @@ class Xfsd extends Eterm{
         // update by xiaojia
 
         preg_match('/\s(\w{3})(\w{3})\/(\w{2})/',$this->startKey, $str);
-        $start = $str[1];
-        $end = $str[2];
-        $direction = $str[3];
+        $start       = $str[1];
+        $end         = $str[2];
+        $direction   = $str[3];
         foreach($arr as $key => $dataline){
             preg_match_all("/\/?\s+([0-9]*\.?[0-9]{0,2})\s*\/[A-Z]{1}/is",$dataline,$res);
-            $index = substr($dataline, 0, 3);                  // 序号
-            $pos = 3;
+            $index   = substr($dataline, 0, 3);                  // 序号
+            $pos     = 3;
             if(intval($index) > 99){
                 $pos = 4;
             }
-            $fare = preg_replace('/\s*/', "", substr($dataline, $pos, 8));                // fare 
+            $fare    = preg_replace('/\s*/', "", substr($dataline, $pos, 8));                // fare 
             $special = substr($dataline, $pos+9,1);            // 特殊规则
             preg_match_all("/ADVP\s*([0-9]{1,2}D)/",$dataline, $advp);
-            $ADVPDay = isset($advp[1][0])? $advp[1][0]:'';             // ADVP 
+            $ADVPDay = empty($advp[0])?'':$advp[1][0];             // ADVP 
 
             if(substr($dataline, $pos+23, 6) != "      "){
                 $singleLineFee = "";
-                $backLineFee = $res[1][0]?$res[1][0]:$res[1][1];   // 往返价格 //substr($dataline, $pos+23, 6);
+                $backLineFee   = $res[1][0]?$res[1][0]:$res[1][1];   // 往返价格 //substr($dataline, $pos+23, 6);
             }else{
                 $singleLineFee = $res[1][0]?$res[1][0]:$res[1][1];
-                $backLineFee = "";
+                $backLineFee   = "";
             }      
-            $seat = substr($dataline, $pos+30, 1);             // 舱位
-            $minStay = substr($dataline, $pos+32, 3);          // 最低滞留时间
-            $maxStay = substr($dataline, $pos+36, 3);          // 最长滞留时间
-            $allowDateStart = substr($dataline, $pos+40, 5);   // 适用截止起始日期
-            $allowDateEnd = substr($dataline, $pos+46, 5);     // 适用截止结束日期
-            $reTicket = substr($dataline, $pos+52, 5);         // 退票规则
+            $seat            = substr($dataline, $pos+30, 1);   // 舱位
+            $minStay         = substr($dataline, $pos+32, 3);   // 最低滞留时间
+            $maxStay         = substr($dataline, $pos+36, 3);   // 最长滞留时间
+            $allowDateStart  = substr($dataline, $pos+40, 5);   // 适用截止起始日期
+            $allowDateEnd    = substr($dataline, $pos+46, 5);     // 适用截止结束日期
+            $reTicket        = substr($dataline, $pos+52, 5);         // 退票规则
             preg_match_all('/[D]\s\d+/', substr($dataline, $pos+58), $arrWeek);
-            $allowWeek  = isset($arrWeek[0])? '1234567':substr($arrWeek[0][0],2);            // 可用周期
-            
+            $allowWeek       = empty($arrWeek[0])? '1234567':substr($arrWeek[0][0],2);            // 可用周期
             // 回填数据
             $this->arr[$key] = array(
                 'index'=>$index, 
