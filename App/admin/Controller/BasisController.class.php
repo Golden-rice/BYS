@@ -26,13 +26,14 @@ class BasisController extends Controller {
         $aircompany = model('aircompany');
         $flight     = model('flight');
         $result     = $aircompany -> where("Air_Code = '{$_POST['airCompanyCode']}'") -> select(); // 
-        if($result['Air_Code'])
-            $result_flight = $flight -> where("Fli_Airport = '{$result['Air_Code']}'") -> select(); // 
+        $col        = $result[0];
+        if($col['Air_Code'])
+            $result_flight = $flight -> where("Fli_Airport = '{$col['Air_Code']}'") -> select(); // 
         else
             $result_flight = array();
 
-        if($result) {
-            echo json_encode(array('status' => 'success', 'result'=>$result, 'result_flight'=>$result_flight));
+        if(!empty($result_flight[0])) {
+            echo json_encode(array('status' => 'success', 'result'=>$col, 'result_flight'=>$result_flight));
         }else{
             echo json_encode(array('status' => 'error', 'msg' => '出现错误'));
         }   
@@ -56,8 +57,8 @@ class BasisController extends Controller {
         // 转换城市代码
         $depCityResult = $toCity -> where("`ACC_Code` = '{$dep}'")->select();
         $arrCityResult = $toCity -> where("`ACC_Code` = '{$arr}'")->select();
-        $depCity       = $depCityResult['ACC_CityCode'];
-        $arrCity       = $arrCityResult['ACC_CityCode'];
+        $depCity       = $depCityResult[0]['ACC_CityCode'];
+        $arrCity       = $arrCityResult[0]['ACC_CityCode'];
         // 携程低价中的航路
         import('vender/api/OpenApi.class.php');
         $api = new \Api\OpenApi;

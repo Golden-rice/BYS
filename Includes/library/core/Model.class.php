@@ -128,7 +128,15 @@
 	 	public function select(){
 	 		$sql = "SELECT * FROM ".$this->tableName.$this->where;
 	 		$this->prepare($sql);
-	 		return $this->execute();
+	 		$result = $this->execute();
+
+	 		// 如果有结果均按数组返回
+	 		if(is_array($result) && isset($result[0])){
+		 		return $result;
+	 		}else{
+	 			return array(0=>$result);
+	 		}
+	 		return $result;
 	 	}
 
 	 	/**

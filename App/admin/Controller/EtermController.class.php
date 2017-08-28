@@ -199,17 +199,9 @@ class EtermController extends Controller {
   	$result    = $m_xfsd ->where('`command` ="'.$array['command'].'" ')->select();
 
   	// 为空时
-  	if(!$result || count($result) == 0) return false;
+  	if(!$result || empty($result[0]) == 0) return false;
 
-  	if(isset($result[0])){
-  		// 不只一条
-  		$cols = $result[count($result)-1];
-  	}else{
-	  	// 仅一条
-	  	$cols = $result;
-  	}
-
-  	// foreach ($result as $cols) {
+  	foreach ($result as $cols) {
   		// 一天的保留时间
   		if( $cols['GmtModified'] + 24*60*60 >= time() ) {
   			return $cols['Detail'];
@@ -223,7 +215,7 @@ class EtermController extends Controller {
   			if ( isset($cols['Detail']) && $firstPage == substr($cols['Detail'], 0 , $flength) ) 
   				return $cols['Detail'];
   		}
-  	// }
+  	}
   	return false;
   }
 
@@ -423,7 +415,7 @@ class EtermController extends Controller {
   	$m_avh->where('`command` = "'.$array['command'].'" ')->update($update);
   	// 仅有一条
   	$result = $m_avh->where('`command` = "'.$array['command'].'" ')->select();
-  	return $result['Id'];
+  	return $result[0]['Id'];
 	}
 
 	// 保存 avh_source
@@ -444,10 +436,10 @@ class EtermController extends Controller {
   	$result = $m_avh ->where('`command` ="'.$array['command'].'" ')->select();
 
   	// 为空返回false
-  	if(!$result || count($result) == 0) return false;
-
-		if ( isset($result['Command']) && $array['command'] == $result['Command'] ) 
-			return array('Detail' =>$result['Detail'], 'GmtModified' =>$result['GmtModified'] );
+  	if(!$result || empty($result[0]) == 0) return false;
+  	$col = $result[0]; // 仅一条
+		if ( isset($col['Command']) && $array['command'] == $col['Command'] ) 
+			return array('Detail' =>$col['Detail'], 'GmtModified' =>$col['GmtModified'] );
 
   	return false;
 	}
