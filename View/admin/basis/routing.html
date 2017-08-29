@@ -1,6 +1,6 @@
 <{extends file='../layout.html'}>
 
-<{block name="title"}>航程<{/block}>
+<{block name="title"}>航路<{/block}>
 <{block name="content"}>
 
 <div class="panel panel-default">
@@ -32,9 +32,54 @@
 <div id="content-progress"></div>
 <div id="content"></div>
     
+<!-- other modal -->
+<div class="modal fade" id="otherModal" tabindex="-1" role="dialog" aria-labelledby="modalLabel">
+  <div class="modal-dialog modal-lg" role="document" >
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="modalLabel"> </h4>
+      </div>
+      <!-- modal header -->
+
+      <div class="modal-body">
+        <div id="modal-content">
+            
+
+        </div>
+      </div>
+      <!-- modal body -->
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+      </div>
+      <!-- modal footer -->
+
+    </div>
+  </div>
+</div>
+<!-- other modal end -->
+
 <script>
 require(['eterm', 'dt'], function (eterm, dt){
 
+// 弹出框   
+var OtherModel = function(title, content, footer){
+
+    $("#otherModal .modal-title").html(title);
+    $("#otherModal #modal-content").html(content);
+    $("#otherModal .modal-footer").html(footer);
+
+    return {
+        hide: function(){
+            $("#otherModal").modal("hide");
+        },
+        show: function(){
+            $("#otherModal").modal();
+        }
+    }
+}
 
 var setCommend = function(command){
 
@@ -69,140 +114,150 @@ var tpl = {
 setCommend(eterm.createCommand(eterm.eterm,tpl));
 
 function mkTable(data, dom, wrap, type){
-	console.log(data)
-		let html = '', 
-				routingBy1 = [], outbound = [], inbound = [],
-				appendType = type !== ""? type : 'w',
-		  	context = wrap !== "" ? wrap : document;
+
+	let html = '', 
+		routingBy1 = [], outbound = [], inbound = [],
+		appendType = type !== ""? type : 'w',
+	  	context = wrap !== "" ? wrap : document;
 
 
-		  	// 匹配1个中转
-		  	var matchRoutingPart = function(firstPart, secondPart){
-		  		var dep = '', arr = '', cur_arr = '', cur_dep = '', routingPart = [];
-			  	for(var i in firstPart){
-			  		firstDepartrue = firstPart[i];
-			  		dep            = firstDepartrue.Fli_Dep;
-			  		cur_arr        = firstDepartrue.Fli_Arr;
+  	// 匹配1个中转
+  	var matchRoutingPart = function(firstPart, secondPart){
+  		var dep = '', arr = '', cur_arr = '', cur_dep = '', routingPart = [];
+	  	for(var i in firstPart){
+	  		firstDepartrue = firstPart[i];
+	  		dep            = firstDepartrue.Fli_Dep;
+	  		cur_arr        = firstDepartrue.Fli_Arr;
 
-			  		for (var j in secondPart){
-			  			secondDeparture  = secondPart[j];
-			  			cur_dep          = secondDeparture.Fli_Dep;
-			  			arr              = secondDeparture.Fli_Arr;
+	  		for (var j in secondPart){
+	  			secondDeparture  = secondPart[j];
+	  			cur_dep          = secondDeparture.Fli_Dep;
+	  			arr              = secondDeparture.Fli_Arr;
 
-			  			if(cur_arr == cur_dep ){
-					  		var cur_arr_time = new Date(2017, 8, 21, firstDepartrue.Fli_ArrTime.substr(0,2), firstDepartrue.Fli_ArrTime.substr(2,2), 0).getTime();
-				  			var cur_dep_time = new Date(2017, 8, 21, secondDeparture.Fli_DepTime.substr(0,2), secondDeparture.Fli_DepTime.substr(2,2), 0).getTime();
+	  			if(cur_arr == cur_dep ){
+			  		var cur_arr_time = new Date(2017, 8, 21, firstDepartrue.Fli_ArrTime.substr(0,2), firstDepartrue.Fli_ArrTime.substr(2,2), 0).getTime();
+		  			var cur_dep_time = new Date(2017, 8, 21, secondDeparture.Fli_DepTime.substr(0,2), secondDeparture.Fli_DepTime.substr(2,2), 0).getTime();
 
-			  				if( cur_dep_time - cur_arr_time > 0 ){
-				  				routingPart.push({
-				  					'routing': dep + '-' + cur_arr + '-' + arr,
-				  					'flight': firstDepartrue.Fli_Flight + '(' + firstDepartrue.Fli_SupportType + ')' + '-' + secondDeparture.Fli_Flight + '(' + secondDeparture.Fli_SupportType + ')',
-				  					'time': firstDepartrue.Fli_DepTime + '-' + firstDepartrue.Fli_ArrTime + '(' + firstDepartrue.Fli_Fly + ')'+ '-' + secondDeparture.Fli_DepTime + '-' + secondDeparture.Fli_ArrTime + '(' + secondDeparture.Fli_Fly + ')',
-				  				})
-			  				}
-			  			} 
+	  				if( cur_dep_time - cur_arr_time > 0 && cur_arr !== arr){
+		  				routingPart.push({
+		  					'routing': dep + '-' + cur_arr + '-' + arr,
+		  					'flight': firstDepartrue.Fli_Flight + '(' + firstDepartrue.Fli_SupportType + ')' + '-' + secondDeparture.Fli_Flight + '(' + secondDeparture.Fli_SupportType + ')',
+		  					'time': firstDepartrue.Fli_DepTime + '-' + firstDepartrue.Fli_ArrTime + '(' + firstDepartrue.Fli_Fly + ')'+ '-' + secondDeparture.Fli_DepTime + '-' + secondDeparture.Fli_ArrTime + '(' + secondDeparture.Fli_Fly + ')',
+                            'FlightNumber': firstDepartrue.Fli_Flight + '+' + secondDeparture.Fli_Flight,
+		  				})
+	  				}
+	  			} 
 
-			  		} 
+	  		} 
 
-			  	} 
-		  		return routingPart;
-		  	}
+	  	} 
+  		return routingPart;
+  	}
 
-		  	// 匹配去程
-		  	outbound = matchRoutingPart(data.outboundFirst, data.outboundSecond);
-		  	// 匹配回程
-		  	inbound  = matchRoutingPart(data.inboundFirst, data.inboundSecond);
+  	// 匹配去程
+  	outbound = matchRoutingPart(data.outboundFirst, data.outboundSecond);
+  	// 匹配回程
+  	inbound  = matchRoutingPart(data.inboundFirst, data.inboundSecond);
 
-		  	// 内积
-		  	for (var i in outbound){
-		  		for(var j in inbound){
-		  			routingBy1.push ({
-		  				'outboundRouting': outbound[i].routing,
-		  				'outboundFlight': outbound[i].flight,
-		  				'outTime': outbound[i].time,
-		  				'inboundRouting': inbound[j].routing,
-		  				'inboundFlight': inbound[j].flight,
-		  				'inboundTime': inbound[j].time,
-		  				'routing': outbound[i].routing + '-' + inbound[j].routing,
-		  			}) 
-		  		}
-		  	}
- 
-
-		  	html += `
-		  	<div class="${dom}">
-
-				  <!-- 一次中转 -->
-		  		<div class="row">
-						<div class="col-lg-12">
-							<div class="panel panel-default">
-						  <div class="panel-heading">数据库拼接航路：一次中转 </div>
-						  <div class='panel-body'>
-							  <table class="routing-by1-table table table-hover table-bordered table-responsive">
-							  <thead>
-                  <tr>
-                    <td colspan ='3'>去程</td>
-                    <td colspan ='3'>回程</td>
-                    <td rowspan ='2'>总航路</td>
-                  </tr>
-                  <tr>
-                    <td>航程</td>
-                    <td>航班号</td>
-                    <td>时间</td>
-
-                    <td>航程</td>
-                    <td>航班号</td>
-                    <td>时间</td>
-                  </tr>
-									</tr>
-								</thead>
-								</table>
-							</div>
-						</div>
-					</div>
-					<!-- 一次中转 -->
+  	// 内积
+  	for (var i in outbound){
+  		for(var j in inbound){
+  			routingBy1.push ({
+  				'outboundRouting': outbound[i].routing,
+  				'outboundFlight': outbound[i].flight,
+  				'outTime': outbound[i].time,
+  				'inboundRouting': inbound[j].routing,
+  				'inboundFlight': inbound[j].flight,
+  				'inboundTime': inbound[j].time,
+  				'routing': outbound[i].routing + '-' + inbound[j].routing,
+                'action': '<a href="#" class="buildFsi" data-json='+JSON.stringify({
+                    'FlightNumberOut': outbound[i].FlightNumber,
+                    'FlightInfoOut': outbound[i].routing,
+                    'SeatClassOut': '/',
+                    'FlightNumberIn': inbound[j].FlightNumber,
+                    'FlightInfoIn': inbound[j].routing,
+                    'SeatClassIn': '/',
+                })+'>fsi</a>',
+  			}) 
+  		}
+  	}
 
 
-				  <!-- 携程数据 -->
-		  		<div class="row">
-						<div class="col-lg-12">
-							<div class="panel panel-default">
-						  <div class="panel-heading">携程数据</div>
-						  <div class='panel-body'>
-							  <table class="routing-ctrip-table table table-hover table-bordered table-responsive">
-							  <thead>
-                  <tr>
-                    <td colspan ='3'>去程</td>
-                    <td colspan ='3'>回程</td>
-                  </tr>
-                  <tr>
-                    <td>航程</td>
-                    <td>航班号</td>
-                    <td>旅行日期</td>
+  	html += `
+  	<div class="${dom}">
 
-                    <td>航程</td>
-                    <td>航班号</td>
-                    <td>旅行日期</td>
-                  </tr>
-									</tr>
-								</thead>
-								</table>
-							</div>
-						</div>
-					</div>
-					<!-- 一次中转 -->
+	    <!-- 一次中转 -->
+		    <div class="row">
+			<div class="col-lg-12">
+				<div class="panel panel-default">
+				    <div class="panel-heading">数据库拼接航路：一次中转 </div>
+				    <div class='panel-body'>
+					    <table class="routing-by1-table table table-hover table-bordered table-responsive">
+					    <thead>
+                          <tr>
+                            <td colspan ='3'>去程</td>
+                            <td colspan ='3'>回程</td>
+                            <td rowspan ='2'>总航路</td>
+                            <td rowspan ='2'>操作</td>
+                          </tr>
+                          <tr>
+                            <td>航程</td>
+                            <td>航班号</td>
+                            <td>时间</td>
 
+                            <td>航程</td>
+                            <td>航班号</td>
+                            <td>时间</td>
+                          </tr>
+						</thead>
+						</table>
+                    </div>
 				</div>
-		  	`;
+			</div>
+		</div>
+		<!-- 一次中转 -->
 
-		if(appendType === 'w'){
-			$(context).html(html);
-		}
-		else if(appendType === 'a'){
-			$(context).append(html);
-		}		
 
-		$('.routing-by1-table').DataTable({
+		<!-- 携程数据 -->
+  		<div class="row">
+			<div class="col-lg-12">
+				<div class="panel panel-default">
+				    <div class="panel-heading">携程数据</div>
+				    <div class='panel-body'>
+					    <table class="routing-ctrip-table table table-hover table-bordered table-responsive">
+					    <thead>
+                          <tr>
+                            <td colspan ='3'>去程</td>
+                            <td colspan ='3'>回程</td>
+                          </tr>
+                          <tr>
+                            <td>航程</td>
+                            <td>航班号</td>
+                            <td>旅行日期</td>
+
+                            <td>航程</td>
+                            <td>航班号</td>
+                            <td>旅行日期</td>
+                          </tr>
+						</thead>
+						</table>
+					</div>
+				</div>
+			</div>
+        </div>
+		<!-- 携程数据-->
+
+		</div>
+  	`;
+
+	if(appendType === 'w'){
+		$(context).html(html);
+	}
+	else if(appendType === 'a'){
+		$(context).append(html);
+	}		
+
+	$('.routing-by1-table').DataTable({
         // responsive: true,
         data: routingBy1,
         columns: [
@@ -213,6 +268,7 @@ function mkTable(data, dom, wrap, type){
             { data: "inboundFlight" },
             { data: "inboundTime" },
             { data: "routing" },
+            { data: "action" },
         ]
     });  	
 
@@ -244,13 +300,7 @@ function mkTable(data, dom, wrap, type){
     // 生成 fsi
     $("#content").on("click", ".buildFsi", function(){
         // 只生成往返
-        /*
-            "XS FSI2ADT/DL///#CCN1080                                                       
-        S DL   128T24JUN PEK1120 0736SEA0S    76W                                       
-        S DL   129T".$bb." SEA1659>1950PEK0S    76W 
-        */
         var json = $(this).data("json");
-        return;
         if( JSON.stringify(json) === "{}"){
             return;
         }
@@ -258,36 +308,11 @@ function mkTable(data, dom, wrap, type){
         var targetData             = json,     
             OutboundTravelDateOrg  = (new Date())+"",     
             OutboundTravelDate     = OutboundTravelDateOrg.substr(8,2)+OutboundTravelDateOrg.substr(4,3).toUpperCase();
-        // if( $("#InboundTravelDate").val() !== ""){
+
         var InboundTravelDateOrg   = (new Date())+"",
             InboundTravelDate      = InboundTravelDateOrg.substr(8,2)+InboundTravelDateOrg.substr(4,3).toUpperCase();
-        // }
-        /*
-        success: 去程回程均无中间段
-        XS FSI/UA
-        S UA   088K26JUN BJS0100 0200NYC0S    76W 
-        S UA   089K30JUL NYC0300 0400BJS0S    76W
-
-        去程中间段
-        XS FSI/UA
-        S UA   850K26JUN BJS0100 0200CHI0X    76W 
-        S UA   1023K26JUN CHI0300 0400NYC0S    76W 
-        S UA   089K30JUL NYC0300 0400BJS0S    76W 
-
-        XS FSI/UA
-        S UA   1310\09SEP BJS0100 0200CHI0X    76W 
-        S UA   1310\09SEP CHI0300 0400NYC0S    76W 
-        S UA   981\09SEP BJS0100 0200CHI0X    76W
-        S UA   981\09SEP NYC0300 0400BJS0S    76W 
-
-        回程中间段
-        XS FSI/UA
-        S UA   088K26JUN BJS0100 0200NYC0S    76W 
-        S UA   1757K30JUL NYC0100 0200WAS0X    76W 
-        S UA   807K30JUL WAS0300 0400BJS0S    76W 
 
 
-        */
         var fsi = "XS FSI/"+$("#airCompany").val()+"\r"; 
 
         // 去程中间段
@@ -297,8 +322,8 @@ function mkTable(data, dom, wrap, type){
                 flightOut1 = out[1], out1 = out[2], flightOut2 = out[3], out2 = out[4],
 
                 // 舱位
-                seatClassOut  = /(\w{1})\+(\w{1})/.exec(targetData.SeatClassOut),
-                seatClassOut1 = seatClassOut[1], seatClassOut2 = seatClassOut[2],
+                seatClassOut  = targetData.SeatClassOut,
+                seatClassOut1 = seatClassOut, seatClassOut2 = seatClassOut,
 
                 // 地点
                 dep = /(\w{3})-(\w{3})-(\w{3})/.exec(targetData.FlightInfoOut),
@@ -336,8 +361,8 @@ function mkTable(data, dom, wrap, type){
                 flightIn1 = inb[1], inb1 = inb[2], flightIn2 = inb[3], inb2 = inb[4],
 
                 // 舱位
-                seatClassIn  = /(\w{1})\+(\w{1})/.exec(targetData.SeatClassIn),
-                seatClassIn1 = seatClassIn[1], seatClassIn2 = seatClassIn[2],
+                seatClassIn  = targetData.SeatClassIn,
+                seatClassIn1 = seatClassIn, seatClassIn2 = seatClassIn,
 
                 // 地点
                 arr = /(\w{3})-(\w{3})-(\w{3})/.exec(targetData.FlightInfoIn),

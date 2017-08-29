@@ -133,7 +133,7 @@
 	 		// 如果有结果均按数组返回
 	 		if(is_array($result) && isset($result[0])){
 		 		return $result;
-	 		}else{
+	 		}elseif(is_array($result)){
 	 			return array(0=>$result);
 	 		}
 	 		return $result;

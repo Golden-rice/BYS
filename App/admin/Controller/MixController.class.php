@@ -18,8 +18,10 @@ class MixController extends Controller {
         // 转换城市代码
         $depCityResult = $toCity -> where("`ACC_Code` = '{$dep}'")->select();
         $arrCityResult = $toCity -> where("`ACC_Code` = '{$arr}'")->select();
-        $depCity       = $depCityResult['ACC_CityCode'];
-        $arrCity       = $arrCityResult['ACC_CityCode'];
+        // **待完成**:没有则提示需要跑数据 
+
+        $depCity       = $depCityResult[0]['ACC_CityCode'];
+        $arrCity       = $arrCityResult[0]['ACC_CityCode'];
         // 查询xfsd
         $xfsd_where    = " `xfsd_dep`= '{$depCity}' AND `xfsd_arr` = '{$arrCity}' AND  `xfsd_DateStart` < '{$date}' AND '{$date}' < `xfsd_DateEnd`".($tripType == 'OW' ? ' AND `xfsd_SingleFee` > 0' : ' AND `xfsd_RoundFee` > 0');
         $xfsd_result   = $xfsd_r -> where($xfsd_where) ->select();
@@ -41,4 +43,5 @@ class MixController extends Controller {
     // 组合 routing 
     // 携程 底价api -> 抓取 routing 
     // routing 保存
+
 }

@@ -45,9 +45,10 @@ function autoload($map){
   }
 }
 
-// 新建数据库
+// 创建命令的表单 source 及 detail 
 $a = new Eterm\CommandModel();
-// 创建表单 source 及 detail 
+
+// xfsd source 及 result
 $a->build('xfsd', array(
 	'Id'         => 'bigint(20) NOT NULL AUTO_INCREMENT',
 	// 关键字，格式：dep_city/arr_city/airline/pax_type/source/source_office/source_agreement(大客户编号)/other/fare_date 例如："BJS/MIA/UA/ADT/1E/BJS248///20170825"
@@ -98,6 +99,7 @@ $a->build('xfsd', array(
 	'gmtModified'    => 'int(13) DEFAULT NULL',
 ));
 
+// avh souce 及 result
 $a->build('avh',array(
 	'Id'            => 'bigint(20) NOT NULL AUTO_INCREMENT',
 	// 命令
@@ -135,3 +137,6 @@ $a->build('avh',array(
 	// 修改时间
 	'gmtModified'   => 'int(13) DEFAULT NULL',
 ));
+
+// fsl source
+$a->build('fsl');

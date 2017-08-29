@@ -5,9 +5,8 @@ class BasisController extends Controller {
 
 	// 航空公司 basis_aircompany <- basis_country
     public function aircompany(){
-        // 以航程划分，含有那些舱位，航班号；含航空公司详细信息
-        // 这些舱位有哪些farebasis即使用规则
-        // 利用farabasis的使用规则：详细内容拆分出可用日期、价格、退改、作用点、限制航班号
+        // 展示航班号、航空公司详细信息
+        // 拆分出：出发、到达
         $this->display();
     }
 
@@ -15,7 +14,7 @@ class BasisController extends Controller {
         $aircompany = model('aircompany');
 
         $result = $aircompany -> select(); // 
-        if($result) {
+        if(!empty($result[0])) {
             echo json_encode(array('status' => 'success', 'result'=>$result));
         }else{
             echo json_encode(array('status' => 'error', 'msg' => '出现错误'));
@@ -33,10 +32,31 @@ class BasisController extends Controller {
             $result_flight = array();
 
         if(!empty($result_flight[0])) {
-            echo json_encode(array('status' => 'success', 'result'=>$col, 'result_flight'=>$result_flight));
+            $result_cnto = $this->searchCnTo($result[0]['Air_Code']);
+            echo json_encode(array('status' => 'success', 'result'=>$col, 'result_flight'=>$result_flight, 'result_cnto'=>$result_cnto));
         }else{
             echo json_encode(array('status' => 'error', 'msg' => '出现错误'));
         }   
+    }
+
+    // 查询从中国始发
+    public function searchCnTo($aircompany = ''){
+        $cnto       = model('CnTo');
+        $aircompany = $aircompany == ''? $_POST['aircompany'] : $aircompany;
+        $result     = $cnto -> where("`CNTo_Aircompany` = '{$aircompany}' OR `CNTo_Aircompany` = '*{$aircompany}' ORDER BY `Id`") -> select();
+
+        if($aircompany == ''){
+            if(!empty($result[0])) 
+                echo json_encode(array('status' => 'success', 'result'=>$result));
+            else
+                echo json_encode(array('status' => 'error', 'msg' => '出现错误'));
+        }else{
+            if(!empty($result[0])) {
+                return $result;
+            }else{
+                return false;
+            }
+        }
     }
 
     public function routing(){
@@ -44,15 +64,15 @@ class BasisController extends Controller {
     }
 
     public function searchRouting(){
-        $flight           = model('flight');
-        $toCity           = model('AirportCityCode');
-        $aircompany       = $_POST['airCompany'];
-        $dep              = $_POST['dep'];
-        $arr              = $_POST['arr'];
-        $result_out_first = $flight -> where("Fli_Airport = '{$aircompany}' AND Fli_Dep = '{$dep}'") -> select(); // 出境第一段结果
-        $result_out_second= $flight -> where("Fli_Airport = '{$aircompany}' AND Fli_Arr = '{$arr}'") -> select(); // 出境第二段结果
-        $result_in_first  = $flight -> where("Fli_Airport = '{$aircompany}' AND Fli_Dep = '{$arr}'") -> select(); // 回境第一段到达结果
-        $result_in_second = $flight -> where("Fli_Airport = '{$aircompany}' AND Fli_Arr = '{$dep}'") -> select(); // 回境第二段到达结果
+        $flight            = model('flight');
+        $toCity            = model('AirportCityCode');
+        $aircompany        = $_POST['airCompany'];
+        $dep               = $_POST['dep'];
+        $arr               = $_POST['arr'];
+        $result_out_first  = $flight -> where("Fli_Airport = '{$aircompany}' AND Fli_Dep = '{$dep}'") -> select(); // 出境第一段结果
+        $result_out_second = $flight -> where("Fli_Airport = '{$aircompany}' AND Fli_Arr = '{$arr}'") -> select(); // 出境第二段结果
+        $result_in_first   = $flight -> where("Fli_Airport = '{$aircompany}' AND Fli_Dep = '{$arr}'") -> select(); // 回境第一段到达结果
+        $result_in_second  = $flight -> where("Fli_Airport = '{$aircompany}' AND Fli_Arr = '{$dep}'") -> select(); // 回境第二段到达结果
 
         // 转换城市代码
         $depCityResult = $toCity -> where("`ACC_Code` = '{$dep}'")->select();
@@ -101,8 +121,8 @@ class BasisController extends Controller {
     }
 
     // 机场城市代码 basis_airport_city_code <- basis_country | 城市表
-    public function airportAndCity(){
-
+    public function searchAirportAndCity(){
+        $airportAndCity = '';
     }
 
     // 国家 basis_country
@@ -125,8 +145,4 @@ class BasisController extends Controller {
 
     }
 
-    // 从中国出发 basisi_cn_to
-    public function CNto(){
-
-    }
 }

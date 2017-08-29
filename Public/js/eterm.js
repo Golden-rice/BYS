@@ -1003,7 +1003,7 @@ var createCommand = function(recevier, tpl){
 				recevier.rmTable(recevier.target);
 				recevier.progress.complete();
 				if(data.status === 'success'){
-					recevier.render( {'aircompany' : data.result, 'result_flight': data.result_flight}, recevier.target, recevier.context, 'w');
+					recevier.render( {'aircompany' : data.result, 'result_flight': data.result_flight, 'result_cnto': data.result_cnto}, recevier.target, recevier.context, 'w');
 				}else{
 					alert(data.msg);
 				}

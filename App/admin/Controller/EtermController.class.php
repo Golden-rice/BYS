@@ -110,8 +110,8 @@ class EtermController extends Controller {
 			$array[$end]['other']      = $other;
 		}
 
-		// 保存解析结果
-		// $this->saveXfsdResult($array);
+		// 全部保存解析结果，用id筛选需要保存的数据
+		$this->saveXfsdResult($array);
 		echo json_encode(array('array'=>$array, 'time'=>'更新时间：'.date('Y-m-d H:i:s', $xfsd->fileTime)) );
   }
 
@@ -199,7 +199,7 @@ class EtermController extends Controller {
   	$result    = $m_xfsd ->where('`command` ="'.$array['command'].'" ')->select();
 
   	// 为空时
-  	if(!$result || empty($result[0]) == 0) return false;
+  	if(!$result || empty($result[0]) ) return false;
 
   	foreach ($result as $cols) {
   		// 一天的保留时间
@@ -436,7 +436,7 @@ class EtermController extends Controller {
   	$result = $m_avh ->where('`command` ="'.$array['command'].'" ')->select();
 
   	// 为空返回false
-  	if(!$result || empty($result[0]) == 0) return false;
+  	if(!$result || empty($result[0]) ) return false;
   	$col = $result[0]; // 仅一条
 		if ( isset($col['Command']) && $array['command'] == $col['Command'] ) 
 			return array('Detail' =>$col['Detail'], 'GmtModified' =>$col['GmtModified'] );

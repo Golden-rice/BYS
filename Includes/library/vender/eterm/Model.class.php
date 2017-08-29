@@ -21,6 +21,7 @@ class CommandModel extends Model {
 				parent::_creat($name.'_source', $this->SourceTable());
 			if(!$this->haveTable($name.'_result'))
 				parent::_creat($name.'_result', $this->ResultTable($SourceConstruct));
+
 			// price_source 同步燕峰提供的使用规则数据
 			if(!$this->haveTable($this->tablePrefix.'price_source'))
 				parent::_creat($this->tablePrefix.'price_source', $this->PriceSource());
@@ -30,7 +31,6 @@ class CommandModel extends Model {
 			BYS\Report::error($e);
 			return false;
 		}
-
 		return true;
 	}
 
@@ -164,7 +164,7 @@ class CommandModel extends Model {
 			// String countryOnly; 允许国家代码
 			// String countryExcept; 不允许国家代码
 			// Integer countryLimit; 0,1,2;0不启用,1所有乘客满足onlys和excepts,2任一乘客满足onlys和excepts
-			// String source; 来源 
+			// String source; 来源  CTRIP（携程） 1E(航信)
 			'Source'      => 'varchar(10) DEFAULT NULL',
 			// String tariff; *
 			// String airlineRule; 航线

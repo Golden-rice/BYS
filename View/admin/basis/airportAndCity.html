@@ -1,15 +1,17 @@
 <{extends file='../layout.html'}>
 
-<{block name="title"}>航空公司基础数据<{/block}>
+<{block name="title"}>机场/城市<{/block}>
 <{block name="content"}>
 
 <div class="panel panel-default">
 	<div class="panel-body">
 
 		<div class="form-inline">
-
 			<div class="input-group">
-					<span class="input-group-addon" id="input-airCompany">航空公司</span><input type="text" name="airCompany" id="airCompany" placeholder="两字码" class='form-control' onblur="upper(this)" style='width:100px' aria-describedby="input-airCompany">
+					<span class="input-group-addon" id="input-airport">机场</span><input type="text" name="airport" id="airport" placeholder="三字码" class='form-control' onblur="upper(this)" style='width:100px' aria-describedby="input-airport">
+			</div>
+			<div class="input-group">
+					<span class="input-group-addon" id="input-city">城市</span><input type="text" name="city" id="city" placeholder="三字码" class='form-control' onblur="upper(this)" style='width:100px' aria-describedby="input-city">
 			</div>
 
 			<div class="input-group">
@@ -33,18 +35,17 @@
 
     
 <script>
-require(['eterm', 'dt'], function (eterm, dt){
+require(['eterm','dt'], function (eterm, dt){
 
 
 var setCommend = function(command){
 
 	// 测试
 	$('#test').click(function(){
-		command.findAircompany({
+		command.findCity({
 			airCompanyCode: 'UA',
 		})
 
-		// command.basisAircompany()
 	})
 
 	// 开始查询

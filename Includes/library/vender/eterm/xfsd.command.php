@@ -124,13 +124,11 @@ class Xfsd extends Eterm{
 
     private function display($arr){
         // update by xiaojia
-
         preg_match('/\s(\w{3})(\w{3})\/(\w{2})/',$this->startKey, $str);
         $start       = $str[1];
         $end         = $str[2];
         $direction   = $str[3];
         foreach($arr as $key => $dataline){
-            preg_match_all("/\/?\s+([0-9]*\.?[0-9]{0,2})\s*\/[A-Z]{1}/is",$dataline,$res);
             $index   = substr($dataline, 0, 3);                  // 序号
             $pos     = 3;
             if(intval($index) > 99){
@@ -140,14 +138,21 @@ class Xfsd extends Eterm{
             $special = substr($dataline, $pos+9,1);            // 特殊规则
             preg_match_all("/ADVP\s*([0-9]{1,2}D)/",$dataline, $advp);
             $ADVPDay = empty($advp[0])?'':$advp[1][0];             // ADVP 
-
-            if(substr($dataline, $pos+23, 6) != "      "){
-                $singleLineFee = "";
-                $backLineFee   = $res[1][0]?$res[1][0]:$res[1][1];   // 往返价格 //substr($dataline, $pos+23, 6);
-            }else{
-                $singleLineFee = $res[1][0]?$res[1][0]:$res[1][1];
-                $backLineFee   = "";
-            }      
+            // 匹配金额 13~21(9) 单程 +3 24~32(9)
+            // 原正则："/\/?\s+([0-9]*\.?[0-9]{0,2})\s*\/[A-Z]{1}/is"
+            preg_match("/\s*([0-9]*\.?[0-9]{0,2})/is", substr($dataline, $pos+10, 9), $singleLineFeeArea);
+            preg_match("/\s*([0-9]*\.?[0-9]{0,2})/is", substr($dataline, $pos+20, 9), $backLineFeeArea);
+            
+            if(isset($singleLineFeeArea[1]) && $singleLineFeeArea[1] != ''){
+                 $singleLineFee = $singleLineFeeArea[1];
+                 $backLineFee   = '';
+            }
+            // 矫正单程运价区域填充其他信息
+            if(isset($backLineFeeArea[1]) && $backLineFeeArea[1] != ''){
+                 $singleLineFee = '';
+                 $backLineFee   = $backLineFeeArea[1];    
+            }
+     
             $seat            = substr($dataline, $pos+30, 1);   // 舱位
             $minStay         = substr($dataline, $pos+32, 3);   // 最低滞留时间
             $maxStay         = substr($dataline, $pos+36, 3);   // 最长滞留时间
