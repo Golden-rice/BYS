@@ -19,7 +19,8 @@ class EtermController extends Controller {
   }
 
   public function fsl(){
-  	$this->searchFslByDefault();
+  	// $this->searchFslByDefault();
+  	$this->display();
   }
 
   // 获取汇率
@@ -451,6 +452,34 @@ class EtermController extends Controller {
   	return false;
 	}
 
+	public function searchFslByInput(){
+		import('vender/eterm/app.php');
+
+		$aircompany = $_POST['aircompany'];
+		$start      = $_POST['start'];
+		$end        = $_POST['end'];
+		$array      = array();   // 最终航程结果
+
+		$command    = 'XS/FSD'.$start.$end.'/'.date('tM', time()+10*24*60*60 ).'/'.$aircompany.'/NEGO/X';
+		$fsl        = new \Fsl($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
+
+		$result = $this->hasFslSource(array('command' => $command));
+
+		// 比default多个analysis 
+		if ( isset($result['GmtModified']) && $result['GmtModified'] + 30*24*60*60 > time() ){ 
+			$fsl -> wtTmp($result['Detail']);
+			$array["{$start}{$end}/{$aircompany}"] = $fsl -> analysis(array(3,4));
+			$array["{$start}{$end}/{$aircompany}"]['length'] = count($array["{$start}{$end}/{$aircompany}"])-1;
+		}else{
+			$fsl -> command($command, 'w');
+			$array["{$start}{$end}/{$aircompany}"] = $fsl -> analysis(array(1,2,3,4));
+			$array["{$start}{$end}/{$aircompany}"]['length'] = count($array["{$start}{$end}/{$aircompany}"])-1;
+			$this-> saveFslSource(array('source' => $fsl->readSource(), 'command' => $command));
+		}
+
+		echo json_encode(array('array'=>$array));
+	}
+
 	public function searchFslByDefault(){
 		import('vender/eterm/app.php');
 		// ** 
@@ -470,11 +499,6 @@ class EtermController extends Controller {
 
 		// 航程
 		$array = array();
-
-		$start      = 'BJS';
-		$end        = 'NYC';
-		$aircompany = 'UA';
-
 		foreach($depart as $aircompany => $d){
 			foreach ($arrive[$aircompany] as $end) {
 		// 		echo $d[0].'-'.$end."<br>";
@@ -487,10 +511,10 @@ class EtermController extends Controller {
 				// 数据保留1个月
 				if ( isset($result['GmtModified']) && $result['GmtModified'] + 30*24*60*60 > time() ){ 
 					$fsl -> wtTmp($result['Detail']);
-					$array["{$d[0]}{$end}/{$aircompany}"] = $fsl -> analysis(array(3,4));
+					$array["{$start}{$end}/{$aircompany}"] = $fsl -> analysis(array(3,4));
 				}else{
 					$fsl -> command($command, 'w');
-					$array["{$d[0]}{$end}/{$aircompany}"] = $fsl -> analysis(array(1,2,3));
+					$array["{$start}{$end}/{$aircompany}"] = $fsl -> analysis(array(1,2,3,4));
 					$this-> saveFslSource(array('source' => $fsl->readSource(), 'command' => $command));
 					sleep(3);
 				}

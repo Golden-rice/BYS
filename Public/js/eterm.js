@@ -956,10 +956,7 @@ var createCommand = function(recevier, tpl){
 
 			// console.log(matchCabin)
 			mkCabinTpl(matchCabin, recevier.target, recevier.context, 'a');
-
-
 	}
-
 
 	var basisAircompany = function(){
 		recevier.target = 'table';
@@ -1082,6 +1079,34 @@ var createCommand = function(recevier, tpl){
 		});	
 	}
 
+	var searchFslByInput = function(query){
+		recevier.target = 'table-fsl';
+		recevier.context = '#content'
+		recevier.progress = progress();
+
+		// 模板
+		if(recevier.isFunction(mkTable) && typeof recevier.isFunction(rmTable)){
+			recevier.mkTable = mkTable; 
+			recevier.rmTable = rmTable; 
+		}else{
+			console.log("'mkTable' or 'rmTable' haven't added in ")
+		}
+
+		recevier.progress.create('#content-progress');
+		recevier.getData( Controller + 'searchFslByInput', query, function(data){
+			
+				recevier.rmTable(recevier.target);
+				recevier.progress.complete();
+				recevier.mkTable(data.array, recevier.target, recevier.context, 'w');
+					
+				// 垃圾回收
+				recevier.progress = null;
+				recevier.mkTable = null;
+				recevier.rmTable = null;
+		});	
+	
+	}
+
 	return {
 		xfsd: xfsd,                             // 获得xfsd数据，并用table回填到页面中
 		selected: selected,                     // 选择
@@ -1104,6 +1129,7 @@ var createCommand = function(recevier, tpl){
 		findAircompany: findAircompany,         // 基础数据：查询某航空公司
 		searchRouting: searchRouting,           // 合成数据：查询航路
 		searchComposePolicy: searchComposePolicy,// 合成数据：查询政策
+		searchFslByInput: searchFslByInput,     // 合成数据：查询航路
 	}
 }
 

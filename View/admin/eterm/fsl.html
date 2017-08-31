@@ -1,0 +1,135 @@
+<{extends file='../layout.html'}>
+
+<{block name="title"}>航路<{/block}>
+<{block name="content"}>
+
+<div class="row">
+	<div class="col-lg-12">
+		<div class="panel panel-default">
+			<div class="panel-body">
+
+				<div class="form-inline">
+
+					<div class="input-group">
+							<span class="input-group-addon" id="input-airCompany">航空公司</span><input type="text" name="airCompany" id="airCompany" placeholder="两代码" class='form-control' onblur="upper(this)" style='width:100px' aria-describedby="input-airCompany">
+							<span class="input-group-addon" id="input-start">出发地</span><input type="text" name="start" id="start" placeholder="城市代码" class='form-control' onblur="upper(this)" style='width:100px' aria-describedby="input-start">
+							<span class="input-group-addon" id="input-end">到达地</span><input type="text" name='end' id='end' placeholder="城市代码" class='form-control' onblur="upper(this)" style='width:100px' aria-describedby="input-end">
+					</div>
+
+					<div class="input-group">
+						<input type="submit" value="查询" name='dosubmit' id='dosubmit' class="btn btn-primary">
+					</div>
+
+					<div class="input-group">
+						<button id='test' class='btn btn-default'>test</button>
+					</div>
+
+
+				</div>
+				<!-- form-inline -->
+			</div>
+			<!-- "panel-body -->
+		</div>
+<!-- panel -->
+	</div>
+</div>
+
+<div id="content-progress"></div>
+<div id="content"></div>
+
+<script>
+require(['eterm','dt'], function(eterm, extend){
+var setCommend = function(command){
+
+	// 查看部分使用规则
+	$('#test').click(function(){
+		$('#start').val('BJS')
+		$('#end').val('SFO')
+		$('#airCompany').val('UA')
+
+		command.searchFslByInput({
+			start: $('#start').val(),
+			end: $('#end').val(),
+			aircompany: $('#airCompany').val()
+		})
+	})
+
+	// 查看全部
+	$('#dosubmit').click(function(){
+		command.searchFslByInput({
+			start: $('#start').val(),
+			end: $('#end').val(),
+			aircompany: $('#airCompany').val()
+		})
+	})
+
+}
+
+var tpl = {
+	mkTable:mkTable
+}
+// 配置setCommand()
+// 装载模板mkTable()
+setCommend(eterm.createCommand(eterm.eterm, tpl));
+
+function mkTable(array, dom, wrap, type){
+	"use strict";
+	// ES6 
+
+	let html = '',
+			appendType = type !== ""? type : 'w',
+			context = wrap !== "" ? wrap : document;
+
+	for (var item in array){
+		var length = array[item].length, start = $('#start').val(), end = $('#end').val(), aircompany = $('#airCompany').val();
+		html = `
+			<table class="table-addCabin table table-hover table-bordered table-responsive add-cabin-table" >
+				<tr>
+					<th>代码</th>
+					<th>中转点</th>
+					<th>出发</th>
+					<th>到达</th>
+					<th>航空公司</th>
+					<th>解析结果</th>
+					<th>源</th>
+				</tr>
+				<tr>
+					<td rowspan="${length}">${item}</td>
+					<td rowspan="${length}">${array[item].result}</td>
+				</tr>
+		`
+		for(var i = 0; i < array[item].length-1; i++){
+
+			html +=`
+				<tr>
+					<td>${start}</td>
+					<td>${end}</td>
+					<td>${aircompany}</td>
+					<td>${array[item][i].translate}</td>
+					<td>${array[item][i].source}</td>
+				</tr>
+			`
+		}
+	}
+	html += `</table>`;
+
+	if(appendType === 'w'){
+		$(context).html(html);
+	}
+	else if(appendType === 'a'){
+		$(context).append(html);
+	}
+}
+
+
+	$(function(){
+		// 导航
+		$('.nav>li').removeClass('active');
+		$('.nav>.fsl').addClass('active');
+	})
+
+
+})
+
+</script>
+<{/block}>

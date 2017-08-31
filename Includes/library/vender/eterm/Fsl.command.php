@@ -93,15 +93,63 @@ class Fsl extends Eterm{
   private function format(){
   	// 匹配
   	// 拆分航路
-  	// 城市：SFO 旧金山 LAX 洛杉矶 
-  	$matchCity = array('SFO', 'CHI', 'EWR', 'WAS', 'LAX');
+  	// 城市：SFO 旧金山 CHI 芝加哥 （ORD MDW） NYC 纽约（EWR JFK LGA） WAS 华盛顿（IAD DCA） LAX 洛杉矶  
+  	// $matchCity = array('SFO', 'CHI', 'NYC', 'WAS', 'LAX', 'ORD', 'EWR');
+  	// 合并所有中转情况
+  	$result = array();
+  	$rangePotResult = array(); // 所有的中转
+  	$end = '';
+
+  	// 解析所有行的中转情况
   	foreach ($this->arr as $key => $line) {
-  		$routing  = explode('-',$line);
-  		$end      = end($routing);
-  		$endMatch = explode('/',$routing[count($routing)-2]);
-  		foreach ($endMatch as $match) {
-	  		echo $end .'->'.$match."<br>";
+  		$range    = explode('-',$line);
+  		$depart   = substr($line, 0, 3);
+  		$rangePot = array();
+  		$arrive   = end($range);
+  		// 放到上层
+  		$end      = $arrive;
+  		foreach ($range as $r){
+  			if($r != $arrive && preg_match_all("/SFO|CHI|NYC|WAS|LAX|ORD|EWR/", $r, $arrivePot)){
+  				// $rangePot .= $arrivePot[0].'/';
+  				if(!empty($arrivePot[0])){
+  					foreach ($arrivePot[0] as $pot) {
+  						if(!in_array($pot, $rangePot))
+	  						array_push($rangePot, $pot);
+  					}
+  				}
+  			}
   		}
+  		$routing = $depart.'-';
+  		if(!empty($rangePot)){
+	  		foreach ($rangePot as $pot) {
+	  			$routing .= $pot.'/'; 
+	  		}
+	  		// 汇集所有中转情况
+  			array_push($rangePotResult, $rangePot);
+  		}
+	  	else
+	  		$routing = rtrim( $routing, '-' );
+
+  		$routing = rtrim( $routing, '/' ).'-'.$arrive;
+  		// echo '原航路：'.$line."<br>解析后：".$routing."<br>";
+  		// echo "<hr>";
+  		
+  		$this->arr[$key] = array(
+  			'source'    => $line,
+  			'translate' => $routing,
+  		);
   	}
+
+  	// 合并所有的中转点
+  	if(!empty($rangePotResult))
+	  	foreach ($rangePotResult as $rangePotItem) {
+	  		foreach ($rangePotItem as $pot) {
+		  		if(!in_array($pot, $result) && $end != $pot )
+		  			array_push($result, $pot);
+	  		}
+	  	}
+
+  	// 合并结果
+  	$this->arr['result'] = $result;
   }
 }

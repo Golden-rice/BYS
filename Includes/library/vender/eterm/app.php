@@ -1,9 +1,9 @@
 <?php
 
 // eterm 核心库
-include 'Eterm.class.php';
+include_once 'Eterm.class.php';
 // 表单类
-include 'Model.class.php';
+include_once 'Model.class.php';
 
 define('ETERM_ROOT', VEND_PATH.'eterm/');
 
@@ -40,7 +40,7 @@ function autoReadCommand($path, $namespace = ""){
 function autoload($map){
 	foreach ($map as $file) {
 		if( is_file(ETERM_ROOT.$file) ) {
-        include ETERM_ROOT.$file;
+        include_once ETERM_ROOT.$file;
     }
   }
 }
@@ -139,4 +139,24 @@ $a->build('avh',array(
 ));
 
 // fsl source
-$a->build('fsl');
+$a->build('fsl', array(
+	'Id'            => 'bigint(20) NOT NULL AUTO_INCREMENT',
+	// 命令
+	'Command'       => 'varchar(100) NOT NULL',
+	// 状态：-2 已知错误发生 -1 失败 0 等待 1 进行中 2 成功
+	'Status'        => 'int(1) NOT NULL',
+	// OFFICE 号
+	'Office'        => 'char(10) DEFAULT NULL',
+	// source id
+	'Sid'           => 'bigint(20) NOT NULL',
+	// routing 原数据
+	'Fsl_Source'    => 'varchar(500) NOT NULL', 
+	// 筛选从中国出发到美国的中转城市
+	'Fsl_Translate' => 'varchar(100) DEFAULT NULL',
+	// 合并后的中转城市
+	'Fsl_result'    => 'varchar(500) DEFAULT NULL',
+	// 创建时间
+	'gmtCreate'     => 'int(13) NOT NULL',
+	// 修改时间
+	'gmtModified'   => 'int(13) DEFAULT NULL',
+));
