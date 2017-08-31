@@ -21,7 +21,7 @@ class Eterm{
 			$this->resource = $resource;
 		}		
 		
-		public function command($command, $type, $p=false, $add = ""){   
+		public function command($command, $type='w', $p=false, $add = ''){   
 			// 向eterm输入命令，并存放在tmp中 ,$p 是否开启打印
 
 			// 初始化
@@ -29,11 +29,11 @@ class Eterm{
 			$add = $this->command.$this->resource.$add;
 
 			// filesize 返回没正确结果时也重新读取
-			if(!file_exists($this->tmp) || !filesize($this->tmp)>150 ){
+			// if(!file_exists($this->tmp) || !filesize($this->tmp)>150 ){
 		 		$requestURL='http://eterm.cctba.com:8350/COMMAND?USER='.$this->name.'&PASSWORD='.$this->password.'&RESOURCEETERM-SHARE-'.$this->resource.'&COMMAND='.urlencode($command);
 		 	 	$file = file_get_contents($requestURL);
 		 	 	$this->saveStr($file, $type);
-			}
+			// }
 	  }
 
 
@@ -59,9 +59,9 @@ class Eterm{
     public function wtTmp($str = ''){
         if ($str != '') $this->tmp = $str;
     }
-	  protected function getAllPage($fileName, $command){
+	  protected function getAllPage($dataFrom, $command){
 			// 获取除了第一页的其他页数据
-	    $f = $this->initFile($fileName, 0, 1);
+	    $f = $this->initFile($dataFrom, 0, 1);
 			preg_match_all('/PAGE[\s]*(\w+)\/(\w+)/', end($f), $str); // 获取页码
 
 			$pageTotal = intval($str[2][0]);   // 总页码

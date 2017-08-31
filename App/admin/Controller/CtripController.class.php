@@ -7,7 +7,7 @@ class CtripController extends Controller {
     // fsi 批量检验 routing 价格价格，没有问题的则录入 policy_result 表，标示 from ctrip
     // 交互：仅查询出发、到达、航空公司、即可获得政策及是否fsi检验，来源
 	public function index(){
-
+		set_time_limit(0);
 		// YYCNUS
 		$outbound = array(
 			'UA' => array( 'CTUSFO', 'PEKEWR', 'PEKIAD', 'PEKSFO', 'XIYSFO'),  // 'HGHSFO', 'PVGEWR', 'PVGLAX', 'PVGSFO' 杭州 上海暂时不做

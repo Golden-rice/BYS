@@ -192,6 +192,12 @@ var createCommand = function(recevier, tpl){
 			url = Controller + 'searchXfsdByInput';
 		}
 
+		// 验证
+		if(query.end.length > 110){
+			alert('目的地过多，最多25个目的地，请重新输入');
+			return;
+		}
+
 		recevier.progress.create('#content-progress');
 		recevier.getData(url, query,
 			// 回调函数
@@ -212,7 +218,7 @@ var createCommand = function(recevier, tpl){
 					console.log(recevier.xfsd)
 					for(var arr in data.array){
 						// command += data.array[arr].command.replace(/</,"&lt;")+'<br>';
-						command += '<kbd>'+data.array[arr].command.replace(/</,"&lt;")+'</kbd>&nbsp;';
+						command += '<kbd style="float:left;margin:0 10px 10px 0;">'+data.array[arr].command.replace(/</,"&lt;")+'</kbd>';
 					}
 
 					recevier.lab.time.html(data.time);

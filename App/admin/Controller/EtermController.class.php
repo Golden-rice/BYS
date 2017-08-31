@@ -18,6 +18,10 @@ class EtermController extends Controller {
   	$this->display();
   }
 
+  public function fsl(){
+  	$this->searchFslByDefault();
+  }
+
   // 获取汇率
   public function toCNY(){
   	import('vender/eterm/app.php');
@@ -100,6 +104,7 @@ class EtermController extends Controller {
 				// 声明
 				$array[$end] = $resultArr;
 				$array[$end]['id'] = $this->saveXfsdSource(array('source' => $xfsd->readSource(), 'command' => $command)); // 储存至数据库
+				sleep(6);
 			}
 			// 封装基础数据格式
 			$array[$end]['from']       = $code==''?'':$code;
@@ -108,6 +113,8 @@ class EtermController extends Controller {
 			$array[$end]['length']     = count($resultArr);
 			$array[$end]['command']    = $command;
 			$array[$end]['other']      = $other;
+			ob_flush();
+			flush();
 		}
 
 		// 全部保存解析结果，用id筛选需要保存的数据
@@ -207,7 +214,7 @@ class EtermController extends Controller {
   			return $cols['Detail'];
   		}
   		else{
-  			$xfsd       = new \Xfsd($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
+  			$xfsd      = new \Xfsd($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
   			$firstPage = $xfsd->getFirstPage();
   		}
   		// 第一页
@@ -444,6 +451,82 @@ class EtermController extends Controller {
   	return false;
 	}
 
+	public function searchFslByDefault(){
+		import('vender/eterm/app.php');
+		// ** 
+		$depart   = array(
+			'UA' => array( 'BJS' ),
+			'DL' => array( 'BJS' )
+		);
+		$arrive   = array( 
+			'UA' => array('SFO', 'IAD', 'BOS', 'LAX', 'EWR', 'ORD', 'MCO', 'IAH', 'SLC', 'DEN', 'CVG', 'LAS', 'PIA', 'ATL', 'RDU', 'BDL', 'BTV', 'SEA', 'SAN', 'CLT', 'BNA', 'DFW', 'PIT', 'DSM', 'CLE', 'BOI', 'MIA', 'SGF', 'STL', 'ROA', 'YYZ', 'PHL', 'OMA', 'BUF', 'PDX', 'MSP', 'OKC', 'HSV', 'PHX', 'IND', 'DCA', 'SBN', 'LGA', 'SAT', 'CMH', 'LAN', 'MCI', 'JAC', 'CMI', 'EUG', 'AUS', 'MEX', 'SYR', 'FLL', 'GEG', 'DTW', 'ALB', 'RIC', 'YUL'),
+			'DL' => array('SEA', 'DTW', 'BOS', 'LAX', 'MCO', 'SLC', 'ATL', 'DEN', )
+		);
+		$arrive   = array( 
+			'UA' => array('SFO', 'IAD'),
+			'DL' => array('SEA', 'DTW')
+		);
+
+
+		// 航程
+		$array = array();
+
+		$start      = 'BJS';
+		$end        = 'NYC';
+		$aircompany = 'UA';
+
+		foreach($depart as $aircompany => $d){
+			foreach ($arrive[$aircompany] as $end) {
+		// 		echo $d[0].'-'.$end."<br>";
+				$start      = $d[0];
+				$command    = 'XS/FSD'.$start.$end.'/'.date('tM', time()+10*24*60*60 ).'/'.$aircompany.'/NEGO/X';
+				$fsl        = new \Fsl($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
+
+				$result = $this->hasFslSource(array('command' => $command));
+
+				// 数据保留1个月
+				if ( isset($result['GmtModified']) && $result['GmtModified'] + 30*24*60*60 > time() ){ 
+					$fsl -> wtTmp($result['Detail']);
+					$array["{$d[0]}{$end}/{$aircompany}"] = $fsl -> analysis(array(3,4));
+				}else{
+					$fsl -> command($command, 'w');
+					$array["{$d[0]}{$end}/{$aircompany}"] = $fsl -> analysis(array(1,2,3));
+					$this-> saveFslSource(array('source' => $fsl->readSource(), 'command' => $command));
+					sleep(3);
+				}
+				ob_flush();
+				flush();
+			}
+		}
+
+
+		\BYS\Report::p($array);
+	}
+
+	public function hasFslSource($array = array()){
+		$m_fsl  = model('fsl_source');
+  	$result = $m_fsl->where('`command` ="'.$array['command'].'" ')->select();
+
+  	// 为空返回false
+  	if(!$result || empty($result[0]) ) return false;
+  	$col = $result[0]; // 仅一条
+		if ( isset($col['Command']) && $array['command'] == $col['Command'] ) 
+			return array('Detail' =>$col['Detail'], 'GmtModified' =>$col['GmtModified'] );
+
+  	return false;
+	}
+
+	public function saveFslSource($array = array()){
+		$m_fsl = model('fsl_source');
+  	$add = array(
+  		'office' => $_SESSION['resource'],
+  		'status' => 2,
+  		'command'=> isset($array['command'])? $array['command'] : '',
+  		'detail' => isset($array['source'])? $array['source']: '',
+  	);
+  	return $m_fsl->add($add);
+	}
+
 	// 新增混舱
 	public function addMixCabin(){
 		if(isset($_POST['data']) && $_POST['action'] == 'add'){
@@ -481,7 +564,6 @@ class EtermController extends Controller {
 			echo 'ERROR: No Session Data !';
 			exit;
 		}
-
 
 		if(count($data) == 2){ // 最多2个航段
 
@@ -592,7 +674,6 @@ class EtermController extends Controller {
 		$this->display('eterm/mixCabinByTpl');
 	}
 
-
 	private function matchRule($array1, $array2){
 		// 混舱规则
 		if(empty($array1) || empty($array2)) {
@@ -680,9 +761,7 @@ class EtermController extends Controller {
 		}
 		
 		return $array;
-
 	}
-
 
 	// 使用规则，备注装填
 	public function assignItem($arr){
