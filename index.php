@@ -18,6 +18,9 @@ if(version_compare(PHP_VERSION,'5.3.0','<'))  die('require PHP > 5.3.0 !');
 // 绑定应用
 define('BIND_APP', 'admin');
 
+// 开启调试模式 建议开发阶段开启 部署阶段注释或者设为false
+// define('APP_DEBUG', True);
+
 // 引入入口文件
 require './includes/set.php';
 
