@@ -11,9 +11,77 @@
 				<div class="form-inline">
 
 					<div class="input-group">
-							<span class="input-group-addon" id="input-airCompany">航空公司</span><input type="text" name="airCompany" id="airCompany" placeholder="两代码" class='form-control' onblur="upper(this)" style='width:100px' aria-describedby="input-airCompany">
-							<span class="input-group-addon" id="input-start">出发地</span><input type="text" name="start" id="start" placeholder="城市代码" class='form-control' onblur="upper(this)" style='width:100px' aria-describedby="input-start">
-							<span class="input-group-addon" id="input-end">到达地</span><input type="text" name='end' id='end' placeholder="城市代码" class='form-control' onblur="upper(this)" style='width:100px' aria-describedby="input-end">
+							<span class="input-group-addon" id="input-airCompany">航空公司</span><input type="search" name="airCompany" id="airCompany" placeholder="两代码" class='form-control' onblur="upper(this)"  aria-describedby="input-airCompany" list='airCompanyList'>
+							<datalist id="airCompanyList">
+							  <option value="UA">
+							  <option value="DL">
+							</datalist>
+							<span class="input-group-addon" id="input-start">出发地</span><input type="search" name="start" id="start" placeholder="城市代码" class='form-control' onblur="upper(this)"  aria-describedby="input-start" list='startList'>
+							<datalist id="startList">
+							  <option value="BJS">
+							</datalist>
+							<span class="input-group-addon" id="input-end">到达地</span><input type="search" name='end' id='end' placeholder="城市代码" class='form-control' onblur="upper(this)" aria-describedby="input-end" list='endList'>
+							<datalist id="endList">
+								<option value='SFO'>
+								<option value='IAD'>
+								<option value='BOS'>
+								<option value='LAX'>
+								<option value='EWR'>
+								<option value='ORD'>
+								<option value='MCO'>
+								<option value='IAH'>
+								<option value='SLC'>
+								<option value='DEN'>
+								<option value='CVG'>
+								<option value='LAS'>
+								<option value='PIA'>
+								<option value='ATL'>
+								<option value='RDU'>
+								<option value='BDL'>
+								<option value='BTV'>
+								<option value='SEA'>
+								<option value='SAN'>
+								<option value='CLT'>
+								<option value='BNA'>
+								<option value='DFW'>
+								<option value='PIT'>
+								<option value='DSM'>
+								<option value='CLE'>
+								<option value='BOI'>
+								<option value='MIA'>
+								<option value='SGF'>
+								<option value='STL'>
+								<option value='ROA'>
+								<option value='YYZ'>
+								<option value='PHL'>
+								<option value='OMA'>
+								<option value='BUF'>
+								<option value='PDX'>
+								<option value='MSP'>
+								<option value='OKC'>
+								<option value='HSV'>
+								<option value='PHX'>
+								<option value='IND'>
+								<option value='DCA'>
+								<option value='SBN'>
+								<option value='LGA'>
+								<option value='SAT'>
+								<option value='CMH'>
+								<option value='LAN'>
+								<option value='MCI'>
+								<option value='JAC'>
+								<option value='CMI'>
+								<option value='EUG'>
+								<option value='AUS'>
+								<option value='MEX'>
+								<option value='SYR'>
+								<option value='FLL'>
+								<option value='GEG'>
+								<option value='DTW'>
+								<option value='ALB'>
+								<option value='RIC'>
+								<option value='YUL'>
+							</datalist>
 					</div>
 
 					<div class="input-group">
