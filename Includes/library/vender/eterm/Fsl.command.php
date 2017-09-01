@@ -103,7 +103,7 @@ class Fsl extends Eterm{
     if(!empty($this->fliter) && isset($this->fliter['aircompany'])) {
       $fliter_aircompany = $this->fliter['aircompany'];
       $cnto = model('cn_to');
-      
+
       $fliter_stay = array(); //  所有的中国出发直达的目的地，二维数组
     }
 
@@ -124,15 +124,36 @@ class Fsl extends Eterm{
       // 筛选中转点：中国各个城市出发匹配的中转点
       if(isset($cnto) && (!isset($fliter_stay[$depart])) ){
         // 转换成机场代码
-        $fliter_direct = $cnto->where("`CNTo_Aircompany` = '{$fliter_aircompany}' AND `CNTo_Depart` = '{$depart}' ")->select();
+        $fliter_direct = $cnto->query("SELECT
+                C.aircompany,
+                C.depart,
+                C.arrive,
+                C.departCity,
+                D.ACC_CityCode AS arriveCity
+              FROM
+                (
+                  SELECT
+                    B.CNTo_Aircompany AS aircompany,
+                    B.CNTo_Depart AS depart,
+                    B.CNTo_Arrive AS arrive,
+                    A.ACC_CityCode AS departCity
+                  FROM
+                    basis_cn_to AS B
+                  LEFT JOIN basis_airport_city_code AS A ON B.CNTo_Depart = A.ACC_Code
+                  WHERE
+                    B.CNTo_Aircompany = '{$fliter_aircompany}'
+                  AND A.ACC_CityCode = '{$depart}'
+                ) AS C
+              LEFT JOIN basis_airport_city_code AS D ON C.arrive = D.ACC_Code ;");
+
         $fliter_stay[$depart] = array();
-        var_dump("`CNTo_Aircompany` = '{$fliter_aircompany}' AND `CNTo_Depart` = '{$depart}'");
+
         if ( $fliter_direct ) 
           foreach ($fliter_direct as $item) {
-            if( isset($item['CNTo_Arrive']) )
-              array_push($fliter_stay[$depart], $item['CNTo_Arrive']);
+            // 机场代码
+            if( isset($item['arriveCity']) && !in_array($item['arriveCity'], $fliter_stay[$depart]))
+              array_push($fliter_stay[$depart], $item['arriveCity']);
           }
-
       }
 
   		foreach ($range as $r){
@@ -140,17 +161,19 @@ class Fsl extends Eterm{
   				if(!empty($arrivePot[0])){
   					foreach ($arrivePot[0] as $pot) {
               // 即不再数组中，又在从中国出发的匹配城市中  						
-              if (isset($fliter_stay[$depart]) && !empty($fliter_stay[$depart]))
+              if (isset($fliter_stay[$depart]) && !empty($fliter_stay[$depart])){
                 if( !in_array($pot, $rangePot) && in_array($pot, $fliter_stay[$depart]) )
   	  						array_push($rangePot, $pot);
-
-              else
+              }
+              else{
                 if( !in_array($pot, $rangePot) ) 
                   array_push($rangePot, $pot);
+              }
   					}
   				}
   			}
   		}
+
   		$routing = $depart.'-';
   		if(!empty($rangePot)){
 	  		foreach ($rangePot as $pot) {

@@ -80,7 +80,7 @@ class EtermController extends Controller {
 		$tripType   = $_POST['tripType'];
 		$other      = $_POST['other'];
 		$ab_flag    = preg_match("/[\/]2|[\/]2[\/]|2[\/]/",$other, $str) ? true:false;
-		$endArr     = explode(',', $endMore);  // 多地点录入时
+		$endArr     = explode(',', rtrim($endMore,','));  // 多地点录入时
 		$array      = array();                 // 解析结果的数组，支持多个地点
 		
 		foreach($endArr as $end){

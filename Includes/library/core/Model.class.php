@@ -11,6 +11,8 @@
 	 	protected $_validate        = array();
 	 	// WHERE
 	 	protected $where            = '';
+	 	// JOIN
+	 	protected $join             = '';
 
 	 	function __construct($className = ""){
 		 	// 声明全局变量
@@ -116,20 +118,44 @@
 		 * @return thisObject
 		 */	
 	 	public function where($where = ''){
-	 		if(!is_string($where)) return;
+	 		if(!is_string($where)) return $this;
 			$this->where = " WHERE ".$where;
 			return $this;
+	 	}
+
+	 	public function join($type = '', $sql = ''){
+	 		if(!is_string($type) || $type == '') return $this;
+	 		if(!is_string($sql)) return $this;
+
+	 		switch ($type) {
+	 			case 'INNER':
+			 		$this->join = ' INNER JOIN '.$sql;
+		 			break;
+	 			case 'LEFT':
+		 			$this->join = ' LEFT JOIN '.$sql;
+	 				break;
+	 			case 'RIGHT':
+	 				$this->join = ' RIGHT JOIN '.$sql;
+	 				break;
+	 			case 'FULL':
+	 				$this->join = ' FULL JOIN '.$sql;
+	 				break;
+	 		}
+	 		return $this;
 	 	}
 
 	  /**
 		 * 查询数据
 		 * @return mix 结果
 		 */	 	
-	 	public function select(){
-	 		$sql = "SELECT * FROM ".$this->tableName.$this->where;
+	 	public function select($cols = ''){
+	 		if( $cols != '')
+	 			$sql = "SELECT {$cols} FROM ".$this->tableName.$this->join.$this->where;
+		 	else
+		 		$sql = "SELECT * FROM ".$this->tableName.$this->join.$this->where;
+
 	 		$this->prepare($sql);
 	 		$result = $this->execute();
-
 	 		// 如果有结果均按数组返回
 	 		if(is_array($result) && isset($result[0])){
 		 		return $result;
@@ -190,17 +216,13 @@
 		 	try{
 		 			// Db::$link->beginTransaction(); 
 	        $rows = Db::$link->query($sql); // 返回类似于数组
-	        $lastId = Db::$link->lastInsertId();
 	        // Db::$link->commit();
 	        $result = array();
-	        if(count($rows)>1){
-		        foreach ($rows as $row) {
-		        	$result[] = $row;
-		        }
-	        } else{
-	        	var_dump($rows);
-	        	$result = $rows;
+
+	        foreach ($rows as $row) {
+	        	$result[] = $row;
 	        }
+
 	        return $result;
 
 	    }catch(PDOException $e){

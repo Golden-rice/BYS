@@ -8,6 +8,7 @@ defined('ROOT')      or define('ROOT', dirname($_SERVER['SCRIPT_FILENAME']).'/')
 defined('URL')       or define('URL', 'http://'.$_SERVER['HTTP_HOST'].rtrim($_SERVER['SCRIPT_NAME'], 'index.php')); 
 defined('INCLUDES')  or define('INCLUDES',  ROOT.'Includes/'); // 依赖地址
 defined('NAMESPACE') or define('NAMESPACE',  'BYS'); // 框架命名空间
+defined('APP_DEBUG') or define('APP_DEBUG',  false); // 开发模式
 
 define('APP_PATH',  ROOT.'App/');         // 应用文件目录
 define('PUB_PATH',  ROOT.'Public/');      // 静态文件目录
