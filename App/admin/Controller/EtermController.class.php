@@ -511,10 +511,10 @@ class EtermController extends Controller {
 				// 数据保留1个月
 				if ( isset($result['GmtModified']) && $result['GmtModified'] + 30*24*60*60 > time() ){ 
 					$fsl -> wtTmp($result['Detail']);
-					$array["{$start}{$end}/{$aircompany}"] = $fsl -> analysis(array(3,4));
+					$array["{$start}{$end}/{$aircompany}"] = $fsl -> analysis(array(3,4), array('aircompany'=>$aircompany));
 				}else{
 					$fsl -> command($command, 'w');
-					$array["{$start}{$end}/{$aircompany}"] = $fsl -> analysis(array(1,2,3,4));
+					$array["{$start}{$end}/{$aircompany}"] = $fsl -> analysis(array(1,2,3,4), array('aircompany'=>$aircompany));
 					$this-> saveFslSource(array('source' => $fsl->readSource(), 'command' => $command));
 					sleep(3);
 				}

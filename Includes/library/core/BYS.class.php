@@ -31,7 +31,7 @@ class BYS {
 		// 设置中国时区
 		date_default_timezone_set('PRC');
 
-		if(isset(APP_DEBUG) && constant(APP_DEBUG) == true)
+		if(APP_DEBUG == null)
 			error_reporting(E_ALL ^ E_NOTICE);
 
 		// 设置语言

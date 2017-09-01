@@ -103,33 +103,50 @@ class Fsl extends Eterm{
     if(!empty($this->fliter) && isset($this->fliter['aircompany'])) {
       $fliter_aircompany = $this->fliter['aircompany'];
       $cnto = model('cn_to');
+      
+      $fliter_stay = array(); //  所有的中国出发直达的目的地，二维数组
     }
 
 
   	// 解析所有行的中转情况
   	foreach ($this->arr as $key => $line) {
+      // 每条航路
   		$range    = explode('-',$line);
+      // 航路出发
   		$depart   = $range[0];
+      // 所有匹配的中转点，已去重
   		$rangePot = array();
+      // 航路到达
   		$arrive   = end($range);
   		// 放到上层
   		$end      = $arrive;
-      if(isset($cnto) && empty($fliter_stay[$depart])){
+
+      // 筛选中转点：中国各个城市出发匹配的中转点
+      if(isset($cnto) && (!isset($fliter_stay[$depart])) ){
+        // 转换成机场代码
         $fliter_direct = $cnto->where("`CNTo_Aircompany` = '{$fliter_aircompany}' AND `CNTo_Depart` = '{$depart}' ")->select();
         $fliter_stay[$depart] = array();
-        foreach ($fliter_direct as $item) {
-          if( isset($item['CNTo_Arrive']) )
-            array_push($fliter_stay[$depart], $item['CNTo_Arrive']);
-        }
+        var_dump("`CNTo_Aircompany` = '{$fliter_aircompany}' AND `CNTo_Depart` = '{$depart}'");
+        if ( $fliter_direct ) 
+          foreach ($fliter_direct as $item) {
+            if( isset($item['CNTo_Arrive']) )
+              array_push($fliter_stay[$depart], $item['CNTo_Arrive']);
+          }
+
       }
 
   		foreach ($range as $r){
   			if($r != $arrive && preg_match_all("/SFO|CHI|NYC|WAS|LAX|ORD|EWR/", $r, $arrivePot)){
-  				// $rangePot .= $arrivePot[0].'/';
   				if(!empty($arrivePot[0])){
   					foreach ($arrivePot[0] as $pot) {
-  						if(!in_array($pot, $rangePot))
-	  						array_push($rangePot, $pot);
+              // 即不再数组中，又在从中国出发的匹配城市中  						
+              if (isset($fliter_stay[$depart]) && !empty($fliter_stay[$depart]))
+                if( !in_array($pot, $rangePot) && in_array($pot, $fliter_stay[$depart]) )
+  	  						array_push($rangePot, $pot);
+
+              else
+                if( !in_array($pot, $rangePot) ) 
+                  array_push($rangePot, $pot);
   					}
   				}
   			}
