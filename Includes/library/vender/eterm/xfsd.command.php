@@ -4,7 +4,7 @@ class Xfsd extends Eterm{
 	private $arr = array();      // 储存数组信息
     private $org_arr = array();  // 原始数组信息
 	private $date;
-    private $startKey;           // 开始匹配的起始位置
+    private $startKey = '';           // 开始匹配的起始位置
     private $firstPage = '';
 
     public function analysis($switch){
@@ -79,11 +79,11 @@ class Xfsd extends Eterm{
 		if($isF){ // 如果是第一页
 			$fkey = 0;
 	    	foreach ($pageArr as $key => $pageline) {
-	    		if( !$fkey && preg_match_all("/\d{2}\s\w/",substr($pageline,0, 10),$arr)) {
+	    		if( $fkey == 0 && preg_match_all("/\d{2}\s\w/",substr($pageline,0, 10),$arr)) {
 	    			$fkey = $key-1; // 开始匹配舱位的位置，通常是12
                     $this->startKey = $pageArr[$fkey];
 	    		}
-	    		if(!empty($fkey) && $key > $fkey ){
+	    		if( $fkey != 0 && $key > $fkey ){
 					if(isset($pageArr[$key+1]) && substr($pageArr[$key+1], 0,4) == '    ' ){  // 带有星期
 						$pageline = $pageline.substr($pageArr[$key+1], 1);
 						$this->inputSeat($pageline);
@@ -124,10 +124,14 @@ class Xfsd extends Eterm{
 
     private function display($arr){
         // update by xiaojia
+        // 无数据时
+        if($this->startKey == '') return;
+        
         preg_match('/\s(\w{3})(\w{3})\/(\w{2})/',$this->startKey, $str);
         $start       = $str[1];
         $end         = $str[2];
         $direction   = $str[3];
+
         foreach($arr as $key => $dataline){
             $index   = substr($dataline, 0, 3);                  // 序号
             $pos     = 3;

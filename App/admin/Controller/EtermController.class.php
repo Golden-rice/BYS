@@ -468,11 +468,11 @@ class EtermController extends Controller {
 		// 比default多个analysis 
 		if ( isset($result['GmtModified']) && $result['GmtModified'] + 30*24*60*60 > time() ){ 
 			$fsl -> wtTmp($result['Detail']);
-			$array["{$start}{$end}/{$aircompany}"] = $fsl -> analysis(array(3,4));
+			$array["{$start}{$end}/{$aircompany}"] = $fsl -> analysis(array(3,4), array('aircompany'=>$aircompany));
 			$array["{$start}{$end}/{$aircompany}"]['length'] = count($array["{$start}{$end}/{$aircompany}"])-1;
 		}else{
 			$fsl -> command($command, 'w');
-			$array["{$start}{$end}/{$aircompany}"] = $fsl -> analysis(array(1,2,3,4));
+			$array["{$start}{$end}/{$aircompany}"] = $fsl -> analysis(array(1,2,3,4), array('aircompany'=>$aircompany));
 			$array["{$start}{$end}/{$aircompany}"]['length'] = count($array["{$start}{$end}/{$aircompany}"])-1;
 			$this-> saveFslSource(array('source' => $fsl->readSource(), 'command' => $command));
 		}
@@ -489,7 +489,7 @@ class EtermController extends Controller {
 		);
 		$arrive   = array( 
 			'UA' => array('SFO', 'IAD', 'BOS', 'LAX', 'EWR', 'ORD', 'MCO', 'IAH', 'SLC', 'DEN', 'CVG', 'LAS', 'PIA', 'ATL', 'RDU', 'BDL', 'BTV', 'SEA', 'SAN', 'CLT', 'BNA', 'DFW', 'PIT', 'DSM', 'CLE', 'BOI', 'MIA', 'SGF', 'STL', 'ROA', 'YYZ', 'PHL', 'OMA', 'BUF', 'PDX', 'MSP', 'OKC', 'HSV', 'PHX', 'IND', 'DCA', 'SBN', 'LGA', 'SAT', 'CMH', 'LAN', 'MCI', 'JAC', 'CMI', 'EUG', 'AUS', 'MEX', 'SYR', 'FLL', 'GEG', 'DTW', 'ALB', 'RIC', 'YUL'),
-			'DL' => array('SEA', 'DTW', 'BOS', 'LAX', 'MCO', 'SLC', 'ATL', 'DEN', )
+			'DL' => array('SEA', 'DTW', 'BOS', 'LAX', 'MCO', 'SLC', 'ATL', 'DEN' )
 		);
 		$arrive   = array( 
 			'UA' => array('SFO', 'IAD'),
