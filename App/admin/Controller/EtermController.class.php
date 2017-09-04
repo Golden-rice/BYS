@@ -3,6 +3,8 @@ namespace admin\Controller;
 use BYS\Controller;
 class EtermController extends Controller {
 
+	private $cache = array(); // 临时储存
+
 	// xfsd 前台展示
   public function xfsd(){
   	$this->display();
@@ -19,7 +21,6 @@ class EtermController extends Controller {
   }
 
   public function fsl(){
-  	// $this->searchFslByDefault();
   	$this->display();
   }
 
@@ -119,6 +120,7 @@ class EtermController extends Controller {
 		}
 
 		// 全部保存解析结果，用id筛选需要保存的数据
+		// 所有查询结果均会保存，所以在使用result时，要选择最新的即 sid大的
 		$this->saveXfsdResult($array);
 		echo json_encode(array('array'=>$array, 'time'=>'更新时间：'.date('Y-m-d H:i:s', $xfsd->fileTime)) );
   }
@@ -143,8 +145,10 @@ class EtermController extends Controller {
   	$addAll = array();
 
   	foreach ($array as $end => $list) {
+  		// 通过储存source 返回的id 来储存 result
   		if(!isset($list['id'])) continue;
   		for($i = 0; $i < count($list)-6; $i++){
+  			// 当没数据是返回
   			if(!isset($list[$i])) break;
   			
   			$value = $list[$i];
@@ -405,7 +409,6 @@ class EtermController extends Controller {
 
 		// 再插入
 		$this->saveAvhResult($array, $id, $command);
-
 	}
 
 	public function deleteAvhResult($id = 0){
@@ -452,7 +455,7 @@ class EtermController extends Controller {
   	return false;
 	}
 
-	public function searchFslByInput(){
+	public function searchFslByInput($return = false){
 		import('vender/eterm/app.php');
 
 		$aircompany = $_POST['aircompany'];
@@ -468,16 +471,27 @@ class EtermController extends Controller {
 		// 比default多个analysis 
 		if ( isset($result['GmtModified']) && $result['GmtModified'] + 30*24*60*60 > time() ){ 
 			$fsl -> wtTmp($result['Detail']);
-			$array["{$start}{$end}/{$aircompany}"] = $fsl -> analysis(array(3,4), array('aircompany'=>$aircompany));
-			$array["{$start}{$end}/{$aircompany}"]['length'] = count($array["{$start}{$end}/{$aircompany}"])-1;
+			$fsl_result = $fsl -> analysis(array(3,4), array('aircompany'=>$aircompany)); 
+
+			if(!empty($fsl_result)){
+				$array["{$start}{$end}/{$aircompany}"] = $fsl_result;
+				$array["{$start}{$end}/{$aircompany}"]['length'] = count($array["{$start}{$end}/{$aircompany}"])-1;
+			}
+				
 		}else{
 			$fsl -> command($command, 'w');
-			$array["{$start}{$end}/{$aircompany}"] = $fsl -> analysis(array(1,2,3,4), array('aircompany'=>$aircompany));
-			$array["{$start}{$end}/{$aircompany}"]['length'] = count($array["{$start}{$end}/{$aircompany}"])-1;
+			$fsl_result = $fsl -> analysis(array(1,2,3,4), array('aircompany'=>$aircompany));
+			if(!empty($fsl_result)){
+				$array["{$start}{$end}/{$aircompany}"] = $fsl_result;
+				$array["{$start}{$end}/{$aircompany}"]['length'] = count($array["{$start}{$end}/{$aircompany}"])-1;
+			}			
 			$this-> saveFslSource(array('source' => $fsl->readSource(), 'command' => $command));
 		}
 
-		echo json_encode(array('array'=>$array));
+		if($return)
+			return array('array'=>$array, 'msg'=> \BYS\Report::printLog());
+		else
+			echo json_encode(array('array'=>$array, 'msg'=> \BYS\Report::printLog()));
 	}
 
 	public function searchFslByDefault(){
@@ -584,10 +598,8 @@ class EtermController extends Controller {
 		$data = $_SESSION['data'];
 		$array = array(); // 混舱后
 
-		if(empty($data)) {
-			echo 'ERROR: No Session Data !';
-			exit;
-		}
+		if(empty($data)) 
+			\BYS\Report::error('ERROR: No Session Data !');
 
 		if(count($data) == 2){ // 最多2个航段
 
@@ -623,7 +635,7 @@ class EtermController extends Controller {
 			}	
 
 		}else{
-			echo 'ERROR: Not True Count of Session !';
+			\BYS\Report::error('ERROR: Not True Count of Session !');
 		}
 
 		$_SESSION['mixCabin'] = $array;
@@ -642,18 +654,19 @@ class EtermController extends Controller {
 		if(isset($_POST['tpl']) && isset($_SESSION['data'])){
 			$tpl = json_decode($_POST['tpl'], true);
 
-			$array = $_SESSION['mixCabin'];
-			$tplName = $_POST['tplName'];
+			$array    = $_SESSION['mixCabin'];
+			$tplName  = $_POST['tplName'];
 			$typeName = $_POST['typeName'];
 
 			if( preg_match("/taobao/", $tplName) ){
 				foreach ($array as $key => $value) {
+					// 需要扩展已确认值
 					// $arrayByTpl[] = $array[$key];
 					$tpl['outFileCode']   = "";
 					$tpl['originLand']    = $value['start'];
 					$tpl['destination']   = $value['end'];
 					$tpl['cabin']         = $value['seat'];
-					$tpl['FareBasis']      = $value['fare'];
+					$tpl['FareBasis']     = $value['fare'];
 					$tpl['flightDateRestrict4Dep']   = $value['allowWeek_1'];
 					$tpl['flightDateRestrict4Ret']   = $value['allowWeek_2'];
 					$tpl['minStay']       = $value['minStay'];
@@ -665,26 +678,27 @@ class EtermController extends Controller {
 				}
 			}else if( preg_match("/xiecheng/", $tplName) ){
 				foreach ($array as $key => $value) {
-					$tpl['outFileCode']    = "";
-					$tpl['DepartCity']     = $value['start'];
-					$tpl['ArriveCity']     = $value['end'];
-					// Routing 航路
+					// 舱位
 					preg_match_all("/(\w)\,(\w)/",$value['seat'], $s);
-					$seat = isset($s[1][0]) && $s[1][0] == $s[2][0] ? $s[1][0]: $value['seat'];
-					$tpl['RoutingClass']   = $seat;
-					$tpl['FareBasis']      = $value['fare'];
-					$tpl['OutboundDayTime']= $value['allowWeek_1'];
-					$tpl['InboundDayTime'] = $value['allowWeek_2'];
-					// 去程旅行日期
-					// 回程旅行日期
-					// 销售日期
-					// 乘客资质
-					$tpl['MinStay']        = $array[$key]['minStay'];
-					$tpl['MaxStay']        = $array[$key]['maxStay'];
-					$tpl['SalesPrice']     = $array[$key]['backLineFee'] != ''? $array[$key]['backLineFee'] : $array[$key]['singleLineFee'];  
-					// 出票时限
-					// 成人去程行李额
-					// 成人回程行李额
+					preg_match("/(\d)([D|M])/", $array[$key]['minStay'], $md);
+					if(isset($md[1]) && isset($md[2])){
+						$mdAdd = (int)$md[1] * ( $md[2] == 'M' ? 30 * 24 * 60 * 60 : 24 * 60 * 60  );
+					}
+
+					$tpl['outFileCode']          = "";
+					$tpl['DepartCity']           = $value['start'];
+					$tpl['ArriveCity']           = $value['end'];
+					$tpl['Routing']              = $value['routing'];
+					$tpl['RoutingClass']         = isset($s[1][0]) && $s[1][0] == $s[2][0] ? $s[1][0]: $value['seat'];
+					$tpl['FareBasis']            = $value['fare'];
+					$tpl['OutboundDayTime']      = $value['allowWeek_1'];
+					$tpl['InboundDayTime']       = $value['allowWeek_2'];
+					$tpl['FcOutboundTravelDate'] = $value['allowDateStart'] != '' && $value['allowDateEnd'] != '' ?  date('Y-m-d',strtotime($value['allowDateStart'])).'>'.date('Y-m-d',strtotime($value['allowDateEnd'])): ''; 
+					$tpl['FcInboundTravelDate']  = $tpl['FcOutboundTravelDate'] != '' && isset($mdAdd) ?  date('Y-m-d', strtotime($value['allowDateStart']) + $mdAdd ).'>'.date('Y-m-d',strtotime($value['allowDateEnd'])): ''; 
+					// 销售日期 SalesDate
+					$tpl['MinStay']              = $array[$key]['minStay'];
+					$tpl['MaxStay']              = $array[$key]['maxStay'];
+					$tpl['SalesPrice']           = $array[$key]['backLineFee'] != ''? $array[$key]['backLineFee'] : $array[$key]['singleLineFee'];  
 					$arrayByTpl[] = $tpl;
 				}
 			}
@@ -705,40 +719,116 @@ class EtermController extends Controller {
 			return;
 		}
 
-		$stay = '';
-		$start_2 = '';
-		$end_2 = '';
-		$stay_2 = '';
-
-		$array = array();
-
+		// 判断去程与回程是否相同
+		$stay      = '';
+		$start_2   = '';  // 回程出发
+		$stay_2    = '';  // 回程中转
+		$end_2     = '';  // 回程到达
+		$array     = array();
 		$stayMatch = array(
-			'EK' => array(
-				'aircompany' => 'EK',
-				'stay' => 'DXB'
-				),
-			'EY' => array(
-				'aircompany' => 'EY',
-				'stay' => 'DXB'
-				),
+			'EK' => array('aircompany' => 'EK', 'stay' => 'DXB'),
+			'EY' => array('aircompany' => 'EY', 'stay' => 'DXB'),
 		);
 
+		// 回程的查询结果回程出发与到达应相反
 		if($array1['start'] != $array2['start']){
-			$start_2 = $array2['start'];
+			$start_2 = $array2['end'];
 		}
-
+		// 回程的查询结果回程出发与到达应相反
 		if($array1['end'] != $array2['end']){
-			$end_2 = $array2['end'];
+			$end_2 = $array2['start'];
 		}
 
+		// 查询航路
+		$routingResultId1    = $array1['start'].$array1['end'].'/'.$array1['aircompany'];
+		$routingResultId2    = $array2['start'].$array2['end'].'/'.$array2['aircompany'];
+
+		$_POST['aircompany'] = $array1['aircompany'];
+		$_POST['start']      = $array1['start'];
+		$_POST['end']        = $array1['end'];
+
+		// 减少请求次数
+		if(isset($this->cache['routingResult']) && !empty($this->cache['routingResult'][$routingResultId1])){
+			$routingResult1    = $this->cache['routingResult'][$routingResultId1];
+		}
+		else{
+			$Result1 = $this->searchFslByInput(true);
+			if(empty($Result1['msg']) ){
+				$routingResult1  = $Result1['array'];
+			}else{
+				echo $Result1['msg'];
+			}
+			$this->cache['routingResult'] = array();
+			$this->cache['routingResult'][$routingResultId1] = $routingResult1;
+		}
+
+		// 查询航程的航班号
+		// $flightModel         = model('flight');
+		// $flightResult1       = $flight -> where("Fli_Airport = '{$array1['aircompany']}'") -> select();
+
+
+		// 相同航程
+		if($routingResultId2 == $routingResultId1){
+
+			// 相同查询结果
+			$routingResult2    = $routingResult1;
+
+		// 不同航程
+		}else{
+
+			$_POST['aircompany'] = $array2['aircompany'];
+			$_POST['start']      = $array2['start'];
+			$_POST['end']        = $array2['end'];
+
+			// 减少请求次数
+			if(isset($this->cache['routingResult']) && !empty($this->cache['routingResult'][$routingResultId2])){
+				$routingResult2 = $this->cache['routingResult'][$routingResultId2];
+			}
+			else{
+				$routingResult2 = $this->searchFslByInput(true);
+				if(empty($Result2['msg']) ){
+					$routingResult2 = $Result1['array'];
+				}else{
+					echo $Result2['msg'];
+				}
+				$this->cache['routingResult'] = array();
+				$this->cache['routingResult'][$routingResultId2] = $routingResult2;
+			}
+
+		}
+
+
+		// 利用 $routingResult1 扩充 $stayMatch
+		if(!empty($routingResult1)){
+			$stayMatch[$array1['aircompany']] = array(
+				'aircompany' => $array1['aircompany'],
+				'stay'       => ''
+			);
+			foreach ($routingResult1[$routingResultId1]['result'] as $stay) {
+				$stayMatch[$array1['aircompany']]['stay'] .= $stay.',';
+			}
+			$stayMatch[$array1['aircompany']]['stay'] = rtrim($stayMatch[$array1['aircompany']]['stay'],',');
+		}
+
+		// 利用 $routingResult2 扩充 $stayMatch
+		if(!empty($routingResult2)){
+			$stayMatch[$array2['aircompany']] = array(
+				'aircompany' => $array2['aircompany'],
+				'stay'       => ''
+			);
+			foreach ($routingResult2[$routingResultId2]['result'] as $stay) {
+				$stayMatch[$array2['aircompany']]['stay'] .= $stay.',';
+			}
+			$stayMatch[$array2['aircompany']]['stay'] = rtrim($stayMatch[$array2['aircompany']]['stay'],',');
+		}
 
 		if($array1['aircompany'] == $array2['aircompany']){
-			// 相同航空公司
+			// 相同航空公司，回程中转地相同
 			if(isset($stayMatch[$array1['aircompany']]) && $array1['end'] != $stayMatch[$array1['aircompany']]['stay']){ // 有该航司中转城市，且目的地不是中转城市
 				$stay = $stayMatch[$array1['aircompany']]['stay'];
 			}
 
-			// 待测试
+			// 回程中转地不同
 			if(!empty($end_2)){
 				if(isset($stayMatch[$array2['aircompany']]) && $array2['end'] != $stayMatch[$array2['aircompany']]['stay']){ // 有该航司中转城市，且目的地不是中转城市
 					$stay_2 = $stayMatch[$array2['aircompany']]['stay'];
@@ -746,44 +836,31 @@ class EtermController extends Controller {
 			}
 
 		}else{
-			// 不同航空公司
-			echo '不能进行不同航空公司混舱规则！';
-			exit;
+			\BYS\Report::error('不能进行不同航空公司混舱规则！');
 		}
 
 		$array = array(
-				'fare'          => $array1['fare'].'+'.$array2['fare'],
+				'fare'          => "{$array1['fare']}/{$array2['fare']}",
 				'ADVPDay'       => strtotime(preg_replace("/D/","day",$array1['ADVPDay'])) > strtotime(preg_replace("/D/","day",$array2['ADVPDay'])) ? preg_replace("/D/","",$array1['ADVPDay']): preg_replace("/D/","",$array2['ADVPDay']),
 				'singleLineFee' => $array1['singleLineFee'] == ""? "":($array1['singleLineFee']+$array2['singleLineFee'])/2,
 				'backLineFee'   => $array1['backLineFee'] == "" ? "":($array1['backLineFee']+$array2['backLineFee'])/2,
-				'seat'          => $array1['seat'].','.$array2['seat'],
+				'seat'          => ( isset($stayMatch[$array1['aircompany']]['stay']) ?  $array1['seat'].'-'.$array1['seat'] : $array1['seat']).'-'.( isset($stayMatch[$array2['aircompany']]['stay']) ? $array2['seat'].'-'.$array2['seat'] : $array2['seat'] ),
 				'minStay'       => strtotime(preg_replace(array("/D/","/M/"), array("day","month"), $array1['minStay'])) > strtotime(preg_replace(array("/D/","/M/"), array("day","month"), $array2['minStay'])) ? $array2['minStay'] : $array1['minStay'],
 				'maxStay'       => strtotime(preg_replace(array("/D/","/M/"), array("day","month"), $array1['maxStay'])) < strtotime(preg_replace(array("/D/","/M/"), array("day","month"), $array2['maxStay'])) ? $array1['maxStay'] : $array2['maxStay'],
 				'allowDateStart'=> strtotime($array1['allowDateStart']) > strtotime($array2['allowDateStart'])? $array1['allowDateStart']:$array2['allowDateStart'],
 				'allowDateEnd'  => strtotime($array1['allowDateEnd']) < strtotime($array2['allowDateEnd'])? $array1['allowDateEnd']:$array2['allowDateEnd'],
 				'allowWeek_1'   => $array1['allowWeek'],
 				'allowWeek_2'   => $array2['allowWeek'],
+				'reTicket'      => "{$array1['reTicket']}/{$array2['reTicket']}",
 				'start'         => $array1['start'],
 				'end'           => $array1['end'],
 				'stay'          => $stay,
+				'aircompany'    => $array1['aircompany'],
+				'routing'       => "{$array1['start']}-{$array1['aircompany']}-".($stay != ''? "{$stay}-{$array1['aircompany']}-{$array1['end']}-":"{$array1['aircompany']}-{$array1['end']}-").($start_2 != ''? ",{$start_2}-": '').($stay_2 != ''? "{$array2['aircompany']}-{$stay_2}-":"{$array2['aircompany']}-").($end_2 != ''? "{$end_2}": "{$array1['start']}") 
 			);
 
-		if( !empty($start_2) ){
+		// \BYS\Report::p($array);
 
-			$array['start_2'] = $array2['start'];
-
-		}
-		if(!empty($end_2)){
-
-			$array['end_2'] = $array2['end'];
-
-		}
-		if(!empty($stay_2)){ 
-
-			$array['stay_2'] = $stay_2;
-
-		}
-		
 		return $array;
 	}
 

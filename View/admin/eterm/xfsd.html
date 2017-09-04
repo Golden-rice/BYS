@@ -97,7 +97,7 @@
 
 		<!-- 提醒 -->
 		<ul class="list-group">
-		  <li class="list-group-item">默认排序（/X）</li>
+		  <li class="list-group-item">默认排序（/X），混舱以FaraBasis区分</li>
 		  <li class="list-group-item time">时间</li>
 		  <li class="list-group-item" id="labtoCNY">汇率</li>
 		</ul>
@@ -202,55 +202,43 @@ function setTableFormat(d){
 	return tmp
 }
 
-
-
 // 导入 
 $("#importExl").change(function(){
     // 传入数据库，获取id后再渲染
+    var tableMaker, data, end = "";
 
-        var tableMaker, data, end = "";
+    xlsx.setTitle(xfsdTitle);
+    xlsx.importf($(this)[0], function(data){
+        xlsx.saveData(data)   
+        data = xlsx.readData()
+        if(data.length > 0){
+        	xlsx.saveData(setTableFormat(data))
+        	// console.log("setafter", xlsx.readData())
+        	if(data[0].end ){
+        		end = data[0].end 
+        	}else{
+        		console.log("数据错误，目的地没数据")
+        		return;
+        	}
 
+        	// 赋值给 eterm.js
+        	eterm.eterm.xfsd = xlsx.readData()
 
-        xlsx.setTitle(xfsdTitle);
+        	// 渲染
+        	eterm.eterm.target = "table"
+        	mkTable(eterm.eterm.xfsd, 'table', "#content", 'w');
 
-        xlsx.importf($(this)[0], function(data){
+        	// 多选框
+					xlsx.checkbox({
+						all: 'cAll'+end,
+						select: 'cSelect'+end
+					})
 
-            xlsx.saveData(data)   
-                 
-            data = xlsx.readData()
-
-            if(data.length > 0){
-
-            	xlsx.saveData(setTableFormat(data))
-
-            	// console.log("setafter", xlsx.readData())
-
-            	if(data[0].end ){
-            		end = data[0].end 
-            	}else{
-            		console.log("数据错误，目的地没数据")
-            		return;
-            	}
-
-            	// 赋值给 eterm.js
-            	eterm.eterm.xfsd = xlsx.readData()
-
-            	// 渲染
-            	eterm.eterm.target = "table"
-            	mkTable(eterm.eterm.xfsd, 'table', "#content", 'w');
-
-            	// 多选框
-							xlsx.checkbox({
-								all: 'cAll'+end,
-								select: 'cSelect'+end
-							})
-
-
-            }else{
-                alert("导入失败！没有数据！")
-            }
-        })
+        }else{
+            alert("导入失败！没有数据！")
+        }
     })
+})
 
 var setCommend = function(command){
 
@@ -311,12 +299,6 @@ var setCommend = function(command){
 		command.getFliterPolicy(remove);
 	})
 
-	$('#updateDB').click(function(){
-		var remove = $('#allPolicy').attr('removeRuntime') || '0';
-		
-		command.selected('cSelect');
-		command.updataDB(remove);
-	})
 
 	$('#openAddCabin').click(function(){
 		
@@ -411,6 +393,7 @@ var setCommend = function(command){
 		}else{
 
 			command.selected('cSelect');
+
 			command.mixCabin({
 				modal: '#mixCabinModal',
 				container: '#mixCabinContent',
@@ -421,7 +404,8 @@ var setCommend = function(command){
 
 		// setTimeout(function(){
 
-		$("#mixCabinModal").modal()
+		$("#mixCabinModal").modal();
+
 		// },1000)
 	})
 
@@ -438,8 +422,8 @@ var setCommend = function(command){
 			command.xfsd({
 				dosubmit: "",
 				start: 'BJS',
-				end: 'DXB',
-				startDate: '25JUL',
+				end: 'LAX',
+				startDate: '25SEP',
 				aircompany: 'UA',
 				private: '',
 				tripType:"",

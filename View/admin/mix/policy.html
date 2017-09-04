@@ -12,22 +12,22 @@
 
 							<span class="input-group-addon" id="input-end">到达</span><input type="text" name='end' id='end' aria-describedby="input-end" placeholder='机场代码' class='form-control'  onblur="upper(this)" style='width:100px'>
 
-							<span class="input-group-addon" id="input-startDate">日期</span><input type="text" name='startDate' id='startDate'  aria-describedby="input-startDate" class='form-control datetimepicker'  onblur="upper(this)"  style='width:100px'>
+							<span class="input-group-addon" id="input-startDate">去程日期</span><input type="text" name='startDate' id='startDate'  aria-describedby="input-startDate" class='form-control datetimepicker'  onblur="upper(this)"  style='width:100px'>
 
 							<span class="input-group-addon" id="input-aircompany">航空公司</span><input type="text" name='aircompany' id='aircompany' aria-describedby="input-aircompany" placeholder='两字码' class='form-control'  onblur="upper(this)"  style='width:100px'>
 						</div>
 							
 						<div class="input-group">
-							<label class="radio-inline">
+							<!-- <label class="radio-inline">
 								<input type="radio" id='allType'  class='tripType' name="tripType" value='' checked> 全部
-							</label>
+							</label> -->
 
-							<label class="radio-inline">
+							<!-- <label class="radio-inline">
 								<input type="radio" id='sigleLine' class='tripType' name="tripType" value='OW'> 单程
-							</label>
+							</label> -->
 								
 							<label class="radio-inline">
-								<input type="radio" id='cbackLine' class='tripType' name="tripType" value='RT'> 往返
+								<input type="radio" id='cbackLine' class='tripType' name="tripType" value='RT' checked> 往返
 							</label>	
 						</div>
 							
@@ -56,12 +56,18 @@ var setCommend = function(command){
 
 	// 测试
 	$('#test').click(function(){
+		$('#start').val('PEK')
+		$('#end').val('EWR')
+		$('#startDate').val('2017-09-05')
+		$('#aircompany').val('UA')
+		$(".tripType").val('RT')
+
 		command.searchComposePolicy({
-			dep: 'PEK',
-			arr: 'EWR',
-			date:       '2017-09-05',
-			aircompany: 'UA',
-			tripType:   'RT',
+			dep:        $('#start').val(),
+			arr:        $('#end').val(),
+			date:       $('#startDate').val(),
+			aircompany: $('#aircompany').val(),
+			tripType:   $(".tripType:checked").val(),
 		})
 	})
 
@@ -104,149 +110,6 @@ function mkTable(data, dom, wrap, type){
 				appendType = type !== ""? type : 'w',
 		  	context = wrap !== "" ? wrap : document;
 
-		  	// data = [].concat(data.result_dep, data.result_arr);
-
-		  	// 匹配1个中转
-		  	for(var i in data.result_dep){
-		  		dep     = data.result_dep[i].Fli_Dep;
-		  		cur_arr = data.result_dep[i].Fli_Arr;
-
-		  		for (var j in data.result_arr){
-		  			cur_dep = data.result_arr[j].Fli_Dep;
-		  			arr     = data.result_arr[j].Fli_Arr;
-
-		  			if(cur_arr == cur_dep ){
-				  		var cur_arr_time = new Date(2017, 8, 21, data.result_dep[i].Fli_ArrTime.substr(0,2), data.result_dep[i].Fli_ArrTime.substr(2,2), 0).getTime();
-			  			var cur_dep_time = new Date(2017, 8, 21, data.result_arr[j].Fli_DepTime.substr(0,2), data.result_arr[j].Fli_DepTime.substr(2,2), 0).getTime();
-
-		  				if( cur_dep_time - cur_arr_time > 0 ){
-			  				routingBy1.push({
-			  					'aircompany': data.result_dep[i].Fli_Airport,
-			  					'dep': dep,
-			  					'depFlight': data.result_dep[i].Fli_Flight,
-			  					'depSupportType': data.result_dep[i].Fli_SupportType,
-			  					'depStartTime': data.result_dep[i].Fli_DepTime,
-			  					'depEndTime': data.result_dep[i].Fli_ArrTime,
-			  					'depFly': data.result_dep[i].Fli_Fly,
-			  					'stay': cur_arr,
-			  					'arrFlight': data.result_arr[j].Fli_Flight,
-			  					'arrSupportType': data.result_arr[j].Fli_SupportType,
-			  					'arrStartTime': data.result_arr[j].Fli_DepTime,
-			  					'arrEndTime': data.result_arr[j].Fli_ArrTime,
-			  					'arrFly': data.result_arr[j].Fli_Fly,
-			  					'arr': arr,
-			  					'routing': dep + '-' + cur_arr + '-' + arr + '-' + cur_arr + '-' + dep,
-			  					'action': "<a href = '#' class='buildFsi' data-json='"+JSON.stringify({})+"'>fsi</a>",
-			  				})
-		  				}
-		  			}
-
-		  		}
-		  	}
-
-		  	// console.log(routingBy1);
-
-		  	// 匹配2个中转
-
-
-		  	html += `
-		  	<div class="${dom}">
-		  		<div class="row">
-
-					  <!-- 一次中转 -->
-						<div class="col-lg-12">
-							<div class="panel panel-default">
-						  <div class="panel-heading">航路：一次中转</div>
-						  <div class='panel-body'>
-							  <table class="routing-by1-table table table-hover table-bordered table-responsive">
-							  <thead>
-                  <tr>
-                    <td rowspan = '2'>航空公司</td>
-                    <td colspan ='6'>航程1</td>
-                    <td rowspan = '2'>航程1：到达/航程2：出发</td>
-                    <td colspan ='6'>航程2</td>
-                    <td rowspan = '2'>航路</td>
-                    <!-- <td rowspan = '2'>操作</td> -->
-                  </tr>
-                  <tr>
-                    <td>出发</td>
-                    <td>航班号</td>
-                    <td>自营</td>
-                    <td>出发时间</td>
-                    <td>到达时间</td>
-                    <td>飞行时间</td>
-                    <td>航班号</td>
-                    <td>自营</td>
-                    <td>出发时间</td>
-                    <td>到达时间</td>
-                    <td>飞行时间</td>
-                    <td>到达</td>
-                  </tr>
-									</tr>
-								</thead>
-								</table>
-							</div>
-							</div>
-						</div>
-					</div>
-
-				  <!-- 出发 -->
-					<div class="row">
-						<div class="col-lg-12">
-							<div class="panel panel-default">
-						  <div class="panel-heading">出发</div>
-						  <div class='panel-body'>
-							  <table class="routing-dep-table table table-hover table-bordered table-responsive">
-							  <thead>
-									<tr>
-										<th>航空公司</th>
-										<th>航班号</th>
-										<th>自营</th>
-										<th>出发</th>
-										<th>出发时间</th>
-										<th>到达</th>
-										<th>到达时间</th>
-										<th>飞行时间</th>
-										<th>机型</th>
-										<th>餐食</th>
-										<th>距离</th>
-									</tr>
-								</thead>
-								</table>
-							</div>
-							</div>
-						</div>
-					</div>
-
-				  <!-- 到达 -->
-					<div class="row">
-						<div class="col-lg-12">
-							<div class="panel panel-default">
-						  <div class="panel-heading">到达</div>
-						  <div class='panel-body'>
-							  <table class="routing-arr-table table table-hover table-bordered table-responsive">
-							  <thead>
-									<tr>
-										<th>航空公司</th>
-										<th>航班号</th>
-										<th>自营</th>
-										<th>出发</th>
-										<th>出发时间</th>
-										<th>到达</th>
-										<th>到达时间</th>
-										<th>飞行时间</th>
-										<th>机型</th>
-										<th>餐食</th>
-										<th>距离</th>
-									</tr>
-								</thead>
-								</table>
-							</div>
-							</div>
-						</div>
-					</div>
-				</div>
-		  	`;
 
 		if(appendType === 'w'){
 			$(context).html(html);
@@ -254,30 +117,6 @@ function mkTable(data, dom, wrap, type){
 		else if(appendType === 'a'){
 			$(context).append(html);
 		}
-
-		$('.routing-by1-table').DataTable({
-        // responsive: true,
-        data: routingBy1,
-        columns: [
-            { data: "aircompany" },
-            { data: "dep" },
-            { data: "depFlight" },
-            { data: "depSupportType" },
-            { data: "depStartTime" },
-            { data: "depEndTime" },
-            { data: "depFly" },
-            { data: "stay" },
-            { data: "arrFlight" },
-            { data: "arrSupportType" },
-            { data: "arrStartTime" },
-            { data: "arrEndTime" },
-            { data: "arrFly" },
-            { data: "arr" },
-            { data: "routing" },
-            // { data: "action" },
-        ]
-    });
-	  	
 
 }
 

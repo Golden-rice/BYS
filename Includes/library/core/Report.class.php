@@ -10,6 +10,7 @@ class Report {
 
 	static public function error($words){
 		echo $words;
+		exit;
 	}
 
 	static public function warning($words){
@@ -31,6 +32,13 @@ class Report {
 	}
 
 	static public function printLog(){
-		print_r(self::$log);
+		$log = '';
+
+		if(!empty(self::$log))
+			foreach (self::$log as $words) {
+				$log .= $words;
+			}
+
+		return $log;
 	}
 }

@@ -15,6 +15,7 @@ class MixController extends Controller {
         $date       = $_POST['date'];
         $aircompany = $_POST['aircompany'];
         $tripType   = $_POST['tripType'];
+
         // 转换城市代码
         $depCityResult = $toCity -> where("`ACC_Code` = '{$dep}'")->select();
         $arrCityResult = $toCity -> where("`ACC_Code` = '{$arr}'")->select();

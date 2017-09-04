@@ -5,6 +5,7 @@ class Fsl extends Eterm{
 
 	public function analysis($switch = array(), $fliter = array()){
     if(!empty($fliter)) $this->fliter = $fliter;
+
 		// 根据选项执行
   	foreach ($switch as $flags) {
   		switch ($flags) {
@@ -32,9 +33,8 @@ class Fsl extends Eterm{
 		// fsd 请求
 		if(count( parent::initFile($this->tmp)) >11){
 			$this->command('XS/FSL1', 'w');
-		}else{
-			echo '无fsd结果';
 		}
+
 	}
 
 	private function callArr($page, $isF){
@@ -46,11 +46,16 @@ class Fsl extends Eterm{
 		$fkey = 0;
 		if($isF){ // 如果是第一页
     	foreach ($pageArr as $key => $pageline) {
+        // 如果没数据
+        if(preg_match("/NO\sFARE\sFOR\sTHIS/", $pageline, $arr))
+          return array();
+
     		// 确定开始匹配的位置
     		if( $fkey == 0 && preg_match("/\s\d\*\w/", substr($pageline, 0, 10), $arr)) {
     			$fkey = $key; // 开始匹配舱位的位置，通常是4
           break;
     		}
+
     	}
     	// 重置
     	$pageArr = array_slice($pageArr, $fkey, count($pageArr));
@@ -62,6 +67,8 @@ class Fsl extends Eterm{
     $data = $datafrom;
     preg_match_all("/\[CDATA\[(.*?)\]\]/is", $data, $dataList);
   	$totalPageList = array();
+    // \BYS\Report::log('无fsd结果');
+
 		foreach ($dataList[1] as $pageNum => $Page) {
 	    if($pageNum == 0){
         $totalPageList = array_merge($totalPageList, $this->callArr($Page, true));
@@ -70,7 +77,11 @@ class Fsl extends Eterm{
       }
   	} 
 
-  	// 将所有的设为一行
+    if(empty($totalPageList)) {
+      \BYS\Report::log('无运价结果');
+      return;
+  	}
+    // 将所有的设为一行
 		$curFsl = '';
 		foreach ($totalPageList as $key => $line) {
 			// 初始化临时储存Fsl数据
@@ -92,6 +103,7 @@ class Fsl extends Eterm{
   }
 
   private function format(){
+    if(empty($this->arr)) return;
   	// 匹配
   	// 拆分航路
   	// 城市：SFO 旧金山 CHI 芝加哥 （ORD MDW） NYC 纽约（EWR JFK LGA） WAS 华盛顿（IAD DCA） LAX 洛杉矶  

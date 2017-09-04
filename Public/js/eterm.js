@@ -262,20 +262,19 @@ var createCommand = function(recevier, tpl){
 
 	var selected = function(selectedClassName){
 		var selected = {}, target = recevier.target;
-		var o = $('.'+target).find('.'+selectedClassName+':checked')
+		var o = $('.'+target+' .'+selectedClassName+':checked');
 
-		// for(var i = 0; i < o.length; i++){
-		// 	var end = o[i].id.match(/c(\w{3})\d{2}/)[1];
-		// 	selected[end] = [];
-		// }
+		// 清除已选
+		o.removeAttr('checked')
 
 		for(var i = 0; i < o.length; i++){
-			end = o[i].id.match(/c(\w{3})\d{1,}/)[1];
+			end = o[i].id.match(/c(\w{3})\d+/)[1];
 
 			if(Object.prototype.toString.call(selected[end]) !== '[object Array]' ){
 				selected[end] = [];
 			}
 
+			// 会存在farebasis 重复导致，添加多余的政策数据
 			selected[end].push(o[i].value);
 		}
 
@@ -283,8 +282,8 @@ var createCommand = function(recevier, tpl){
 			selected[end] = jQuery.fn.unique(selected[end]);
 		}
 
+		// 暴露至全局
 		recevier.selected = selected;
-
 	}
 
 	var fliterFare = function(){
@@ -319,6 +318,7 @@ var createCommand = function(recevier, tpl){
 			for( var j in recevier.selected[end]){
 				for(var i = 0; i < recevier.xfsd[end].length; i++){
 
+					// 如果存在重复的farabasis会导致重复输入
 					if(recevier.xfsd[end][i].fare === recevier.selected[end][j]){
 						fareArray[end].push(recevier.xfsd[end][i]);
 						[].push.call(fareJson[end] ,recevier.xfsd[end][i]);
@@ -343,7 +343,6 @@ var createCommand = function(recevier, tpl){
 			totalFliterLength += fareArray[end].fliterLength;
 
 		}
-
 
 		// 筛选
 		console.log('** OrigTotal: '+ totalOrgLength +'- SeletedTotal: ' + totalFliterLength+' **');
@@ -1097,6 +1096,10 @@ var createCommand = function(recevier, tpl){
 			
 				recevier.rmTable(recevier.target);
 				recevier.progress.complete();
+				console.log(data)
+				if(data.msg !== ''){
+					alert(data.msg);
+				}
 				recevier.mkTable(data.array, recevier.target, recevier.context, 'w');
 					
 				// 垃圾回收

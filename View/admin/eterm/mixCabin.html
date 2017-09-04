@@ -27,14 +27,14 @@
 		            <div class="form-group">
 									<select class="form-control" style="width: 200px" id='selectTpl'>
 										<option value='0'>请选择OTA模板...</option>
-									  <option value='1'>淘宝OTA模板</option>
+									  <!-- <option value='1'>淘宝OTA模板</option> -->
 									  <option value='2'>携程OTA模板</option>
 									</select>
 								</div>
 								<div class="form-group">
-									<select class="form-control" style="width: 200px" id='selectTplType'>
+									<select class="form-control" style="width: 200px" id='selectTplDefault'>
 										<option value='0'>中转</option>
-									  <option value='1'>直达</option>
+									  <!-- <option value='1'>直达</option> -->
 									</select>
 								</div>
 								<div class="form-group">
@@ -62,14 +62,17 @@
 <script>
 var data = eval(<{$data}>);
 var org_data = eval(<{$org_data}>)
+console.log(data);
+console.log(org_data);
 
 
 // 生成OTA模板
 require(['eterm'], function(eterm){
 
-var selectTpl, selectTranlate, selectTplType, selectTplName, selectTplTypeName;
-console.log(data);
-console.log(org_data);
+var selectTpl,  // 选择的值为空的模板
+		selectTranlate,  // 字段与中文对照的模板
+		selectTplDefault,  // 填充默认字段的模板
+		selectTplName, selectTplTypeName;
 
 list(data, 'table', "#content", 'w');
 for(var i in org_data ){
@@ -96,19 +99,21 @@ $('#selectTplOption').click(function(){
 	}
 
 	// 直达 中转
-	switch ( $('#selectTplType').find('option:selected').val() ){
+	switch ( $('#selectTplDefault').find('option:selected').val() ){
 		case "0" : 
-			selectTplType = tpl[selectTplName+'Transit'];
+			selectTplDefault = tpl[selectTplName+'Transit'];
 			selectTplTypeName = 'Transit';
 			break;
 		case "1" : 
-			selectTplType = tpl[selectTplName+'Direct'];
+			selectTplDefault = tpl[selectTplName+'Direct'];
 			selectTplTypeName = 'Direct';
 			break;
 	}
-	selectTpl = tpl[selectTplName];
-	selectTranlate = translate[selectTplName];
-	renderTpl(selectTranlate, selectTplType)
+
+	selectTpl        = tpl[selectTplName];   // 为空值的模板
+	selectTranlate   = translate[selectTplName]; // 字段对照
+	setTplDefault();
+	renderTpl(selectTranlate, selectTplDefault)
 	
 })
 
@@ -122,9 +127,16 @@ $('#outputTpl').click(function(){
 		return;
 	}
 
-	for (var name in selectTpl){
-		selectTpl[name] = $('#'+name).val();
-	}
+	// 全部获取
+	// for (var name in selectTpl){
+	// 	selectTpl[name] = $('#'+name).val();
+	// }
+
+	// 输入框回填数据
+	selectTplDefault.IsOther = $('#IsOther').val();
+
+	// 回填空值模板
+	selectTpl = selectTplDefault
 
 	command.mixCabinByTpl(selectTpl, selectTplName, selectTplTypeName)
 })
@@ -133,6 +145,14 @@ $('#outputTpl').click(function(){
 
 setCommend(eterm.createCommand(eterm.eterm));
 
+// 设置OTA模板的默认值
+function setTplDefault(){
+	var defaultDate = data[0];
+
+	selectTplDefault.Owner = defaultDate.aircompany
+}
+
+// 回填OTA模板
 function renderTpl(translate, tplType){
 
 	'use strict';
@@ -140,16 +160,25 @@ function renderTpl(translate, tplType){
 	if(translate == undefined || tplType == undefined ){ return ; }
 
 	let html = "";
-	html += `<table class="table table-hover table-bordered table-responsive">`
-	for(var name in translate){
-		html += `
+	html += `<table class="table table-hover table-bordered table-responsive">`;
+
+	// for(var name in translate){
+	// 	html += `
+	// 		<tr>
+	// 			<td>${translate[name]}</td>
+	// 			<td><input type='text' id="${name}" class="form-control" value="${tplType[name]}"></td>
+	// 		</tr>
+	// 	`
+	// }
+
+	html += `
 			<tr>
-				<td>${translate[name]}</td>
-				<td><input type='text' id="${name}" class="form-control" value="${tplType[name]}"></td>
-			<tr>
-		`
-	}
-	html += `</table>`
+				<td>是否特殊运价</td>
+				<td><input type='text' id="IsOther" class="form-control" value="${tplType.IsOther}"></td>
+			</tr>
+	`
+	html += `</table>`;
+
 	$('#OTAtpl').html(html)
 }
 
@@ -179,6 +208,7 @@ function list(array, dom, wrap, type){
 					<th>适用截止日期</th>
 					<th>去程可用星期</th>
 					<th>返程可用星期</th>
+					<th>退票规则</th>
 					<th>航程</th>
 
 				</tr>`
@@ -195,35 +225,9 @@ function list(array, dom, wrap, type){
 					<td class='allowDate'>${array[line]['allowDateStart']} - ${array[line]['allowDateEnd']}</td>
 					<td class='allowWeek'>${array[line]['allowWeek_1']}</td>
 					<td class='allowWeek'>${array[line]['allowWeek_2']}</td>
-					<td class='airRrange'>${array[line]['start']}`
-
-					// 第一段中转点
-					if ( array[line]['stay'] !== "" ){
-						html +=` - ${array[line]['stay']}`;
-					}
-
-					if( array[line]['end_2'] ){
-						html +=` - ${array[line]['end']} , ${array[line]['end_2']}`;
-					}else{
-						html +=` - ${array[line]['end']}`;
-					}
-
-
-					// 第二个中转点
-					if(array[line]['stay_2'] ){
-						html +=` - ${array[line]['stay_2']}`;
-					}else if( array[line]['stay'] !== "" && !array[line]['end_2'] ){
-						html +=` - ${array[line]['stay']}`;
-					}
-
-					// 目的地
-					if(array[line]['start_2']){
-						html += ` - ${array[line]['start_2']}`
-					}else{
-						html += ` - ${array[line]['start']}`
-					}
-
-					html +=`</td></tr>`
+					<td class='reTicket'>${array[line]['reTicket']}</td>
+					<td class='routing'>${array[line]['routing']}</td>
+				</tr>`
 			}
 			html += `</table>`
 		// }
@@ -262,7 +266,9 @@ function list_org(array, dom, wrap, type){
 					<th>最长停留</th>
 					<th>适用截止日期</th>
 					<th>可用星期</th>
-					<th>航程</th>
+					<th>退改规则</th>
+					<th>出发</th>
+					<th>到达</th>
 				</tr>`
 
 			for(let line =0; line< array['length']; line++){
@@ -277,13 +283,9 @@ function list_org(array, dom, wrap, type){
 					<td class='maxStay'>${array[line]['maxStay']}</td>
 					<td class='allowDate'>${array[line]['allowDateStart']} - ${array[line]['allowDateEnd']}</td>
 					<td class='allowWeek'>${array[line]['allowWeek']}</td>
-					<td class='airRrange'>${array[line]['start']}`
-					if (array[line]['stay'] && array[line]['stay'] !== ""){
-						html +=` - ${array[line]['stay']} - ${array[line]['end']} - ${array[line]['stay']} - `;
-					}else{
-						html +=` - ${array[line]['end']} - `;
-					}
-					html +=`${array[line]['start']}</td>
+					<td class='reTicket'>${array[line]['reTicket']}</td>
+					<td class='start'>${array[line]['start']}</td>
+					<td class='end'>${array[line]['end']}</td>
 				</tr>
 				`
 			}
