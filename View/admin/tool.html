@@ -7,12 +7,13 @@
     <button id='cl-btn' class="btn btn-default">清空</button>
     <button id='btn' class="btn btn-primary">转换</button>
 </div>
-    <script>
+<script>
+    // 清空
     document.getElementById('cl-btn').onclick = function(){
-        console.log('clear')
         document.getElementById('input').value = '';
         document.getElementById('output').value = '';
     }
+    // 转换
     btn.onclick = function(){
         var str = document.getElementById('input').value;
         var out = document.getElementById('output');
@@ -35,51 +36,4 @@
         out.value = output;
     }
 
-	</script>
-
-
-
-
-<!-- <div class='fix-tr div-2' id='tool' style='resize:auto'> -->
-	<!-- <p>工具 <a href="javascript:void(0)" id="closeTool">关闭</a> </p> -->
-	
-	<!-- <ul > -->
-		<!-- <li id='tool-1' onclick='openTool(this)'><button>格式化多地点</button></li> -->
-
-	<!-- </ul> -->
-	<!-- <iframe src="<{URL}>/view/tool/fliterCode.html" frameborder="0" class="toolContainer"></iframe> -->
-<!-- </div> -->
-<script>
-// var iframeName = '';
-
-// 	function openTool(dom){
-// 		var id = dom.id;
-		
-// 		var tool = document.getElementById('tool');
-// 		var iframe = document.createElement('iframe');
-
-// 		iframeName = iframe.className = 'toolContainer';
-// 		iframe.style.overflow = 'auto';
-
-// 		if(id == 'tool-1'){
-// 			iframe.src = './tool/fliterCode.html';
-// 		}
-
-// 		tool.appendChild(iframe);
-// 	}
-// 	var closeTool = document.getElementById('closeTool');
-
-// 	closeTool.onclick = function(){
-		
-// 		var toolContainer = document.getElementsByTagName('iframe');
-// 		var tool = document.getElementById('tool');
-// 		var length = toolContainer.length;
-// 		for(var i = 0; i< length; i++){
-// 			if(toolContainer[i] && toolContainer[i].getAttribute('class') == iframeName ){
-// 				tool.removeChild(toolContainer[i]);
-// 			}
-
-// 		}
-		
-// 	}
 </script>

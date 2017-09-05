@@ -72,9 +72,9 @@ $a->build('xfsd', array(
 	// allowDateEnd 适用日期结束
 	'xfsd_DateEnd'   => 'datetime DEFAULT NULL',
 	// backLineFee 往返费用
-	'xfsd_RoundFee'  => 'int(10) NOT NULL',
+	'xfsd_RoundFee'  => 'float(10,2) NOT NULL',
 	// singleLineFee 单程费用
-	'xfsd_SingleFee' => 'int(10) NOT NULL',
+	'xfsd_SingleFee' => 'float(10,2) NOT NULL',
 	// start 出发
 	'xfsd_Dep'       => 'char(3) NOT NULL',
 	// end 到达
@@ -91,8 +91,8 @@ $a->build('xfsd', array(
  	'xfsd_MinStay'   => 'char(3) DEFAULT NULL',
 	// seat 舱位
  	'xfsd_Cabin'     => 'char(3) NOT NULL',
-	// fromCode
- 	'xfsd_Code'      => 'varchar(20) DEFAULT NULL',
+ 	// reticket 退改规定
+ 	'xfsd_Rule'      => 'varchar(5) DEFAULT NULL',
 	// 创建时间
 	'gmtCreate'      => 'int(13) NOT NULL',
 	// 修改时间

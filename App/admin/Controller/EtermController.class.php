@@ -68,12 +68,10 @@ class EtermController extends Controller {
 		echo json_encode(array('command'=> $command,'aircompany'=> $aircompany, 'fare'=> $fare, 'array'=>$this->assignItem($array), 'data'=>$array) ); 
   }
 
-
-  public function searchXfsdByDefault(){
-  	$defalut = array(
-			'end'   => array(
-				// 'SAV,ATL,ZUH,ZTH,AGS,ZRH,ZQN,ZNZ,ZLO,ZIH,ZHA,ZCO,ZCL,ZBF,ZAL',
-				// 'ZAG,ZAD,YZV,YZR,YZF,YYY,YYT,YYR,YYJ,YYF,YYD,YYC,YYB,YXY,YXX',
+  public function returnEnd(){
+  	return array(
+				'SAV,ATL,ZUH,ZTH,AGS,ZRH,ZQN,ZNZ,ZLO,ZIH,ZHA,ZCO,ZCL,ZBF,ZAL',
+				'ZAG,ZAD,YZV,YZR,YZF,YYY,YYT,YYR,YYJ,YYF,YYD,YYC,YYB,YXY,YXX',
 				// 'YXU,YXT,YXS,YXJ,YXH,YXE,YXC,YWL,YWK,YWG,YVR,YVO,YUY,SLC,YMQ',
 				// 'YTS,YTM,YSJ,YSB,YQZ,YQX,YQU,YQT,YQR,YQQ,YQM,YQL,YQG,YQB,YOW',
 				// 'YNZ,YNT,YNJ,YMM,YLW,YKF,YKA,YIW,YIN,YIH,YHZ,YTO,YGP,YGK,YGJ',
@@ -139,8 +137,14 @@ class EtermController extends Controller {
 				// 'ALF,ALC,MCE,ALA,AKU,AKL,AKJ,AJU,LBL,AGU,AGT,JMS,AGP,AGA,IGM',
 				// 'AES,BUE,ADZ,ADL,ADD,IZM,HYS,HON,DVL,DUJ,ACC,ACA,ABZ,ABV,CEZ',
 				// 'CDR,AIA,AAR,AAL'
-				),
-  		); 
+				);
+  }
+
+
+  public function searchXfsdByDefault(){
+  	$defalut = array(
+			'end'   => $this->returnEnd()
+  	); 
 
 		foreach ($defalut['end'] as $end) {
 			$_POST = array(
@@ -157,8 +161,52 @@ class EtermController extends Controller {
 			echo $end."<br>";
 			ob_flush();
 			flush();
-			sleep(3*60);
+			sleep(60);
 		}
+
+  }
+
+  public function insertAllXfsdResult(){
+    import('vender/eterm/app.php');
+
+  	$xfsd       = new \Xfsd($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
+  	$start      = 'BJS';
+  	$startDate  = '15SEP';
+  	$aircompany = 'UA';
+  	$tripType   = '';
+  	$code       = '';
+  	$other      = '';
+  	$ab_flag    = '';
+  	$array      = array();  
+
+  	foreach ($this->returnEnd() as $endList) {
+  		$endArr = explode(',', rtrim($endList,','));
+
+  		foreach ($endArr as $end) {
+				$command = $this->toXfsdCommand($start, $end, $startDate, $aircompany, $tripType, $code, $other );
+	  		$result = $this->hasXfsdSource(array('command' => $command));
+	  		if( is_array($result) && isset($result['Id']) ){ 
+					$xfsd->wtTmp($result['Detail']);
+					$resultArr = $ab_flag ? $xfsd->analysis(array(2,3,4)) : $xfsd->analysis(array(2,3));
+					// 声明
+					$array[$end] = $resultArr;
+					$array[$end]['id'] = $result['Id'];
+	  		}
+	  		$array[$end]['from']       = $code==''?'':$code;
+				$array[$end]['aircompany'] = $aircompany;
+				$array[$end]['startDate']  = $startDate;
+				$array[$end]['length']     = count($resultArr);
+				$array[$end]['command']    = $command;
+				$array[$end]['other']      = $other;
+  		}
+  		$this->saveXfsdResult($array);
+  		echo $endList."<br>";
+  		ob_flush();
+			flush();
+			sleep(15);
+
+  	}
+
   }
 
   // 通过输入框查询xfsd 
@@ -183,12 +231,11 @@ class EtermController extends Controller {
 
 			// 开始查询
 			$xfsd->command($command, "w");
-
 			$result = $this->hasXfsdSource(array('command' => $command));
 
-			if( $result ){ 
+			if( is_array($result) && isset($result['Detail']) ){ 
 			// 数据库中有数据，查询旧source数据作为tmp
-				$xfsd->wtTmp($result);
+				$xfsd->wtTmp($result['Detail']);
 				$resultArr = $ab_flag ? $xfsd->analysis(array(2,3,4)) : $xfsd->analysis(array(2,3));
 				// 声明
 				$array[$end] = $resultArr;
@@ -290,8 +337,8 @@ class EtermController extends Controller {
 				 	'xfsd_MinStay'   => $value['minStay'],
 					// seat 舱位
 				 	'xfsd_Cabin'     => $value['seat'],
-					// fromCode
-				 	'xfsd_Code'      => $value['seat']
+				 	// reTicket
+				 	'xfsd_Rule'      => $value['reTicket'],
 	    	);
   		}
   	}
@@ -313,7 +360,7 @@ class EtermController extends Controller {
   	foreach ($result as $cols) {
   		// 一天的保留时间
   		if( $cols['GmtModified'] + 24*60*60 >= time() ) {
-  			return $cols['Detail'];
+  			return $cols;
   		}
   		else{
   			$xfsd      = new \Xfsd($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
@@ -322,7 +369,7 @@ class EtermController extends Controller {
   		// 第一页
   		if(is_string($firstPage) && $flength = strlen($firstPage)  ){
   			if ( isset($cols['Detail']) && $firstPage == substr($cols['Detail'], 0 , $flength) ) 
-  				return $cols['Detail'];
+  				return $cols;
   		}
   	}
   	return false;

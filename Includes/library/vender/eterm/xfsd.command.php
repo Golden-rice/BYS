@@ -1,11 +1,13 @@
 <?php
 use Eterm\Eterm;
 class Xfsd extends Eterm{
-	private $arr = array();      // 储存数组信息
-    private $org_arr = array();  // 原始数组信息
+	private $arr         = array();  // 储存数组信息
+    private $org_arr     = array();  // 原始数组信息
 	private $date;
-    private $startKey = '';           // 开始匹配的起始位置
-    private $firstPage = '';
+    private $startKey    = '';       // 开始匹配的起始位置
+    private $firstPage   = '';
+    private $keyFeature  = array();  // xfsd中含有地点区域标识
+    private $featureWord = '';       // 用于匹配keyFeature的字符
 
     public function analysis($switch){
 
@@ -16,7 +18,7 @@ class Xfsd extends Eterm{
 
         $this->getFirstPage();
 
-    	foreach ($switch as $flags) {
+    	foreach ($switch as $flagKey=> $flags) {
     		switch ($flags) {
     			case 1:
     				// 获得全部页数
@@ -37,8 +39,12 @@ class Xfsd extends Eterm{
     			default:
     				break;
     		}
+            unset($switch[$flagKey]);
     	}
+
     	// parent::p($this->tmp);
+        // 特征组
+        // parent::p($this->keyFeature);
 
         $result = $this->arr;
         $this->arr = array();
@@ -71,6 +77,16 @@ class Xfsd extends Eterm{
 		}
 	}
 
+
+    // 用下一行做标记
+    private function getKeyFeature($pageline = '', $nextPageline = ''){
+        // 当匹配到标识时
+        if($pageline != '' && preg_match("/{$this->featureWord}/", $pageline, $featureStr) ){
+            // key 未所在行，保存
+            $this->keyFeature[substr($nextPageline, 0, 3)] = $pageline;
+        }
+    }
+
 	private function getSeat($page, $isF){
 		// 传递该页page所含舱位，判断是否为第一页
 		$pageArr = explode("\r",$page);
@@ -82,26 +98,39 @@ class Xfsd extends Eterm{
 	    		if( $fkey == 0 && preg_match_all("/\d{2}\s\w/",substr($pageline,0, 10),$arr)) {
 	    			$fkey = $key-1; // 开始匹配舱位的位置，通常是12
                     $this->startKey = $pageArr[$fkey];
+                    $this->featureWord = preg_replace('/([\/|\\|*|.|+])/', "\\\\$1", substr($this->startKey, 0, 18));
 	    		}
+                // 已找到第一行，且遍历到目标位置（第一行之后）
 	    		if( $fkey != 0 && $key > $fkey ){
+
+                    // 检验是否有特征
+                    if(isset($pageArr[$key+1]) ) 
+                        $this->getKeyFeature($pageline, $pageArr[$key+1]);
+
+                    // 匹配正确数据
 					if(isset($pageArr[$key+1]) && substr($pageArr[$key+1], 0,4) == '    ' ){  // 带有星期
 						$pageline = $pageline.substr($pageArr[$key+1], 1);
 						$this->inputSeat($pageline);
-					}else if(substr($pageArr[$key], 0,4) != '    '){
-						$this->inputSeat($pageline);
-					}		    		
+                    }else if(substr($pageArr[$key], 0,4) != '    '){
+                        $this->inputSeat($pageline);
+                    }
 	    		}
 	    	}
 		}else{
 			$pageArr = array_slice($pageArr, 1, count($pageArr));
 			foreach ($pageArr as $key => $pageline) {
+                // 检验是否有特征
+                if(isset($pageArr[$key+1]) ) 
+                    $this->getKeyFeature($pageline, $pageArr[$key+1]);
+
+                // 匹配正确数据
 				if(isset($pageArr[$key+1]) && substr($pageArr[$key+1], 0,4) == '    ' ){  // 带有星期
 					$pageline = $pageline.substr($pageArr[$key+1], 1);
 					$this->inputSeat($pageline);
 				}else if(substr($pageArr[$key], 0,4) != '    '){
 					$this->inputSeat($pageline);
 				}
-				
+
 			}
 		}
 	}
@@ -127,13 +156,30 @@ class Xfsd extends Eterm{
         // 无数据时
         if($this->startKey == '') return;
         
+        // 初始化特征值
         preg_match('/\s(\w{3})(\w{3})\/(\w{2})/',$this->startKey, $str);
         $start       = $str[1];
         $end         = $str[2];
         $direction   = $str[3];
+        $curFeatureKey  = 0; // 当前特征序号
 
         foreach($arr as $key => $dataline){
             $index   = substr($dataline, 0, 3);                  // 序号
+
+            // 是否放入更改特征
+            if(!empty($this->keyFeature) && (int)$index >= (int)$curFeatureKey) {
+                foreach ($this->keyFeature as $featureKey => $feature) {
+                    if ( (int)$index >= (int)$featureKey ){
+                        $curFeatureKey = (int)$featureKey;
+                        preg_match('/\s(\w{3})(\w{3})\/(\w{2})/',$feature, $str);
+                        $start       = $str[1];
+                        $end         = $str[2];
+                        $direction   = $str[3];
+                        unset($this->keyFeature[$featureKey]);
+                    }
+                }
+            }
+
             $pos     = 3;
             if(intval($index) > 99){
                 $pos = 4;
