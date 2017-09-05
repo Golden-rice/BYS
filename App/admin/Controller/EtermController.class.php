@@ -123,27 +123,24 @@ class EtermController extends Controller {
 				// 'EYW,DAB,EVN,RDM,ANK,PDX,NQT,ELS,OTH,MFR,ELH,EJA,EUG,EDI,EBL',
 				// 'EBB,TUL,EAS,OKC,DYG,DXB,DVO,LAW,DUS,DUR,TOL,DUD,DUB,DAY,DTM',
 				// 'DSN,CMH,DRS,CLE,DPS,DOK,DOH,DNK,DNH,DMM,MOW,DLM,CAK,DLC,DLA',
-				'DKR,DGT,DGO,TYR,SJT,DEL,DDG,SAT,DBV,MFE,MAF,DAX,DAT,LRD,LBB',
-				'CZX,CZM,CYO,CWB,HRL,CVM,HOU,CUZ,CUU,CUN,CUE,CUC,CTU,SPK,CTG',
-				'CTA,CSX,ILE,GGG,CRD,CPX,CPT,ELP,CPO,CPH,CPE,DFW,COR,COO,CRP',
-				'CNX,CNS,BHZ,CLL,CAS,BRO,BPT,CME,CMB,CLY,AUS,CLQ,CLO,AMA,CLJ',
-				'ACT,ABI,CKY,CKG,SCE,CJU,CJC,CIX,CIH,CIF,PIT,PHL,CHQ,HAR,CHG',
-				'ERI,CGR,CGQ,CGO,CGN,SAO,CGB,AVP,CEN,CEB,ABE,PAR,CCU,CCS,CCP',
-				'CAP,RDU,CAI,CAG,GSO,FAY,BZG,BZE,EWN,BVB,CLT,AVL,BUD,MOT,FAR',
-				'BSL,BSB,BRU,BRS,BIS,BRN,BRI,BRE,BQN,IDA,BPS,BOI,BON,BOM,SUX',
-				'BOG,BOD,BNE,DSM,DBQ,BLZ,BLR,BLQ,BLL,BKK,BJX,BXN,BJM,BJL,CID',
-				'BIQ,ALO,BIA,BHY,BHX,FAI,ANC,BGO,FYV,BGI,BGA,BFS,TXK,BEY,BEL',
-				'BEG,BDS,LIT,BDA,BCN,BCD,BBA,BAV,BAQ,BAH,FSM,AYT,AXT,AXM,AXA',
-				'ILG,ZVE,ZTF,AUC,AUA,WRL,ATQ,SOW,ATH,ASU,PUB,ASB,PRC,STO,ARI',
-				'AQP,APW,AOK,AOJ,AOI,ANU,ANF,PKB,AMS,AMM,AMD,MEI,MCK,ALL,ALG',
-				'ALF,ALC,MCE,ALA,AKU,AKL,AKJ,AJU,LBL,AGU,AGT,JMS,AGP,AGA,IGM',
+				// 'DKR,DGT,DGO,TYR,SJT,DEL,DDG,SAT,DBV,MFE,MAF,DAX,DAT,LRD,LBB',
+				// 'CZX,CZM,CYO,CWB,HRL,CVM,HOU,CUZ,CUU,CUN,CUE,CUC,CTU,SPK,CTG',
+				// 'CTA,CSX,ILE,GGG,CRD,CPX,CPT,ELP,CPO,CPH,CPE,DFW,COR,COO,CRP',
+				// 'CNX,CNS,BHZ,CLL,CAS,BRO,BPT,CME,CMB,CLY,AUS,CLQ,CLO,AMA,CLJ',
+				// 'ACT,ABI,CKY,CKG,SCE,CJU,CJC,CIX,CIH,CIF,PIT,PHL,CHQ,HAR,CHG',
+				// 'ERI,CGR,CGQ,CGO,CGN,SAO,CGB,AVP,CEN,CEB,ABE,PAR,CCU,CCS,CCP',
+				// 'CAP,RDU,CAI,CAG,GSO,FAY,BZG,BZE,EWN,BVB,CLT,AVL,BUD,MOT,FAR',
+				// 'BSL,BSB,BRU,BRS,BIS,BRN,BRI,BRE,BQN,IDA,BPS,BOI,BON,BOM,SUX',
+				// 'BOG,BOD,BNE,DSM,DBQ,BLZ,BLR,BLQ,BLL,BKK,BJX,BXN,BJM,BJL,CID',
+				// 'BIQ,ALO,BIA,BHY,BHX,FAI,ANC,BGO,FYV,BGI,BGA,BFS,TXK,BEY,BEL',
+				// 'BEG,BDS,LIT,BDA,BCN,BCD,BBA,BAV,BAQ,BAH,FSM,AYT,AXT,AXM,AXA',
+				// 'ILG,ZVE,ZTF,AUC,AUA,WRL,ATQ,SOW,ATH,ASU,PUB,ASB,PRC,STO,ARI',
+				// 'AQP,APW,AOK,AOJ,AOI,ANU,ANF,PKB,AMS,AMM,AMD,MEI,MCK,ALL,ALG',
+				// 'ALF,ALC,MCE,ALA,AKU,AKL,AKJ,AJU,LBL,AGU,AGT,JMS,AGP,AGA,IGM',
 				// 'AES,BUE,ADZ,ADL,ADD,IZM,HYS,HON,DVL,DUJ,ACC,ACA,ABZ,ABV,CEZ',
 				// 'CDR,AIA,AAR,AAL'
 				),
   		); 
-
-
-			
 
 		foreach ($defalut['end'] as $end) {
 			$_POST = array(
@@ -157,14 +154,11 @@ class EtermController extends Controller {
 			);
 
 			$this->searchXfsdByInput(true);
-			sleep(15*60);
+			echo $end."<br>";
 			ob_flush();
 			flush();
+			sleep(3*60);
 		}
-
-
-		
-
   }
 
   // 通过输入框查询xfsd 
@@ -222,7 +216,7 @@ class EtermController extends Controller {
 		// 所有查询结果均会保存，所以在使用result时，要选择最新的即 sid大的
 		$this->saveXfsdResult($array);
 		if($return){
-			return;
+			return 1;
 		}else{
 			echo json_encode(array('array'=>$array, 'time'=>'更新时间：'.date('Y-m-d H:i:s', $xfsd->fileTime)) );
 		}
@@ -859,11 +853,11 @@ class EtermController extends Controller {
 			$Result1 = $this->searchFslByInput(true);
 			if(empty($Result1['msg']) ){
 				$routingResult1  = $Result1['array'];
+				$this->cache['routingResult'] = array();
+				$this->cache['routingResult'][$routingResultId1] = $routingResult1;
 			}else{
 				echo $Result1['msg'];
 			}
-			$this->cache['routingResult'] = array();
-			$this->cache['routingResult'][$routingResultId1] = $routingResult1;
 		}
 
 		// 查询航程的航班号
@@ -871,35 +865,36 @@ class EtermController extends Controller {
 		// $flightResult1       = $flight -> where("Fli_Airport = '{$array1['aircompany']}'") -> select();
 
 
-		// 相同航程
-		if($routingResultId2 == $routingResultId1){
+		if(isset($routingResult1))
+			// 相同航程
+			if($routingResultId2 == $routingResultId1){
 
-			// 相同查询结果
-			$routingResult2    = $routingResult1;
+				// 相同查询结果
+				$routingResult2    = $routingResult1;
 
-		// 不同航程
-		}else{
+			// 不同航程
+			}else{
 
-			$_POST['aircompany'] = $array2['aircompany'];
-			$_POST['start']      = $array2['start'];
-			$_POST['end']        = $array2['end'];
+				$_POST['aircompany'] = $array2['aircompany'];
+				$_POST['start']      = $array2['start'];
+				$_POST['end']        = $array2['end'];
 
-			// 减少请求次数
-			if(isset($this->cache['routingResult']) && !empty($this->cache['routingResult'][$routingResultId2])){
-				$routingResult2 = $this->cache['routingResult'][$routingResultId2];
-			}
-			else{
-				$routingResult2 = $this->searchFslByInput(true);
-				if(empty($Result2['msg']) ){
-					$routingResult2 = $Result1['array'];
-				}else{
-					echo $Result2['msg'];
+				// 减少请求次数
+				if(isset($this->cache['routingResult']) && !empty($this->cache['routingResult'][$routingResultId2])){
+					$routingResult2 = $this->cache['routingResult'][$routingResultId2];
 				}
-				$this->cache['routingResult'] = array();
-				$this->cache['routingResult'][$routingResultId2] = $routingResult2;
-			}
+				else{
+					$routingResult2 = $this->searchFslByInput(true);
+					if(empty($Result2['msg']) ){
+						$routingResult2 = $Result1['array'];
+						$this->cache['routingResult'] = array();
+						$this->cache['routingResult'][$routingResultId2] = $routingResult2;
+					}else{
+						echo $Result2['msg'];
+					}
+				}
 
-		}
+			}
 
 
 		// 利用 $routingResult1 扩充 $stayMatch

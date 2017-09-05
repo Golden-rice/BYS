@@ -1,14 +1,18 @@
 <div class="form-group">
     <label class="control-label" for="input">输入：</label>
-   	<textarea class="form-control" id='input' cols="30" rows="5">	
-   	</textarea>
+   	<textarea class="form-control" id='input' cols="30" rows="5"></textarea>
     <label class="control-label" for="output">输出：</label>
-    <textarea class="form-control" name="" id="output" cols="30" rows="5">
-    </textarea>
+    <textarea class="form-control" id="output" cols="30" rows="5"></textarea>
     <hr>
-		<button id='btn' class="btn btn-primary col-lg-offset-10">转换</button>
+    <button id='cl-btn' class="btn btn-default">清空</button>
+    <button id='btn' class="btn btn-primary">转换</button>
 </div>
     <script>
+    document.getElementById('cl-btn').onclick = function(){
+        console.log('clear')
+        document.getElementById('input').value = '';
+        document.getElementById('output').value = '';
+    }
     btn.onclick = function(){
         var str = document.getElementById('input').value;
         var out = document.getElementById('output');
@@ -18,16 +22,17 @@
             // 格式化 url
             console.log(str)
             var url = parseURL(str);
-            url
+
         }else{
             // 匹配多地点
             var input = str.match(/\w{3}/g);
+
             for (var i = input.length - 1; i >= 0; i--) {
                 input[i] = input[i]+',';
                 output += input[i];
             };
         }
-        out.innerHTML = output;
+        out.value = output;
     }
 
 	</script>
