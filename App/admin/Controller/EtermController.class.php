@@ -70,8 +70,8 @@ class EtermController extends Controller {
 
   public function returnEnd(){
   	return array(
-				'SAV,ATL,ZUH,ZTH,AGS,ZRH,ZQN,ZNZ,ZLO,ZIH,ZHA,ZCO,ZCL,ZBF,ZAL',
-				'ZAG,ZAD,YZV,YZR,YZF,YYY,YYT,YYR,YYJ,YYF,YYD,YYC,YYB,YXY,YXX',
+				// 'SAV,ATL,ZUH,ZTH,AGS,ZRH,ZQN,ZNZ,ZLO,ZIH,ZHA,ZCO,ZCL,ZBF,ZAL',
+				// 'ZAG,ZAD,YZV,YZR,YZF,YYY,YYT,YYR,YYJ,YYF,YYD,YYC,YYB,YXY,YXX',
 				// 'YXU,YXT,YXS,YXJ,YXH,YXE,YXC,YWL,YWK,YWG,YVR,YVO,YUY,SLC,YMQ',
 				// 'YTS,YTM,YSJ,YSB,YQZ,YQX,YQU,YQT,YQR,YQQ,YQM,YQL,YQG,YQB,YOW',
 				// 'YNZ,YNT,YNJ,YMM,YLW,YKF,YKA,YIW,YIN,YIH,YHZ,YTO,YGP,YGK,YGJ',
@@ -135,8 +135,8 @@ class EtermController extends Controller {
 				// 'ILG,ZVE,ZTF,AUC,AUA,WRL,ATQ,SOW,ATH,ASU,PUB,ASB,PRC,STO,ARI',
 				// 'AQP,APW,AOK,AOJ,AOI,ANU,ANF,PKB,AMS,AMM,AMD,MEI,MCK,ALL,ALG',
 				// 'ALF,ALC,MCE,ALA,AKU,AKL,AKJ,AJU,LBL,AGU,AGT,JMS,AGP,AGA,IGM',
-				// 'AES,BUE,ADZ,ADL,ADD,IZM,HYS,HON,DVL,DUJ,ACC,ACA,ABZ,ABV,CEZ',
-				// 'CDR,AIA,AAR,AAL'
+				'AES,BUE,ADZ,ADL,ADD,IZM,HYS,HON,DVL,DUJ,ACC,ACA,ABZ,ABV,CEZ',
+				'CDR,AIA,AAR,AAL'
 				);
   }
 
@@ -178,8 +178,9 @@ class EtermController extends Controller {
   	$other      = '';
   	$ab_flag    = '';
   	$array      = array();  
+  	$endListArr = $this->returnEnd();
 
-  	foreach ($this->returnEnd() as $endList) {
+  	foreach ( $endListArr as $endList) {
   		$endArr = explode(',', rtrim($endList,','));
 
   		foreach ($endArr as $end) {
@@ -203,7 +204,7 @@ class EtermController extends Controller {
   		echo $endList."<br>";
   		ob_flush();
 			flush();
-			sleep(15);
+			sleep(10);
 
   	}
 

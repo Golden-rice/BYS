@@ -42,9 +42,9 @@ class Xfsd extends Eterm{
             unset($switch[$flagKey]);
     	}
 
-    	// parent::p($this->tmp);
+    	
         // 特征组
-        // parent::p($this->keyFeature);
+        // parent::p($this->tmp);
 
         $result = $this->arr;
         $this->arr = array();
@@ -91,34 +91,25 @@ class Xfsd extends Eterm{
 		// 传递该页page所含舱位，判断是否为第一页
 		$pageArr = explode("\r",$page);
 		$pageArr = array_slice($pageArr, 0, count($pageArr)-2);
+		$fkey    = -1;
 
-		if($isF){ // 如果是第一页
-			$fkey = 0;
+        if($isF){ // 如果是第一页
 	    	foreach ($pageArr as $key => $pageline) {
-	    		if( $fkey == 0 && preg_match_all("/\d{2}\s\w/",substr($pageline,0, 10),$arr)) {
-	    			$fkey = $key-1; // 开始匹配舱位的位置，通常是12
-                    $this->startKey = $pageArr[$fkey];
+	    		if( $fkey < 0 && preg_match_all("/\d{2}\s\w/",substr($pageline,0, 10),$arr)) {
+	    			$fkey = $key; // 开始匹配舱位的位置，通常是12
+                    $this->startKey = $pageArr[$fkey-1];
                     $this->featureWord = preg_replace('/([\/|\\|*|.|+])/', "\\\\$1", substr($this->startKey, 0, 18));
 	    		}
-                // 已找到第一行，且遍历到目标位置（第一行之后）
-	    		if( $fkey != 0 && $key > $fkey ){
+            }
+        }else{
+            $fkey = 0 ;
+        }
+        $pageArr = array_slice($pageArr, $fkey, count($pageArr));
 
-                    // 检验是否有特征
-                    if(isset($pageArr[$key+1]) ) 
-                        $this->getKeyFeature($pageline, $pageArr[$key+1]);
 
-                    // 匹配正确数据
-					if(isset($pageArr[$key+1]) && substr($pageArr[$key+1], 0,4) == '    ' ){  // 带有星期
-						$pageline = $pageline.substr($pageArr[$key+1], 1);
-						$this->inputSeat($pageline);
-                    }else if(substr($pageArr[$key], 0,4) != '    '){
-                        $this->inputSeat($pageline);
-                    }
-	    		}
-	    	}
-		}else{
-			$pageArr = array_slice($pageArr, 1, count($pageArr));
-			foreach ($pageArr as $key => $pageline) {
+        foreach ($pageArr as $key => $pageline) {
+            // 已找到第一行，且遍历到目标位置（第一行之后）
+            if( $fkey >= 0 ){
                 // 检验是否有特征
                 if(isset($pageArr[$key+1]) ) 
                     $this->getKeyFeature($pageline, $pageArr[$key+1]);
@@ -127,12 +118,11 @@ class Xfsd extends Eterm{
 				if(isset($pageArr[$key+1]) && substr($pageArr[$key+1], 0,4) == '    ' ){  // 带有星期
 					$pageline = $pageline.substr($pageArr[$key+1], 1);
 					$this->inputSeat($pageline);
-				}else if(substr($pageArr[$key], 0,4) != '    '){
-					$this->inputSeat($pageline);
-				}
-
-			}
-		}
+                }else if(substr($pageArr[$key], 0,4) != '    '){
+                    $this->inputSeat($pageline);
+                }
+    		}
+        }
 	}
 
 	private function getAllSeat($dataFrom){
@@ -142,18 +132,16 @@ class Xfsd extends Eterm{
     	preg_match_all("/\[CDATA\[(.*?)\]\]/is", $data, $newFile);
 
 		foreach ($newFile[1] as $pageNum => $Page) {
-    	    if($pageNum == 0){
-                $this->getSeat($Page, 1);
-            }else{
-                $this->getSeat($Page, 0);
-            }
+    	    $pageNum == 0? $this->getSeat($Page, 1): $this->getSeat($Page, 0);
     	} 
-        $this->org_arr = $this->arr;   	
+        $this->org_arr = $this->arr;   
+
 	}
 
     private function display($arr){
         // update by xiaojia
         // 无数据时
+
         if($this->startKey == '') return;
         
         // 初始化特征值
@@ -179,11 +167,9 @@ class Xfsd extends Eterm{
                     }
                 }
             }
+           
+            $pos =  (int)$index > 99 ? 4: 3;
 
-            $pos     = 3;
-            if(intval($index) > 99){
-                $pos = 4;
-            }
             $fare    = preg_replace('/\s*/', "", substr($dataline, $pos, 8));                // fare 
             $special = substr($dataline, $pos+9,1);            // 特殊规则
             preg_match_all("/ADVP\s*([0-9]{1,2}D)/",$dataline, $advp);
@@ -192,7 +178,7 @@ class Xfsd extends Eterm{
             // 原正则："/\/?\s+([0-9]*\.?[0-9]{0,2})\s*\/[A-Z]{1}/is"
             preg_match("/\s*([0-9]*\.?[0-9]{0,2})/is", substr($dataline, $pos+10, 9), $singleLineFeeArea);
             preg_match("/\s*([0-9]*\.?[0-9]{0,2})/is", substr($dataline, $pos+20, 9), $backLineFeeArea);
-            
+
             if(isset($singleLineFeeArea[1]) && $singleLineFeeArea[1] != ''){
                  $singleLineFee = $singleLineFeeArea[1];
                  $backLineFee   = '';
