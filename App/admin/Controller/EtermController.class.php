@@ -68,8 +68,107 @@ class EtermController extends Controller {
 		echo json_encode(array('command'=> $command,'aircompany'=> $aircompany, 'fare'=> $fare, 'array'=>$this->assignItem($array), 'data'=>$array) ); 
   }
 
+
+  public function searchXfsdByDefault(){
+  	$defalut = array(
+			'end'   => array(
+				// 'SAV,ATL,ZUH,ZTH,AGS,ZRH,ZQN,ZNZ,ZLO,ZIH,ZHA,ZCO,ZCL,ZBF,ZAL',
+				// 'ZAG,ZAD,YZV,YZR,YZF,YYY,YYT,YYR,YYJ,YYF,YYD,YYC,YYB,YXY,YXX',
+				// 'YXU,YXT,YXS,YXJ,YXH,YXE,YXC,YWL,YWK,YWG,YVR,YVO,YUY,SLC,YMQ',
+				// 'YTS,YTM,YSJ,YSB,YQZ,YQX,YQU,YQT,YQR,YQQ,YQM,YQL,YQG,YQB,YOW',
+				// 'YNZ,YNT,YNJ,YMM,YLW,YKF,YKA,YIW,YIN,YIH,YHZ,YTO,YGP,YGK,YGJ',
+				// 'YFC,YEA,YDF,YCU,YCG,YCD,YBP,YBL,YBG,YBC,YAM,XUZ,XNN,SGU,XMN',
+				// 'SIA,XIL,XIC,XFN,WXN,WUX,WUS,WUH,WRO,SBN,WNZ,WLG,WKJ,WEH,WDH',
+				// 'WAW,SRZ,VVC,VUP,VTE,VSA,VRN,VRA,VQS,IND,VOL,VNO,VLN,VLC,VIX',
+				// 'VIJ,VIE,VGO,VER,VCE,VAR,VAA,UYN,URC,UME,ULN,UIO,UIB,UDI,UBJ',
+				// 'FWA,EVV,TYN,TXN,BER,SPI,PIA,CHI,TUN,MLI,TTJ,TSR,TSN,TSJ,TSE',
+				// 'TRU,TRS,TRN,CMI,TRD,TRC,TPQ,TPP,TPE,BMI,TOY,TOS,YUM,TNH,TNA',
+				// 'TMP,TLV,TLS,TLL,TUS,TKS,TIV,TIA,THE,TGU,TGO,TGD,TCQ,TCO,TCB',
+				// 'TBS,TAP,TAO,TAM,TAK,TAG,TAE,TAC,SZX,SZG,SYX,PHX,SYO,SYD,SXB',
+				// 'PGA,SWA,SVQ,SVG,GCN,SUF,SUB,STR,STM,MOB,STI,SSH,SSA,MGM,SRG',
+				// 'SPU,HSV,BHM,SOF,SNN,AIY,SMR,SMI,HOB,SLZ,SLP,ABQ,SLA,SKP,SKG',
+				// 'SKB,SJW,SJU,MHT,SJP,SJO,SJJ,SJD,OGG,SIN,LNY,LIH,SHP,SHE,SHB',
+				// 'KOA,ITO,SFT,HNL,CRW,SDJ,CKB,SCY,SCN,SCL,MSN,SBZ,MKE,LSE,GRB',
+				// 'EAU,AUW,ATW,SAP,TYS,SAL,RZE,RUH,RTM,RTB,TRI,MEM,ROV,ROT,ROS',
+				// 'CHA,MLW,BNA,SYR,RMF,RLG,RJK,RIX,RIS,SWF,RHO,RGN,RGL,REX,REP',
+				// 'REC,ROC,NYC,RCH,RBR,RAR,ITH,RAO,RAK,QRO,PXO,PXM,ISP,PVR,PVK',
+				// 'PVH,HPN,PUY,PUS,ELM,PTY,BUF,PSO,BGM,PRN,PRG,ART,PPS,PPN,POZ',
+				// 'POA,ALB,PNQ,PNH,PNA,PMW,PMO,PMI,PMC,PLZ,RNO,PIU,LAS,OMA,LNK',
+				// 'EAR,MYR,GSP,PHC,FLO,PFB,PER,PEN,PEM,PEI,PEG,CHS,PCL,CAE,PBC',
+				// 'PAZ,PAP,RAP,PAD,OVD,OUL,OUA,BUH,PIR,OSL,ORK,FSD,RST,OPO,DLH',
+				// 'ONJ,PWM,OKJ,BGR,OKA,OIT,OIM,TVC,ODS,OCC,OBO,OAX,MQT,NVT,NVA',
+				// 'NUE,NTQ,NTG,YAO,NNG,NKG,NGS,NGO,NGB,NEV,NDG,NCL,NCE,NBO,NAT',
+				// 'NAS,NAP,NAN,MZT,MZL,MKG,MYJ,MUC,MTY,MTT,MTR,MBS,LAN,MSQ,GRR',
+				// 'FNT,DTT,MRS,CMX,MPM,MPH,AZO,LUL,MNL,MMY,MMB,JAN,MLM,GPT,MLE',
+				// 'STL,MLA,SGF,MKC,MIG,MID,JLN,COU,MSO,HLN,MGA,GTF,MFM,FCA,MEX',
+				// 'BZN,MEL,BIL,MEC,MDZ,BOS,MDG,MDE,MCZ,MCT,MCP,ACK,SBY,BWI,PVD',
+				// 'SHV,MBJ,MBE,MBA,MAZ,MAR,MAO,MAN,MAM,MAJ,MSY,MAD,MAB,MAA,LZO',
+				// 'LZH,LZC,LYS,LXA,LWO,LVI,LUX,LUN,LUM,LUG,MLU,LSC,LRM,LFT,LPB',
+				// 'LOS,LNZ,LCH,BTR,LMM,LLW,LLA,LJU,LJG,AEX,LIS,LIR,MIL,LIM,SDF',
+				// 'LHW,LGG,PAH,LFW,LEX,CVG,LET,LEJ,LED,LDE,LDB,LON,MTJ,LCG,LCE',
+				// 'LCA,SBS,GUC,LBA,EGE,DRO,DEN,LAO,COS,LAD,KWL,KWI,KWE,KWA,KVA',
+				// 'KUL,KUH,KUF,KTW,KSD,KSC,KRY,KRT,KRS,KRR,KRL,KRK,KOW,KOJ,ASE',
+				// 'MES,KMQ,KMJ,KMI,KMG,KLX,KLU,KLO,KKJ,KIV,KIN,KIJ,KHN,KHI,KHH',
+				// 'KHG,KGS,REK,KCZ,KBV,IEV,JZH,JUZ,JUL,JTR,JSI,JOI,JOG,JNZ,JNG',
+				// 'JNB,JMU,HVN,JMK,HFD,JKH,JKG,JJN,JIU,JIB,JIA,JHG,JGS,MHK,JER',
+				// 'JED,JDZ,ICT,SNA,JAL,SMX,IWK,IWJ,SAC,OSA,SJC,IST,SFO,ISG,IQT',
+				// 'IQQ,IOS,INN,CSL,INC,IMP,IKI,THR,IGU,SBA,SAN,RDD,IBZ,IBE,IAS',
+				// 'PSP,ONT,HYN,HYD,OAK,HUX,HTN,HTA,MRY,HSG,LAX,HRK,HRG,HRE,HRB',
+				// 'FAT,CLD,BUR,HOG,BFL,ACV,TYO,SHR,HLH,HLD,HKT,HKG,HKD,HIJ,HGH',
+				// 'HFE,HET,HEL,JAC,HAV,HAU,HAN,HAM,HAJ,HAC,GYS,GYN,GYE,GWT,GVA',
+				// 'GUM,CPR,GUA,COD,SEA,PSC,GRZ,GEG,ROA,RIC,ORF,GPA,GOT,GOA,GLA',
+				// 'RIO,GIB,GHB,GGT,WAS,GEO,CHO,GDN,GDL,BTV,FUK,FUJ,FUG,FTE,FSZ',
+				// 'VPS,TPA,FSC,FRS,FRA,FPO,FOC,TLH,FNJ,FNC,FNA,FLR,SRQ,FLN,FMY',
+				// 'PNS,FLA,FKS,FIH,FDH,FDF,ROM,PBI,MLB,MIA,ORL,FAO,JAX,GNV,FLL',
+				// 'EYW,DAB,EVN,RDM,ANK,PDX,NQT,ELS,OTH,MFR,ELH,EJA,EUG,EDI,EBL',
+				// 'EBB,TUL,EAS,OKC,DYG,DXB,DVO,LAW,DUS,DUR,TOL,DUD,DUB,DAY,DTM',
+				// 'DSN,CMH,DRS,CLE,DPS,DOK,DOH,DNK,DNH,DMM,MOW,DLM,CAK,DLC,DLA',
+				'DKR,DGT,DGO,TYR,SJT,DEL,DDG,SAT,DBV,MFE,MAF,DAX,DAT,LRD,LBB',
+				'CZX,CZM,CYO,CWB,HRL,CVM,HOU,CUZ,CUU,CUN,CUE,CUC,CTU,SPK,CTG',
+				'CTA,CSX,ILE,GGG,CRD,CPX,CPT,ELP,CPO,CPH,CPE,DFW,COR,COO,CRP',
+				'CNX,CNS,BHZ,CLL,CAS,BRO,BPT,CME,CMB,CLY,AUS,CLQ,CLO,AMA,CLJ',
+				'ACT,ABI,CKY,CKG,SCE,CJU,CJC,CIX,CIH,CIF,PIT,PHL,CHQ,HAR,CHG',
+				'ERI,CGR,CGQ,CGO,CGN,SAO,CGB,AVP,CEN,CEB,ABE,PAR,CCU,CCS,CCP',
+				'CAP,RDU,CAI,CAG,GSO,FAY,BZG,BZE,EWN,BVB,CLT,AVL,BUD,MOT,FAR',
+				'BSL,BSB,BRU,BRS,BIS,BRN,BRI,BRE,BQN,IDA,BPS,BOI,BON,BOM,SUX',
+				'BOG,BOD,BNE,DSM,DBQ,BLZ,BLR,BLQ,BLL,BKK,BJX,BXN,BJM,BJL,CID',
+				'BIQ,ALO,BIA,BHY,BHX,FAI,ANC,BGO,FYV,BGI,BGA,BFS,TXK,BEY,BEL',
+				'BEG,BDS,LIT,BDA,BCN,BCD,BBA,BAV,BAQ,BAH,FSM,AYT,AXT,AXM,AXA',
+				'ILG,ZVE,ZTF,AUC,AUA,WRL,ATQ,SOW,ATH,ASU,PUB,ASB,PRC,STO,ARI',
+				'AQP,APW,AOK,AOJ,AOI,ANU,ANF,PKB,AMS,AMM,AMD,MEI,MCK,ALL,ALG',
+				'ALF,ALC,MCE,ALA,AKU,AKL,AKJ,AJU,LBL,AGU,AGT,JMS,AGP,AGA,IGM',
+				// 'AES,BUE,ADZ,ADL,ADD,IZM,HYS,HON,DVL,DUJ,ACC,ACA,ABZ,ABV,CEZ',
+				// 'CDR,AIA,AAR,AAL'
+				),
+  		); 
+
+
+			
+
+		foreach ($defalut['end'] as $end) {
+			$_POST = array(
+	  		'startDate'  => '15SEP',
+	  		'aircompany' => 'UA',
+	  		'start' => 'BJS',
+	  		'private' => '',
+	  		'tripType' => '',
+	  		'other' => '',
+	  		'end' => $end
+			);
+
+			$this->searchXfsdByInput(true);
+			sleep(15*60);
+			ob_flush();
+			flush();
+		}
+
+
+		
+
+  }
+
   // 通过输入框查询xfsd 
-  public function searchXfsdByInput(){
+  public function searchXfsdByInput($return = false){
   	import('vender/eterm/app.php');
 
   	$xfsd       = new \Xfsd($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
@@ -122,7 +221,11 @@ class EtermController extends Controller {
 		// 全部保存解析结果，用id筛选需要保存的数据
 		// 所有查询结果均会保存，所以在使用result时，要选择最新的即 sid大的
 		$this->saveXfsdResult($array);
-		echo json_encode(array('array'=>$array, 'time'=>'更新时间：'.date('Y-m-d H:i:s', $xfsd->fileTime)) );
+		if($return){
+			return;
+		}else{
+			echo json_encode(array('array'=>$array, 'time'=>'更新时间：'.date('Y-m-d H:i:s', $xfsd->fileTime)) );
+		}
   }
 
   // 储存xfsd source资源
@@ -680,6 +783,7 @@ class EtermController extends Controller {
 				foreach ($array as $key => $value) {
 					// 舱位
 					preg_match_all("/(\w)\,(\w)/",$value['seat'], $s);
+					// 最短停留
 					preg_match("/(\d)([D|M])/", $array[$key]['minStay'], $md);
 					if(isset($md[1]) && isset($md[2])){
 						$mdAdd = (int)$md[1] * ( $md[2] == 'M' ? 30 * 24 * 60 * 60 : 24 * 60 * 60  );
@@ -856,7 +960,7 @@ class EtermController extends Controller {
 				'end'           => $array1['end'],
 				'stay'          => $stay,
 				'aircompany'    => $array1['aircompany'],
-				'routing'       => "{$array1['start']}-{$array1['aircompany']}-".($stay != ''? "{$stay}-{$array1['aircompany']}-{$array1['end']}-":"{$array1['aircompany']}-{$array1['end']}-").($start_2 != ''? ",{$start_2}-": '').($stay_2 != ''? "{$array2['aircompany']}-{$stay_2}-":"{$array2['aircompany']}-").($end_2 != ''? "{$end_2}": "{$array1['start']}") 
+				'routing'       => "{$array1['start']}-{$array1['aircompany']}-".($stay != ''? "{$stay}-{$array1['aircompany']}-{$array1['end']}-":"{$array1['end']}-").($start_2 != ''? ",{$start_2}-": '').($stay_2 != ''? "{$array2['aircompany']}-{$stay_2}-":"{$array2['aircompany']}-").($end_2 != ''? "{$end_2}": "{$array1['start']}") 
 			);
 
 		// \BYS\Report::p($array);
