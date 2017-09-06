@@ -11,14 +11,16 @@ class Eterm{
 		public    $password;      // eterm 配置的密码
 		public    $resource;      // eterm 配置号
 		public    $command;       // eterm 查询命令
+		public    $query;         // eterm 查询参数
 		protected $tmp;           // 临时保存读取的服务器返回结果
 		protected $source;        // 保存即将存入数据库的数据
 		public    $fileTime;      // 返回当前时间
 
-		function __construct( $name, $password, $resource){
+		function __construct( $name, $password, $resource, $query = array()){
 			$this->name     = $name;
 			$this->password = $password;
 			$this->resource = $resource;
+			$this->query    = $query;    
 		}		
 		
 		public function command($command, $type='w', $p=false, $add = ''){   

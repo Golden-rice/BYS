@@ -99,29 +99,32 @@ class Xfsd extends Eterm{
 	    			$fkey = $key; // 开始匹配舱位的位置，通常是12
                     $this->startKey = $pageArr[$fkey-1];
                     $this->featureWord = preg_replace('/([\/|\\|*|.|+])/', "\\\\$1", substr($this->startKey, 0, 18));
-	    		}
+        		    break;
+                }
             }
         }else{
             $fkey = 0 ;
         }
-        $pageArr = array_slice($pageArr, $fkey, count($pageArr));
-
-
+        // 生成有效信息组合的数组（除第一页的特征）
+        if( $fkey >= 0)
+            $pageArr = array_slice($pageArr, $fkey, count($pageArr));
+        else
+            return;
+        
+            
         foreach ($pageArr as $key => $pageline) {
-            // 已找到第一行，且遍历到目标位置（第一行之后）
-            if( $fkey >= 0 ){
-                // 检验是否有特征
-                if(isset($pageArr[$key+1]) ) 
-                    $this->getKeyFeature($pageline, $pageArr[$key+1]);
+            // 检验是否有特征
+            if(isset($pageArr[$key+1]) ) 
+                $this->getKeyFeature($pageline, $pageArr[$key+1]);
 
-                // 匹配正确数据
-				if(isset($pageArr[$key+1]) && substr($pageArr[$key+1], 0,4) == '    ' ){  // 带有星期
-					$pageline = $pageline.substr($pageArr[$key+1], 1);
-					$this->inputSeat($pageline);
-                }else if(substr($pageArr[$key], 0,4) != '    '){
-                    $this->inputSeat($pageline);
-                }
-    		}
+            // 匹配正确数据
+			if(isset($pageArr[$key+1]) && substr($pageArr[$key+1], 0,4) == '    ' ){  // 带有星期
+				$pageline = $pageline.substr($pageArr[$key+1], 1);
+				$this->inputSeat($pageline);
+            }else if(substr($pageArr[$key], 0,4) != '    '){
+                $this->inputSeat($pageline);
+            }
+    		
         }
 	}
 
@@ -217,6 +220,14 @@ class Xfsd extends Eterm{
                 'end' => $end,
                 'direction' => $direction
             );
+            if(!empty($this->query)){
+                $this->arr[$key]['from']       = $this->query['code']==''?'':$this->query['code'];
+                $this->arr[$key]['aircompany'] = $this->query['aircompany'];
+                $this->arr[$key]['startDate']  = $this->query['startDate'];
+                $this->arr[$key]['command']    = $this->command;
+                $this->arr[$key]['other']      = $this->query['other'];
+            }
+
         }
     }
 

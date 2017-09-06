@@ -135,11 +135,70 @@ class EtermController extends Controller {
 				// 'ILG,ZVE,ZTF,AUC,AUA,WRL,ATQ,SOW,ATH,ASU,PUB,ASB,PRC,STO,ARI',
 				// 'AQP,APW,AOK,AOJ,AOI,ANU,ANF,PKB,AMS,AMM,AMD,MEI,MCK,ALL,ALG',
 				// 'ALF,ALC,MCE,ALA,AKU,AKL,AKJ,AJU,LBL,AGU,AGT,JMS,AGP,AGA,IGM',
-				'AES,BUE,ADZ,ADL,ADD,IZM,HYS,HON,DVL,DUJ,ACC,ACA,ABZ,ABV,CEZ',
-				'CDR,AIA,AAR,AAL'
+				// 'AES,BUE,ADZ,ADL,ADD,IZM,HYS,HON,DVL,DUJ,ACC,ACA,ABZ,ABV,CEZ',
+				// 'CDR,AIA,AAR,AAL'
 				);
   }
 
+  // 查询 cmd 的source 是否存在
+  private function hasCmdSource($command = '', $cmd = ''){
+  	$m = model("{$cmd}_source");
+  	$result = $m ->where('`command` ="'.$command.'" ')->select();
+
+  	// 为空返回false
+  	if(!$result || empty($result[0]) ) return false;
+  	$col = $result[0]; // 仅一条
+		if ( isset($col['Command']) && $command == $col['Command'] ) 
+			return $col;
+
+  	return false;
+  }
+
+  // 存储 cmd 的source 
+  private function saveCmdSource($array = array(), $cmd=''){
+  	$m = model("{$cmd}_source");
+  	$add = array(
+  		'office'  => $_SESSION['resource'],
+  		'status'  => 2,
+  		'command' => isset($array['command'])? $array['command'] : '',
+  		'detail'  => isset($array['source'])? $array['source']: '',
+  	);
+  	return $m->add($add);
+  }
+
+  // 更新 cmd 的source 
+  private function updateCmdSource($array = array(), $cmd = ''){
+		$m = model("{$cmd}_source");
+  	$update = array(
+  		'detail' => isset($array['source'])? $array['source']: '',
+  		'GmtModified' => time()
+  	);
+  	$m->where('`command` = "'.$array['command'].'" ')->update($update);
+  	// 仅有一条
+  	$result = $m->where('`command` = "'.$array['command'].'" ')->select();
+  	return $result[0]['Id'];
+	}
+
+	// 更新 cmd 的result
+	public function updateCmdResult($array = array(), $id = NULL, $command = '', $cmd = 'test'){
+		if( count($array) == 0 ) return;
+
+		$this->deleteCmdResult($id, $cmd);
+		$saveActionName = 'save'.ucfirst($cmd).'Result';
+		$this->$saveActionName($array, $id, $command); 
+
+	}
+
+	private function saveTestResult($array, $id, $command){
+		echo 'test save name';
+	}
+
+	// 删除 cmd 的result
+	public function deleteCmdResult($id, $cmd = ''){
+		if(!$id) return;
+		$m = model("{$cmd}_result");
+		$result = $m->where("`sid` = {$id}")->delete();
+	}
 
   public function searchXfsdByDefault(){
   	$defalut = array(
@@ -161,9 +220,8 @@ class EtermController extends Controller {
 			echo $end."<br>";
 			ob_flush();
 			flush();
-			sleep(60);
+			sleep(30);
 		}
-
   }
 
   public function insertAllXfsdResult(){
@@ -177,44 +235,51 @@ class EtermController extends Controller {
   	$code       = '';
   	$other      = '';
   	$ab_flag    = '';
-  	$array      = array();  
+  	 
   	$endListArr = $this->returnEnd();
 
   	foreach ( $endListArr as $endList) {
-  		$endArr = explode(',', rtrim($endList,','));
-
+  		$endArr   = explode(',', rtrim($endList,','));
+  		$array    = array(); 
   		foreach ($endArr as $end) {
 				$command = $this->toXfsdCommand($start, $end, $startDate, $aircompany, $tripType, $code, $other );
-	  		$result = $this->hasXfsdSource(array('command' => $command));
+	  		$result  = $this->hasCmdSource($command, 'xfsd');
+	  		echo $end."<br>";
+
 	  		if( is_array($result) && isset($result['Id']) ){ 
+
 					$xfsd->wtTmp($result['Detail']);
-					$resultArr = $ab_flag ? $xfsd->analysis(array(2,3,4)) : $xfsd->analysis(array(2,3));
+					$resultArr                 = $ab_flag ? $xfsd->analysis(array(2,3,4)) : $xfsd->analysis(array(2,3));
+					$array[$end]               = $resultArr;
+					$id                        = $result['Id'];
+					$array[$end]['id']         = $result['Id'];
+		  		$array[$end]['from']       = $code==''?'':$code;
+					$array[$end]['aircompany'] = $aircompany;
+					$array[$end]['startDate']  = $startDate;
+					$array[$end]['length']     = count($resultArr);
+					$array[$end]['command']    = $command;
+					$array[$end]['other']      = $other;
+					// var_dump($array[$end])
+					// $this->updateCmdResult($array[$end], $id, $command, 'xfsd');
 					// 声明
-					$array[$end] = $resultArr;
-					$array[$end]['id'] = $result['Id'];
+	  		}else{
+		  		var_dump($result);
+		  		echo "<br>";
 	  		}
-	  		$array[$end]['from']       = $code==''?'':$code;
-				$array[$end]['aircompany'] = $aircompany;
-				$array[$end]['startDate']  = $startDate;
-				$array[$end]['length']     = count($resultArr);
-				$array[$end]['command']    = $command;
-				$array[$end]['other']      = $other;
+
   		}
   		$this->saveXfsdResult($array);
-  		echo $endList."<br>";
+  		echo $endList." <font color='red'> time:".date('H:i:s',time())."</font><br>";
   		ob_flush();
 			flush();
-			sleep(10);
-
+			sleep(3);
   	}
-
   }
 
   // 通过输入框查询xfsd 
   public function searchXfsdByInput($return = false){
   	import('vender/eterm/app.php');
 
-  	$xfsd       = new \Xfsd($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
 		$start      = $_POST['start'];
 		$endMore    = $_POST['end'];
 		$startDate  = $_POST['startDate'];
@@ -224,45 +289,79 @@ class EtermController extends Controller {
 		$other      = $_POST['other'];
 		$ab_flag    = preg_match("/[\/]2|[\/]2[\/]|2[\/]/",$other, $str) ? true:false;
 		$endArr     = explode(',', rtrim($endMore,','));  // 多地点录入时
-		$array      = array();                 // 解析结果的数组，支持多个地点
+		$array      = array();                            // 解析结果的数组，支持多个地点
+		$query      = array(                              // 查询变量
+			'start'     => $_POST['start'],
+			'end'       => $_POST['end'],
+			'startDate' => $_POST['startDate'],
+			'aircompany'=> $_POST['aircompany'],
+			'code'      => $_POST['private'],
+			'tripType'  => $_POST['tripType'],
+			'other'     => $_POST['other']
+		);
+  	$xfsd       = new \Xfsd($_SESSION['name'], $_SESSION['password'], $_SESSION['resource'], $query);
 		
 		foreach($endArr as $end){
 			// 生成命令
 			$command = $this->toXfsdCommand($start, $end, $startDate, $aircompany, $tripType, $code, $other );
+			$result  = $this->hasCmdSource($command, 'xfsd');
 
-			// 开始查询
-			$xfsd->command($command, "w");
-			$result = $this->hasXfsdSource(array('command' => $command));
+			// 有，日期已过期
+			if ( isset($result['GmtModified']) && $result['GmtModified'] + 24*60*60 < time() ){ 
 
-			if( is_array($result) && isset($result['Detail']) ){ 
-			// 数据库中有数据，查询旧source数据作为tmp
-				$xfsd->wtTmp($result['Detail']);
-				$resultArr = $ab_flag ? $xfsd->analysis(array(2,3,4)) : $xfsd->analysis(array(2,3));
-				// 声明
-				$array[$end] = $resultArr;
-			}else{
-			// 继续查询新数据
-				// 继续查询全部数据并解析为二维数组
-				$resultArr = $ab_flag ? $xfsd->analysis(array(1,2,3,4)) : $xfsd->analysis(array(1,2,3));
-				// 声明
-				$array[$end] = $resultArr;
-				$array[$end]['id'] = $this->saveXfsdSource(array('source' => $xfsd->readSource(), 'command' => $command)); // 储存至数据库
-				sleep(6);
+				$xfsd->command($command, "w");
+				// 检查第一页是否与原数据相同，如果相同不过期，如果不同则更新
+				$firstPage = $xfsd->getFirstPage();
+
+				if(is_string($firstPage) && $flength = strlen($firstPage) ){
+					// 第一页数据不同，更新 source 及 result
+	  			if ( !isset($result['Detail']) || $firstPage != substr($result['Detail'], 0 , $flength) ) {
+	  				// 更新 source
+						$id          = $this->updateCmdSource(array('source' => $xfsd->readSource(), 'command' => $command), 'xfsd');
+						$resultArr   = $ab_flag ? $xfsd->analysis(array(2,3,4)) : $xfsd->analysis(array(2,3));
+						$array[$end] = $resultArr;
+						// 更新 result
+						$this->updateCmdResult($array[$end], $id, $command, 'xfsd'); 
+	  			}
+  				// 第一页数据相同，读取数据库
+	  			else{
+	  				$xfsd->wtTmp($result['Detail']);
+	  				$resultArr   = $ab_flag ? $xfsd->analysis(array(2,3,4)) : $xfsd->analysis(array(2,3));
+						$array[$end] = $resultArr;
+	  			}
+	  		}else{
+	  			echo '第一页的数据检查出错';
+	  			return;
+	  		}
+
 			}
-			// 封装基础数据格式
+			// 有，但是储存时间不大于一天，读取数据库数据
+			elseif( isset($result['GmtModified']) && $result['GmtModified'] + 24*60*60 >= time()){
+				$xfsd->wtTmp($result['Detail']);
+				$resultArr   = $ab_flag ? $xfsd->analysis(array(2,3,4)) : $xfsd->analysis(array(2,3));
+				$array[$end] = $resultArr;
+			}
+			// 无，从新查询，并临时保存 source 及 result 
+			else{
+				$xfsd->command($command, "w");
+				$resultArr   = $ab_flag ? $xfsd->analysis(array(1,2,3,4)) : $xfsd->analysis(array(1,2,3));
+				$array[$end] = $resultArr;
+				$id          = $this->saveCmdSource(array('source' => $xfsd->readSource(), 'command' => $command), 'xfsd'); // 储存至数据库
+				$this->saveXfsdResult($array[$end], $id, $command);
+			}
+
+			// 封装基础数据格式，仅用于前台展示用
 			$array[$end]['from']       = $code==''?'':$code;
 			$array[$end]['aircompany'] = $aircompany;
 			$array[$end]['startDate']  = $startDate;
 			$array[$end]['length']     = count($resultArr);
 			$array[$end]['command']    = $command;
 			$array[$end]['other']      = $other;
+
 			ob_flush();
 			flush();
 		}
 
-		// 全部保存解析结果，用id筛选需要保存的数据
-		// 所有查询结果均会保存，所以在使用result时，要选择最新的即 sid大的
-		$this->saveXfsdResult($array);
 		if($return){
 			return 1;
 		}else{
@@ -270,111 +369,102 @@ class EtermController extends Controller {
 		}
   }
 
-  // 储存xfsd source资源
-  private function saveXfsdSource($array = array()){
-  	$m_xfsd = model('xfsd_source');
-  	$add = array(
-  		'office'  => $_SESSION['resource'],
-  		'status'  => 2,
-  		'command' => isset($array['command'])? $array['command'] : '',
-  		'detail'  => isset($array['source'])? $array['source']: '',
-  	);
-  	return $m_xfsd->add($add);
-  }
-
   // 储存xfsd 解析结果，用是否含id来区分是否保存
-  private function saveXfsdResult($array){
+  private function saveXfsdResult($array, $id = NULL, $command = ''){
   	if( count($array) == 0 ) return;
+
+		if( $id == NULL) return;
 
   	$m_xfsd = model('xfsd_result');
   	$addAll = array();
-
-  	foreach ($array as $end => $list) {
-  		// 通过储存source 返回的id 来储存 result
-  		if(!isset($list['id'])) continue;
-  		for($i = 0; $i < count($list)-6; $i++){
-  			// 当没数据是返回
-  			if(!isset($list[$i])) break;
-  			
-  			$value = $list[$i];
-	    	$addAll[] = array(
-	    		//  fareKey 关键字：dep_city/arr_city/airline/pax_type/source/source_office/source_agreement/other(其他字段)/fare_date
-					'FareKey'        => "{$value['start']}/{$value['end']}/{$list['aircompany']}/ADT/{$_SESSION['resource']}/{$list['from']}/{$list['other']}/".date('Ymd',strtotime($list['startDate'])), 
-					// 命令
-					'Command'        => $list['command'],
-					// 状态：-2 已知错误发生 -1 失败 0 等待 1 进行中 2 成功
-					'Status'         => 2,
-					// OFFICE 号
-					'Office'         => $_SESSION['resource'],
-					// source id
-					'Sid'            => $list['id'],
-					// fare FareBasis
-					'FareBasis'      => $value['fare'],
-					// special 特殊规则
-					'xfsd_Special'   => $value['special'],
-					// advp 提前出票
-					'xfsd_Advp'      => $value['ADVPDay'],
-					// allowDateStart 适用日期起始
-					'xfsd_DateStart' => date('Y-m-d',strtotime($value['allowDateStart'])),
-					// allowDateEnd 适用日期结束
-					'xfsd_DateEnd'   => date('Y-m-d',strtotime($value['allowDateEnd'])),
-					// backLineFee 往返费用
-					'xfsd_RoundFee'  => $value['backLineFee'],
-					// singleLineFee 单程费用
-					'xfsd_SingleFee' => $value['singleLineFee'],
-					// start 出发
-					'xfsd_Dep'       => $value['start'],
-					// end 到达
-					'xfsd_Arr'       => $value['end'],
-					// aircompany 航空公司
-					'xfsd_Owner'     => $list['aircompany'],
-					// direction 区域
-				  'xfsd_Region'    => $value['direction'],
-					// allowWeek 作用点
-				  'xfsd_Indicator' => $value['allowWeek'],
-					// maxStay 最大停留
-				  'xfsd_MaxStay'   => $value['maxStay'],
-					// minStay 最短停留
-				 	'xfsd_MinStay'   => $value['minStay'],
-					// seat 舱位
-				 	'xfsd_Cabin'     => $value['seat'],
-				 	// reTicket
-				 	'xfsd_Rule'      => $value['reTicket'],
-	    	);
-  		}
+  	foreach ($array as $num => $value) {
+    	$addAll[] = array(
+    		//  fareKey 关键字：dep_city/arr_city/airline/pax_type/source/source_office/source_agreement/other(其他字段)/fare_date
+				'FareKey'        => "{$value['start']}/{$value['end']}/{$value['aircompany']}/ADT/{$_SESSION['resource']}/{$value['from']}/{$value['other']}/".date('Ymd',strtotime($value['startDate'])), 
+				// 命令
+				'Command'        => $command,
+				// 状态：-2 已知错误发生 -1 失败 0 等待 1 进行中 2 成功
+				'Status'         => 2,
+				// OFFICE 号
+				'Office'         => $_SESSION['resource'],
+				// source id
+				'Sid'            => $id,
+				// fare FareBasis
+				'FareBasis'      => $value['fare'],
+				// special 特殊规则
+				'xfsd_Special'   => $value['special'],
+				// advp 提前出票
+				'xfsd_Advp'      => $value['ADVPDay'],
+				// allowDateStart 适用日期起始
+				'xfsd_DateStart' => date('Y-m-d',strtotime($value['allowDateStart'])),
+				// allowDateEnd 适用日期结束
+				'xfsd_DateEnd'   => date('Y-m-d',strtotime($value['allowDateEnd'])),
+				// backLineFee 往返费用
+				'xfsd_RoundFee'  => $value['backLineFee'],
+				// singleLineFee 单程费用
+				'xfsd_SingleFee' => $value['singleLineFee'],
+				// start 出发
+				'xfsd_Dep'       => $value['start'],
+				// end 到达
+				'xfsd_Arr'       => $value['end'],
+				// aircompany 航空公司
+				'xfsd_Owner'     => $list['aircompany'],
+				// direction 区域
+			  'xfsd_Region'    => $value['direction'],
+				// allowWeek 作用点
+			  'xfsd_Indicator' => $value['allowWeek'],
+				// maxStay 最大停留
+			  'xfsd_MaxStay'   => $value['maxStay'],
+				// minStay 最短停留
+			 	'xfsd_MinStay'   => $value['minStay'],
+				// seat 舱位
+			 	'xfsd_Cabin'     => $value['seat'],
+			 	// reTicket
+			 	'xfsd_Rule'      => $value['reTicket'],
+    	);
   	}
-
   	$m_xfsd->addAll($addAll);
   }
 
+  // 储存xfsd source资源
+  // private function saveXfsdSource($array = array()){
+  // 	$m_xfsd = model('xfsd_source');
+  // 	$add = array(
+  // 		'office'  => $_SESSION['resource'],
+  // 		'status'  => 2,
+  // 		'command' => isset($array['command'])? $array['command'] : '',
+  // 		'detail'  => isset($array['source'])? $array['source']: '',
+  // 	);
+  // 	return $m_xfsd->add($add);
+  // }
+
 	// 查询command，如果存在，且不只一条，比较他们的firstpage，如果相同，则返回这个source。如果不相同，则返回false
-	// 更新功能
-  private function hasXfsdSource($array = array()){
-  	import('vender/eterm/app.php');
+  // private function hasXfsdSource($array = array()){
+  // 	import('vender/eterm/app.php');
 
-  	$m_xfsd    = model('xfsd_source');
-  	$result    = $m_xfsd ->where('`command` ="'.$array['command'].'" ')->select();
+  // 	$m_xfsd    = model('xfsd_source');
+  // 	$result    = $m_xfsd ->where('`command` ="'.$array['command'].'" ')->select();
 
-  	// 为空时
-  	if(!$result || empty($result[0]) ) return false;
+  // 	// 为空时
+  // 	if(!$result || empty($result[0]) ) return false;
 
-  	foreach ($result as $cols) {
-  		// 一天的保留时间
-  		if( $cols['GmtModified'] + 24*60*60 >= time() ) {
-  			return $cols;
-  		}
-  		else{
-  			$xfsd      = new \Xfsd($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
-  			$firstPage = $xfsd->getFirstPage();
-  		}
-  		// 第一页
-  		if(is_string($firstPage) && $flength = strlen($firstPage)  ){
-  			if ( isset($cols['Detail']) && $firstPage == substr($cols['Detail'], 0 , $flength) ) 
-  				return $cols;
-  		}
-  	}
-  	return false;
-  }
+  // 	foreach ($result as $cols) {
+  // 		// 一天的保留时间
+  // 		if( $cols['GmtModified'] + 24*60*60 >= time() ) {
+  // 			return $cols;
+  // 		}
+  // 		else{
+  // 			$xfsd      = new \Xfsd($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
+  // 			$firstPage = $xfsd->getFirstPage();
+  // 		}
+  // 		// 第一页
+  // 		if(is_string($firstPage) && $flength = strlen($firstPage)  ){
+  // 			if ( isset($cols['Detail']) && $firstPage == substr($cols['Detail'], 0 , $flength) ) 
+  // 				return $cols;
+  // 		}
+  // 	}
+  // 	return false;
+  // }
 
   // 通过command查询xfsd
   public function searchXfsdByCommand(){
@@ -459,15 +549,14 @@ class EtermController extends Controller {
 					$d       = strtoupper(date('d',$days));
 					$date    = $d.$m;
 					$command = $repeat['pos'] == 'start' ? 'AVH/'.$value.$end.$date.$startTime.$other.'/'.$airCompany : 'AVH/'.$start.$value.$date.$startTime.$other.'/'.$airCompany;
-					$result  = $this->hasAvhSource(array('command'=>$command));
-
+					$result  = $this->hasCmdSource($command, 'avh');
 					if ( isset($result['GmtModified']) && $result['GmtModified'] + 24*60*60 < time() ){ 
 						// 有且存储时间大于一天，更新
 						$avh->command($command, "w", false);
 						$array[$value] = array_merge($array[$value], $avh->analysis(array(1,2,6)));
-						$id = $this->updateAvhSource(array('source' => $avh->readSource(), 'command' => $command));
+						$id = $this->updateCmdSource(array('source' => $avh->readSource(), 'command' => $command),'avh');
 						// 更新result
-						$this->updateAvhResult($array[$value], $id, $command);
+						$this->updateCmdResult($array[$value], $id, $command,'avh');
 					}
 					elseif( isset($result['GmtModified']) && $result['GmtModified'] + 24*60*60 >= time()){
 						// 有，但是储存时间不大于一天，读取数据库数据
@@ -478,7 +567,7 @@ class EtermController extends Controller {
 						// 没有，新增
 						$avh->command($command, "w", false);
 						$array[$value] = array_merge($array[$value], $avh->analysis(array(1,2,6)));
-						$id = $this->saveAvhSource(array('source' => $avh->readSource(), 'command' => $command)); // 储存至数据库
+						$id = $this->saveCmdSource(array('source' => $avh->readSource(), 'command' => $command), 'avh'); // 储存至数据库
 						$this->saveAvhResult($array[$value], $id, $command);
 					}
 				}
@@ -488,7 +577,7 @@ class EtermController extends Controller {
 	}
 
 	// 储存 avh_result
-	public function saveAvhResult($array = array(), $id = 0, $command = ''){
+	public function saveAvhResult($array = array(), $id = NULL, $command = ''){
   	if( count($array) == 0 ) return;
 
   	$m_avh = model('avh_result');
@@ -546,59 +635,54 @@ class EtermController extends Controller {
 	}
 
 	// 更新 avh_result
-	public function updateAvhResult($array = array(), $id = 0, $command = ''){
-  	if( count($array) == 0 ) return;
+	// public function updateAvhResult($array = array(), $id = 0, $command = ''){
+ //  	if( count($array) == 0 ) return;
 		
-		// 删除 
-		$this->deleteAvhResult($id);
+	// 	// 删除 
+	// 	$this->deleteCmdResult($id, 'avh');
 
-		// 再插入
-		$this->saveAvhResult($array, $id, $command);
-	}
-
-	public function deleteAvhResult($id = 0){
-		$m_avh = model('avh_result');
-		$result = $m_avh->where("`sid` = {$id}")->delete();
-	}
+	// 	// 再插入
+	// 	$this->saveAvhResult($array, $id, $command);
+	// }
 
 	// 更新 avh_source
-	private function updateAvhSource($array = array()){
-		$m_avh = model('avh_source');
-  	$update = array(
-  		'detail' => isset($array['source'])? $array['source']: '',
-  		'GmtModified' => time()
-  	);
-  	$m_avh->where('`command` = "'.$array['command'].'" ')->update($update);
-  	// 仅有一条
-  	$result = $m_avh->where('`command` = "'.$array['command'].'" ')->select();
-  	return $result[0]['Id'];
-	}
+	// private function updateAvhSource($array = array()){
+	// 	$m_avh = model('avh_source');
+ //  	$update = array(
+ //  		'detail' => isset($array['source'])? $array['source']: '',
+ //  		'GmtModified' => time()
+ //  	);
+ //  	$m_avh->where('`command` = "'.$array['command'].'" ')->update($update);
+ //  	// 仅有一条
+ //  	$result = $m_avh->where('`command` = "'.$array['command'].'" ')->select();
+ //  	return $result[0]['Id'];
+	// }
 
 	// 保存 avh_source
-	private function saveAvhSource($array = array()){
-		$m_avh = model('avh_source');
-  	$add = array(
-  		'office' => $_SESSION['resource'],
-  		'status' => 2,
-  		'command'=> isset($array['command'])? $array['command'] : '',
-  		'detail' => isset($array['source'])? $array['source']: '',
-  	);
-  	return $m_avh->add($add);
-	}
+	// private function saveAvhSource($array = array()){
+	// 	$m_avh = model('avh_source');
+ //  	$add = array(
+ //  		'office' => $_SESSION['resource'],
+ //  		'status' => 2,
+ //  		'command'=> isset($array['command'])? $array['command'] : '',
+ //  		'detail' => isset($array['source'])? $array['source']: '',
+ //  	);
+ //  	return $m_avh->add($add);
+	// }
 
 	// 是否有 avh_source，如果有且生产时间大于一天则更新，如果有但生产时间没有大于一天则读取，没有则添加新数据
-	private function hasAvhSource($array = array()){
-  	$m_avh = model('avh_source');
-  	$result = $m_avh ->where('`command` ="'.$array['command'].'" ')->select();
+	// private function hasAvhSource($array = array()){
+ //  	$m_avh = model('avh_source');
+ //  	$result = $m_avh ->where('`command` ="'.$array['command'].'" ')->select();
 
-  	// 为空返回false
-  	if(!$result || empty($result[0]) ) return false;
-  	$col = $result[0]; // 仅一条
-		if ( isset($col['Command']) && $array['command'] == $col['Command'] ) 
-			return array('Detail' =>$col['Detail'], 'GmtModified' =>$col['GmtModified'] );
+ //  	// 为空返回false
+ //  	if(!$result || empty($result[0]) ) return false;
+ //  	$col = $result[0]; // 仅一条
+	// 	if ( isset($col['Command']) && $array['command'] == $col['Command'] ) 
+	// 		return array('Detail' =>$col['Detail'], 'GmtModified' =>$col['GmtModified'] );
 
-  	return false;
-	}
+ //  	return false;
+	// }
 
 	public function searchFslByInput($return = false){
 		import('vender/eterm/app.php');
@@ -611,8 +695,7 @@ class EtermController extends Controller {
 		$command    = 'XS/FSD'.$start.$end.'/'.date('tM', time()+10*24*60*60 ).'/'.$aircompany.'/NEGO/X';
 		$fsl        = new \Fsl($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
 
-		$result = $this->hasFslSource(array('command' => $command));
-
+		$result = $this->hasCmdSource($command, 'fsl');
 		// 比default多个analysis 
 		if ( isset($result['GmtModified']) && $result['GmtModified'] + 30*24*60*60 > time() ){ 
 			$fsl -> wtTmp($result['Detail']);
@@ -630,7 +713,7 @@ class EtermController extends Controller {
 				$array["{$start}{$end}/{$aircompany}"] = $fsl_result;
 				$array["{$start}{$end}/{$aircompany}"]['length'] = count($array["{$start}{$end}/{$aircompany}"])-1;
 			}			
-			$this-> saveFslSource(array('source' => $fsl->readSource(), 'command' => $command));
+			$this-> saveCmdSource(array('source' => $fsl->readSource(), 'command' => $command), 'fsl');
 		}
 
 		if($return)
@@ -655,7 +738,6 @@ class EtermController extends Controller {
 			'DL' => array('SEA', 'DTW')
 		);
 
-
 		// 航程
 		$array = array();
 		foreach($depart as $aircompany => $d){
@@ -664,8 +746,8 @@ class EtermController extends Controller {
 				$start      = $d[0];
 				$command    = 'XS/FSD'.$start.$end.'/'.date('tM', time()+10*24*60*60 ).'/'.$aircompany.'/NEGO/X';
 				$fsl        = new \Fsl($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
+				$result     = $this->hasCmdSource($command, 'fsl');
 
-				$result = $this->hasFslSource(array('command' => $command));
 
 				// 数据保留1个月
 				if ( isset($result['GmtModified']) && $result['GmtModified'] + 30*24*60*60 > time() ){ 
@@ -686,29 +768,6 @@ class EtermController extends Controller {
 		\BYS\Report::p($array);
 	}
 
-	public function hasFslSource($array = array()){
-		$m_fsl  = model('fsl_source');
-  	$result = $m_fsl->where('`command` ="'.$array['command'].'" ')->select();
-
-  	// 为空返回false
-  	if(!$result || empty($result[0]) ) return false;
-  	$col = $result[0]; // 仅一条
-		if ( isset($col['Command']) && $array['command'] == $col['Command'] ) 
-			return array('Detail' =>$col['Detail'], 'GmtModified' =>$col['GmtModified'] );
-
-  	return false;
-	}
-
-	public function saveFslSource($array = array()){
-		$m_fsl = model('fsl_source');
-  	$add = array(
-  		'office' => $_SESSION['resource'],
-  		'status' => 2,
-  		'command'=> isset($array['command'])? $array['command'] : '',
-  		'detail' => isset($array['source'])? $array['source']: '',
-  	);
-  	return $m_fsl->add($add);
-	}
 
 	// 新增混舱
 	public function addMixCabin(){

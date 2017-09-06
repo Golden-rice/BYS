@@ -10,6 +10,11 @@ class BasisController extends Controller {
         $this->display();
     }
 
+    // 热门城市 数据来源 e_cmd_xfsd_result
+    public function hotCity(){
+        $this->display();
+    }
+
     public function searchAircompany(){
         $aircompany = model('aircompany');
 
