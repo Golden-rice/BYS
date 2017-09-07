@@ -1,0 +1,217 @@
+<{extends file='../layout.html'}>
+
+<{block name="title"}>航路<{/block}>
+<{block name="content"}>
+
+<div class="panel panel-default">
+	<div class="panel-body">
+
+		<div class="form-inline">
+
+			<div class="input-group">
+				<!-- 区域  -->
+				<span class="input-group-addon" id="input-aircompany">航空公司</span>
+				<select class="form-control" id='aircompany' aria-describedby="input-aircompany">
+				  <option>——</option>
+				</select>
+				<!-- 区域 END -->
+
+				<!-- 区域  -->
+				<span class="input-group-addon" id="input-region">区域</span>
+				<select class="form-control" id='region' aria-describedby="input-region">
+				  <option>——</option>
+				</select>
+				<!-- 区域 END -->
+
+				<!-- 规则  -->
+				<span class="input-group-addon" id="input-rule">规则</span>
+				<select class="form-control" id='rule' aria-describedby="input-rule">
+				  <option>——</option>
+				</select>
+				<!-- 规则 END -->
+
+			</div>
+
+			<div class="input-group">
+				<!-- 舱位  -->
+				<div id='cabin'>
+					<!-- <label class="checkbox-inline">
+					  <input type="checkbox" id="inlineCheckbox1" value="option1"> 1
+					</label> -->
+				</div>
+				<!-- 舱位 END -->
+			</div>
+
+			<div class="input-group">
+				<input type="submit" value="查询" name='dosubmit' id='dosubmit' class="btn btn-primary">
+			</div>
+
+			<div class="input-group">
+				<input type="submit" value="生成新的热门城市" name='setHotCity' id='setHotCity' class="btn btn-default">
+			</div>
+
+		</div>
+		<!-- form-inline -->
+	</div>
+	<!-- "panel-body -->
+</div>
+<!-- panel -->
+
+<div id="content-progress"></div>
+<div id="content"></div>
+<script>
+require(['eterm', 'dt'], function (eterm, dt){
+
+var setCommend = function(command){
+
+	// 默认查询结果
+	command.searchHotCity()
+
+	// command.searchHotCityFromResult({
+	// 		aircompany: 'UA',
+	// 		region: 'PA',
+	// 		rule: 'CNCNR',
+	// })
+
+	// 开始查询
+	$('#dosubmit').click(function(){
+		command.searchHotCityFromResult({
+			aircompany: $('#aircompany').val(),
+			region: $('#region').val(),
+			rule: $('#rule').val()
+		})
+	})
+
+	$('#setHotCity').click(function(){
+		setHotCity();
+		console.log(selectedHotCity)
+		if(selectedHotCity) {
+			command.setHotCity({
+				selected: selectedHotCity
+			})
+		}
+	})
+}
+
+var tpl = {
+	mkTable:mkTable,
+	mkSelect: mkSelect,
+}
+
+// 选中的热门城市
+var selectedHotCity;
+
+// 热门城市数据
+var HotCityData;
+
+// 配置setCommand()
+// 装载模板mkTable()
+setCommend(eterm.createCommand(eterm.eterm,tpl));
+
+function mkSelect(data){
+	'use strict';
+
+	let html = '';
+
+	// 回填航空公司数据
+	if(data.aircompany){
+		html = '<option value="">请选择</option>';
+		for(var i in data.aircompany){
+			html += '<option value='+data.aircompany[i].aircompany+'>'+data.aircompany[i].aircompany+'</option>';
+		}
+		$('#aircompany').html(html)
+	}
+
+	// 回填舱位数据
+	// if(data.cabin){
+	// 	html = '';
+	// 	for(var i in data.cabin){
+	// 		if (data.cabin[i].cabin){
+	// 			html += `
+	// 					<label class="checkbox-inline">
+	// 					  <input type="checkbox" id="${i}" value="${data.cabin[i].cabin}"> ${data.cabin[i].cabin}
+	// 					</label>
+	// 			`
+	// 		}
+	// 	}
+	// 	$('#cabin').html(html)
+	// }	
+
+	// 回填区域
+	if(data.region){
+		html = '<option value="">请选择</option>';
+		for(var i in data.region){
+			if(data.region[i].region){
+				html += '<option value='+data.region[i].region+'>'+data.region[i].region+'</option>';
+			}
+		}
+		$('#region').html(html)
+	}
+
+	// 回填规则
+	if(data.rule){
+		html = '<option value="">请选择</option>';
+		for(var i in data.rule){
+			if(data.rule[i].rule){
+				html += '<option value='+data.rule[i].rule+'>'+data.rule[i].rule+'</option>';
+			}
+		}
+		$('#rule').html(html)
+	}
+}
+
+function setHotCity(){
+	selectedHotCity = { data: JSON.stringify( HotCityData.result), query: JSON.stringify( HotCityData.query )} ;
+}
+
+function mkTable(data, wrap, type){
+
+	'use strict';
+
+	let html = '', 
+			appendType = type !== ""? type : 'w',
+	  	context = wrap !== "" ? wrap : document;
+
+	if( data.result.length <= 0 ) return;
+
+	// 暴露至全局
+	HotCityData = data
+
+	html +=`
+	<div class="row">
+		<div class="col-lg-8">
+			<div class="panel panel-default">
+				<div class="panel-heading">目的地（共：${data.result.length}个）</div>
+				<div class="panel-body">
+	`
+	for(var i in data.result){
+		html += `<kbd style="float:left;margin:0 3px 3px 0;">${data.result[i].arrive}</kbd>`
+	}
+	html += `
+				</div>
+			</div>
+		</div>
+
+		<!-- 查询条件 -->
+		<div class="col-lg-4">
+			<div class="panel panel-default">
+				<div class="panel-heading">查询条件</div>
+				<ul class="list-group">
+					<li class="list-group-item">航空公司: ${data.query.aircompany}</li>
+					<li class="list-group-item">区域: ${data.query.region}</li>
+					<li class="list-group-item">规则: ${data.query.rule}</li>
+				</ul>
+			</div>
+		</div>
+	</div>
+	`
+
+
+	appendType === 'a'? $(context).append(html): $(context).html(html);
+}
+
+})
+
+</script>
+
+<{/block}>

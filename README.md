@@ -58,6 +58,9 @@ index.php                  # 入口文件
 ## 待完成
 
 * 生成 热门城市表：筛选 xfsd_result表，并保存，更新则清空表插入全部数据
+
+	basis_hot_city Id HC_arrive HC_Routing HC_XfsdResult_SId HC_XfsdResult_Status HC_AvhResult_Sid HC_AvhResult_Status HC_Status gmtCteate gmtModified
+
 * 计划任务：定期查询热门城市表，然后查询xfsd
 * 生成政策：选择：select 热门城市表，checkbox 舱位 -> 获得解析后的xfsd数据，然后经隐藏只展示出最便宜的一条数据舱位数据，自动混舱生成数据，通过下载修改，上传携程数据
 * 校检热门城市的fsl 数据

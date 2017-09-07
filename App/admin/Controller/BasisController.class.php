@@ -125,6 +125,120 @@ class BasisController extends Controller {
         // fsi 检验
     }
 
+    // 生成热门城市
+    public function setHotCity(){
+        if(!isset($_POST['selected'])) return;
+        $hot_city_model = model('hot_city');
+
+        // 清空表 
+        $hot_city_model -> deleteAll();
+
+        $hotCityArray = json_decode($_POST['selected']['data'], true);
+        $hotCity      = json_decode($_POST['selected']['query'], true);
+        $addAll = array();
+        foreach ($hotCityArray as $key => $value) {
+            $addAll[] = array(
+                'HC_Depart'            => $value['depart'],
+                'HC_Arrive'            => $value['arrive'],
+                'HC_Aircompany'        => $value['aircompany'],
+                'HC_Query'             => json_encode($hotCity),
+                'HC_XfsdResult_Status' => 0,
+                'HC_AvhResult_Status'  => 0,
+                'HC_Status'            => 0,
+            );
+        }
+
+        $result = $hot_city_model->addAll($addAll);
+    }
+
+    // 查询热门城市
+    public function searchHotCity(){
+        if(!isset($_POST)) return;
+        $hot_city    = model('hot_city');
+        $xfsd_result = model('xfsd_result');
+
+        // 查询所有热门城市
+        $result            = $hot_city->select('HC_Arrive AS arrive, HC_Query AS query');
+        // 所有舱位类型
+        $result_cabin      = $xfsd_result->where('')->distinct('`xfsd_Cabin` as cabin')->select();
+        // 所有rule类型
+        $result_rule       = $xfsd_result->where('')->distinct('`xfsd_Rule` as rule')->select();
+        // 所有区域类型
+        $result_region     = $xfsd_result->where('')->distinct('`xfsd_Region` as region')->select();
+        // 所有航空公司
+        $result_aircompany = $xfsd_result->where('')->distinct('`xfsd_Owner` as aircompany')->select();
+        
+        if(!empty($result)){
+            echo json_encode(array(
+                'result'     => $result, 
+                'cabin'      => $result_cabin, 
+                'rule'       => $result_rule, 
+                'region'     => $result_region,
+                'aircompany' => $result_aircompany,
+                'msg'        => \BYS\Report::printLog()
+            ));
+        }
+        elseif($result == false){
+            echo json_encode(array('msg'=>'无数据'));
+            // var_dump($xfsd_result->testSql(), $result);
+        }
+        else{
+            echo json_encode(array('msg'=>\BYS\Report::printLog()));
+        }
+    }
+
+    // 从result中查询热门城市
+    public function searchHotCityFromResult(){
+        if(!isset($_POST)) return;
+        $xfsd_result = model('xfsd_result');
+
+        // 查询条件
+        $where    = "";
+        $distinct = ' `xfsd_Arr` AS arrive, `xfsd_Dep` AS depart, `xfsd_Owner` AS aircompany';
+
+        // 筛选区域
+        if( $_POST['region'] != ''){
+            $where    .= " `xfsd_Region` = '{$_POST['region']}' AND";
+        }     
+
+        // 筛选舱位，可能多个
+        if( $_POST['aircompany'] != ''){
+            $where    .= " `xfsd_Owner` = '{$_POST['aircompany']}' AND";
+        }  
+
+        // 筛选退票规则
+        if( $_POST['rule'] != ''){
+            $where    .= " `xfsd_Rule` = '{$_POST['rule']}' AND";
+        }
+
+        // 查看目的地
+        $result            = $xfsd_result->where(rtrim($where, 'AND'))->distinct(rtrim($distinct, ','))->select();
+        // 所有舱位类型
+        $result_cabin      = $xfsd_result->where('')->distinct('`xfsd_Cabin` as cabin')->select();
+        // 所有rule类型
+        $result_rule       = $xfsd_result->where('')->distinct('`xfsd_Rule` as rule')->select();
+        // 所有区域类型
+        $result_region     = $xfsd_result->where('')->distinct('`xfsd_Region` as region')->select();
+        // 所有航空公司
+        $result_aircompany = $xfsd_result->where('')->distinct('`xfsd_Owner` as aircompany')->select();
+
+        if(!empty($result)){
+            echo json_encode(array(
+                'result'     => $result, 
+                'cabin'      => $result_cabin, 
+                'rule'       => $result_rule, 
+                'region'     => $result_region,
+                'aircompany' => $result_aircompany,
+                'msg'        => \BYS\Report::printLog()
+            ));
+        }elseif($result == false){
+            echo json_encode(array('msg'=>'无数据'));
+            // var_dump($xfsd_result->testSql(), $result);
+        }else{
+            echo json_encode(array('msg'=>\BYS\Report::printLog()));
+        }
+    }
+
     // 机场城市代码 basis_airport_city_code <- basis_country | 城市表
     public function searchAirportAndCity(){
         $airportAndCity = '';

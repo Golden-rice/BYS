@@ -13,6 +13,10 @@
 	 	protected $where            = '';
 	 	// JOIN
 	 	protected $join             = '';
+	 	// 当发生失败时，返回 sql 语句
+	 	protected $sql              = '';
+	 	// 去重语句
+		protected $distinct         = '';
 
 	 	function __construct($className = ""){
 		 	// 声明全局变量
@@ -113,19 +117,30 @@
 	 	}
 
 	 	/**
+		 * 清空表
+		 */	
+	 	public function deleteAll(){
+ 			$this->prepare("TRUNCATE {$this->tableName}");
+ 			$this->execute();
+	 	}
+
+
+	 	/**
 		 * 查询数据的筛选条件
 		 * @param  string $where 筛选语句
 		 * @return thisObject
 		 */	
-	 	public function where($where = ''){
+	 	public function where($where){
 	 		if(!is_string($where)) return $this;
-			$this->where = " WHERE ".$where;
+	 		if($where != '')
+				$this->where = ' WHERE '.$where;
+			else
+				$this->where = '';
 			return $this;
 	 	}
 
-	 	public function join($type = '', $sql = ''){
-	 		if(!is_string($type) || $type == '') return $this;
-	 		if(!is_string($sql)) return $this;
+	 	public function join($type, $sql){
+	 		if(!is_string($type) || !is_string($sql)) return $this;
 
 	 		switch ($type) {
 	 			case 'INNER':
@@ -140,9 +155,32 @@
 	 			case 'FULL':
 	 				$this->join = ' FULL JOIN '.$sql;
 	 				break;
+	 			default:
+	 				$this->join = '';
+	 				break;
 	 		}
 	 		return $this;
 	 	}
+
+	  /**
+		 * 当返回失败时，查看sql语句
+		 * @return string
+		 */	 	
+	  public function testSql(){
+	  	if($this->sql != '')
+	  		return $this->sql;
+	  	else
+	  		return 'No Sql';
+	  }
+
+	  /**
+		 * 去重
+		 */	
+	  public function distinct($distinct = ''){
+	  	if ($distinct != '')
+		  	$this->distinct = ' DISTINCT '.$distinct;
+	  	return $this;
+	  }
 
 	  /**
 		 * 查询数据
@@ -154,14 +192,21 @@
 		 	else
 		 		$sql = "SELECT * FROM ".$this->tableName.$this->join.$this->where;
 
+		 	if( $this->distinct != '')
+		 		$sql = "SELECT {$this->distinct} FROM ".$this->tableName.$this->join.$this->where;
+
 	 		$this->prepare($sql);
 	 		$result = $this->execute();
+	 		if(is_bool($result) && $result == false)
+	 			$this->sql = $sql;
+
 	 		// 如果有结果均按数组返回
 	 		if(is_array($result) && isset($result[0])){
 		 		return $result;
 	 		}elseif(is_array($result)){
 	 			return array(0=>$result);
 	 		}
+
 	 		return $result;
 	 	}
 

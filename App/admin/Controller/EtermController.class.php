@@ -5,12 +5,12 @@ class EtermController extends Controller {
 
 	private $cache = array(); // 临时储存
 
-	// xfsd 前台展示
+	// xfsd 运价 前台展示
   public function xfsd(){
   	$this->display();
   }
 
-  // avh 前台展示
+  // avh 舱位 前台展示
   public function avh(){
 		$this->display();
   }
@@ -20,6 +20,7 @@ class EtermController extends Controller {
   	$this->display();
   }
 
+  // fsl 航程 前台展示
   public function fsl(){
   	$this->display();
   }
@@ -186,9 +187,9 @@ class EtermController extends Controller {
 		$this->deleteCmdResult($id, $cmd);
 		$saveActionName = 'save'.ucfirst($cmd).'Result';
 		$this->$saveActionName($array, $id, $command); 
-
 	}
 
+	// 测试数据
 	private function saveTestResult($array, $id, $command){
 		echo 'test save name';
 	}
@@ -767,7 +768,6 @@ class EtermController extends Controller {
 
 		\BYS\Report::p($array);
 	}
-
 
 	// 新增混舱
 	public function addMixCabin(){

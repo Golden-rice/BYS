@@ -162,6 +162,7 @@ var createCommand = function(recevier, tpl){
 		var mkMixTable   = tpl.mkMixTable ? tpl.mkMixTable: undefined; // xfsd 混舱模板
 		var mkSeatLevel  = tpl.mkSeatLevel ? tpl.mkSeatLevel: undefined; // 舱位等级
 		var mkCabinTpl   = tpl.mkCabinTpl ? tpl.mkCabinTpl: undefined; // 舱位生成产品数据
+		var mkSelect     = tpl.mkSelect ? tpl.mkSelect: undefined; // 选择框模板
 	}
 
 
@@ -1066,6 +1067,7 @@ var createCommand = function(recevier, tpl){
 				recevier.progress.complete();
 				if(data.status === 'success'){
 					console.log(data)
+
 					// recevier.mkTable(data, recevier.target, recevier.context, 'w');
 				}else{
 					alert(data.msg);
@@ -1110,6 +1112,87 @@ var createCommand = function(recevier, tpl){
 	
 	}
 
+	var searchHotCity = function(){
+		recevier.context = '#content';
+
+		// 模板
+		if(recevier.isFunction(mkTable) && typeof recevier.isFunction(rmTable)){
+			recevier.mkTable = mkTable; 
+			recevier.rmTable = rmTable; 
+		}else{
+			console.log("'mkTable' or 'rmTable' haven't added in ")
+		}
+
+		recevier.getData( Controller + 'searchHotCity', '', function(data){
+			recevier.rmTable(recevier.target);
+
+			console.log(data)
+			if(data.msg !== ''){
+				alert(data.msg);
+			}
+
+			if(data.result[0]){
+				data.query = eval('['+data.result[0].query+']')[0];
+			}
+
+			mkSelect({
+				aircompany: data.aircompany,
+				cabin: data.cabin,
+				region: data.region,
+				rule: data.rule,
+			})
+
+			recevier.mkTable(data, recevier.context, 'w');
+				
+			// 垃圾回收
+			recevier.mkTable = null;
+			recevier.rmTable = null;
+		});	
+	}
+
+	var searchHotCityFromResult = function (query){
+		recevier.context = '#content';
+
+		// 模板
+		if(recevier.isFunction(mkTable) && typeof recevier.isFunction(rmTable)){
+			recevier.mkTable = mkTable; 
+			recevier.rmTable = rmTable; 
+		}else{
+			console.log("'mkTable' or 'rmTable' haven't added in ")
+		}
+
+		recevier.getData( Controller + 'searchHotCityFromResult', query, function(data){
+			recevier.rmTable(recevier.target);
+			data.query = query; // 将查询值放入data中
+			console.log(data)
+			if(data.msg !== ''){
+				alert(data.msg);
+			}
+
+			mkSelect({
+				aircompany: data.aircompany,
+				cabin: data.cabin,
+				region: data.region,
+				rule: data.rule,
+			})
+
+			recevier.mkTable(data, recevier.context, 'w');
+				
+			// 垃圾回收
+			recevier.mkTable = null;
+			recevier.rmTable = null;
+		});	
+	}
+
+	var setHotCity = function(selected){
+		recevier.context = '#content';
+		console.log(selected)
+		recevier.link( Controller + 'setHotCity', selected , function(){
+			console.log('reloading ... ')
+			location.reload();
+		});	
+	}
+
 	return {
 		xfsd: xfsd,                             // 获得xfsd数据，并用table回填到页面中
 		selected: selected,                     // 选择
@@ -1133,6 +1216,9 @@ var createCommand = function(recevier, tpl){
 		searchRouting: searchRouting,           // 合成数据：查询航路
 		searchComposePolicy: searchComposePolicy,// 合成数据：查询政策
 		searchFslByInput: searchFslByInput,     // 合成数据：查询航路
+		searchHotCityFromResult: searchHotCityFromResult, // 从result中查询热门城市
+		searchHotCity: searchHotCity,           // 合成数据：热门城市
+		setHotCity: setHotCity,                 // 保存数据：生成热门城市计划表
 	}
 }
 
