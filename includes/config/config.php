@@ -8,7 +8,8 @@
 			// 模板变量替换
 			'TPL_VAR' => array(
 				'__PUBLIC__' => URL.'public/',
-				'__URL__' => URL.'index.php/'
+				'__URL__' => URL.'index.php/',
+				'__VERSION__' => date('YmdHis',time()) //年月日小时
 			),
 
 			// 数据库设置

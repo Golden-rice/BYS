@@ -164,6 +164,9 @@ div:after{
 .autoComplete li a:focus {
 	outline: -webkit-focus-ring-color auto 0px;
 }
+.btn-hotcity{
+	margin:0 3px 3px 0;
+}
 
 /*------------------------------------------------------------------
 [0-1. login]

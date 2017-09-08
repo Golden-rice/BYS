@@ -156,13 +156,14 @@ var createCommand = function(recevier, tpl){
 
 	// 生成模板
 	if(tpl){
-		var render       = tpl.render ? tpl.render: undefined; // 非表格渲染方式
-		var mkTable      = tpl.mkTable ? tpl.mkTable: undefined; // 各个页面基础 模板 等
-		var mkMatchTable = tpl.mkMatchTable ? tpl.mkMatchTable: undefined; // 使用规则模板
-		var mkMixTable   = tpl.mkMixTable ? tpl.mkMixTable: undefined; // xfsd 混舱模板
-		var mkSeatLevel  = tpl.mkSeatLevel ? tpl.mkSeatLevel: undefined; // 舱位等级
-		var mkCabinTpl   = tpl.mkCabinTpl ? tpl.mkCabinTpl: undefined; // 舱位生成产品数据
-		var mkSelect     = tpl.mkSelect ? tpl.mkSelect: undefined; // 选择框模板
+		var render        = tpl.render ? tpl.render: undefined; // 非表格渲染方式
+		var mkTable       = tpl.mkTable ? tpl.mkTable: undefined; // 各个页面基础 模板 等
+		var mkMatchTable  = tpl.mkMatchTable ? tpl.mkMatchTable: undefined; // 使用规则模板
+		var mkMixTable    = tpl.mkMixTable ? tpl.mkMixTable: undefined; // xfsd 混舱模板
+		var mkSeatLevel   = tpl.mkSeatLevel ? tpl.mkSeatLevel: undefined; // 舱位等级
+		var mkCabinTpl    = tpl.mkCabinTpl ? tpl.mkCabinTpl: undefined; // 舱位生成产品数据
+		var mkSelect      = tpl.mkSelect ? tpl.mkSelect: undefined; // 选择框模板
+		var mkSelectCabin = tpl.mkSelectCabin ? tpl.mkSelectCabin: undefined; // 选择框舱位模板
 	}
 
 
@@ -1114,35 +1115,27 @@ var createCommand = function(recevier, tpl){
 
 	var searchHotCity = function(){
 		recevier.context = '#content';
-
+		recevier.target  = 'hotcity-content';
 		// 模板
-		if(recevier.isFunction(mkTable) && typeof recevier.isFunction(rmTable)){
-			recevier.mkTable = mkTable; 
-			recevier.rmTable = rmTable; 
-		}else{
+		if(!recevier.isFunction(mkTable)){
 			console.log("'mkTable' or 'rmTable' haven't added in ")
 		}
 
 		recevier.getData( Controller + 'searchHotCity', '', function(data){
-			recevier.rmTable(recevier.target);
+			rmTable(recevier.target);
 
 			console.log(data)
 			if(data.msg !== ''){
 				alert(data.msg);
 			}
 
+			// 默认计划任务中有数据
 			if(data.result[0]){
 				data.query = eval('['+data.result[0].query+']')[0];
+				data.cabin = eval('['+data.result[0].cabin+']')[0];
 			}
 
-			mkSelect({
-				aircompany: data.aircompany,
-				cabin: data.cabin,
-				region: data.region,
-				rule: data.rule,
-			})
-
-			recevier.mkTable(data, recevier.context, 'w');
+			mkTable(data, recevier.target, recevier.context, 'w');
 				
 			// 垃圾回收
 			recevier.mkTable = null;
@@ -1152,6 +1145,7 @@ var createCommand = function(recevier, tpl){
 
 	var searchHotCityFromResult = function (query){
 		recevier.context = '#content';
+		recevier.target  = 'hotcity-content';
 
 		// 模板
 		if(recevier.isFunction(mkTable) && typeof recevier.isFunction(rmTable)){
@@ -1161,22 +1155,18 @@ var createCommand = function(recevier, tpl){
 			console.log("'mkTable' or 'rmTable' haven't added in ")
 		}
 
+		recevier.rmTable(recevier.target);
 		recevier.getData( Controller + 'searchHotCityFromResult', query, function(data){
-			recevier.rmTable(recevier.target);
-			data.query = query; // 将查询值放入data中
+
 			console.log(data)
+
+			data.query = query; // 将查询值放入data中用于保存至数据库
+
 			if(data.msg !== ''){
 				alert(data.msg);
 			}
 
-			mkSelect({
-				aircompany: data.aircompany,
-				cabin: data.cabin,
-				region: data.region,
-				rule: data.rule,
-			})
-
-			recevier.mkTable(data, recevier.context, 'w');
+			recevier.mkTable(data, recevier.target, recevier.context, 'w');
 				
 			// 垃圾回收
 			recevier.mkTable = null;
@@ -1193,32 +1183,56 @@ var createCommand = function(recevier, tpl){
 		});	
 	}
 
+	var searchHotCitySelect = function(query){
+		recevier.link( Controller + 'searchHotCitySelect', query , function(data){
+			mkSelect({
+				depart: data.depart,
+				aircompany: data.aircompany,
+				cabin: data.cabin,
+				region: data.region,
+				rule: data.rule,
+				cabin_rule: data.cabin_rule
+			})
+		});	
+	}
+
+	var searchCabinRule = function(query){
+		recevier.link( Controller + 'searchCabinRule', query , function(data){
+			console.log(data)
+			mkSelectCabin({
+				cabin_rule: data.cabin_rule
+			})
+		});	
+	}
+
 	return {
-		xfsd: xfsd,                             // 获得xfsd数据，并用table回填到页面中
-		selected: selected,                     // 选择
-		fliterFare: fliterFare,                 // 筛选xfsd的fare，并生成fareArray数组
-		getFliterPolicy: getFliterPolicy,       // 根据fareArray批量获得政策信息
-		appendPolicy: appendPolicy,             // 向XFSD回填使用规则
-		fare: fare,                             // fare页面获取使用规则
-		rate: rate,                             // 汇率
-		mixCabin: mixCabin,                     // 混舱
-		clearMixCabin: clearMixCabin,           // 清楚混舱数据
-		mixCabinByTpl: mixCabinByTpl,           // 通过模板混舱
-		avh: avh,                               // Eterm 的舱位查询 avh 
-		avSabre: avSabre,                       // Sabre 的舱位查询 av 
-		planAvSabre: planAvSabre,               // sabre计划任务舱位展示
-		planAvhEterm: planAvhEterm,             // eterm计划任务舱位展示
-		checkSignin: checkSignin,               // 登录配置检查
-		productModify: productModify,           // 产品调价（淘宝）
-		addCabin: addCabin,                     // 手工添加混舱
-		basisAircompany: basisAircompany,       // 基础数据：查询全部航空公司
-		findAircompany: findAircompany,         // 基础数据：查询某航空公司
-		searchRouting: searchRouting,           // 合成数据：查询航路
-		searchComposePolicy: searchComposePolicy,// 合成数据：查询政策
-		searchFslByInput: searchFslByInput,     // 合成数据：查询航路
+		xfsd: xfsd,                                       // 获得xfsd数据，并用table回填到页面中
+		selected: selected,                               // 选择
+		fliterFare: fliterFare,                           // 筛选xfsd的fare，并生成fareArray数组
+		getFliterPolicy: getFliterPolicy,                 // 根据fareArray批量获得政策信息
+		appendPolicy: appendPolicy,                       // 向XFSD回填使用规则
+		fare: fare,                                       // fare页面获取使用规则
+		rate: rate,                                       // 汇率
+		mixCabin: mixCabin,                               // 混舱
+		clearMixCabin: clearMixCabin,                     // 清楚混舱数据
+		mixCabinByTpl: mixCabinByTpl,                     // 通过模板混舱
+		avh: avh,                                         // Eterm 的舱位查询 avh 
+		avSabre: avSabre,                                 // Sabre 的舱位查询 av 
+		planAvSabre: planAvSabre,                         // sabre计划任务舱位展示
+		planAvhEterm: planAvhEterm,                       // eterm计划任务舱位展示
+		checkSignin: checkSignin,                         // 登录配置检查
+		productModify: productModify,                     // 产品调价（淘宝）
+		addCabin: addCabin,                               // 手工添加混舱
+		basisAircompany: basisAircompany,                 // 基础数据：查询全部航空公司
+		findAircompany: findAircompany,                   // 基础数据：查询某航空公司
+		searchRouting: searchRouting,                     // 合成数据：查询航路
+		searchComposePolicy: searchComposePolicy,         // 合成数据：查询政策
+		searchFslByInput: searchFslByInput,               // 合成数据：查询航路
 		searchHotCityFromResult: searchHotCityFromResult, // 从result中查询热门城市
-		searchHotCity: searchHotCity,           // 合成数据：热门城市
-		setHotCity: setHotCity,                 // 保存数据：生成热门城市计划表
+		searchHotCity: searchHotCity,                     // 合成数据：热门城市
+		setHotCity: setHotCity,                           // 保存数据：生成热门城市计划表
+		searchHotCitySelect: searchHotCitySelect,         // 基础数据：全部result中筛选的数据
+		searchCabinRule: searchCabinRule,                 // 基础数据：查询舱位等级
 	}
 }
 

@@ -402,7 +402,11 @@ function mkTable(data, dom, wrap, type){
         fsiModal.show();
     })
 
-
+  $(function(){
+    // 导航
+    $('.nav>li').removeClass('active');
+    $('.nav>.basis').addClass('active');
+  })
 
 })
 

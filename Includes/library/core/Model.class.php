@@ -17,6 +17,8 @@
 	 	protected $sql              = '';
 	 	// 去重语句
 		protected $distinct         = '';
+		// 排序语句
+		protected $order            = '';
 
 	 	function __construct($className = ""){
 		 	// 声明全局变量
@@ -179,6 +181,19 @@
 	  public function distinct($distinct = ''){
 	  	if ($distinct != '')
 		  	$this->distinct = ' DISTINCT '.$distinct;
+		  else 
+		  	$this->distinct = '';
+	  	return $this;
+	  }
+
+	  /**
+		 * 排序
+		 */		  
+	  public function order($order){
+	  	if ($order != '')
+		  	$this->order = ' ORDER BY '.$order;
+		  else 
+		  	$this->order = '';
 	  	return $this;
 	  }
 
@@ -187,13 +202,17 @@
 		 * @return mix 结果
 		 */	 	
 	 	public function select($cols = ''){
+	 		$sql = '';
+
 	 		if( $cols != '')
-	 			$sql = "SELECT {$cols} FROM ".$this->tableName.$this->join.$this->where;
+	 			$sql = "SELECT {$cols} ";
 		 	else
-		 		$sql = "SELECT * FROM ".$this->tableName.$this->join.$this->where;
+		 		$sql = "SELECT * ";
 
 		 	if( $this->distinct != '')
-		 		$sql = "SELECT {$this->distinct} FROM ".$this->tableName.$this->join.$this->where;
+		 		$sql = "SELECT {$this->distinct} ";
+
+		 	$sql .= " FROM ".$this->tableName.$this->join.$this->where.$this->order;
 
 	 		$this->prepare($sql);
 	 		$result = $this->execute();

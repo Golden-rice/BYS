@@ -16,6 +16,13 @@
 				</select>
 				<!-- 区域 END -->
 
+				<!-- 出发  -->
+				<span class="input-group-addon" id="input-depart">出发</span>
+				<select class="form-control" id='depart' aria-describedby="input-depart">
+				  <option>——</option>
+				</select>
+				<!-- 出发 END -->
+
 				<!-- 区域  -->
 				<span class="input-group-addon" id="input-region">区域</span>
 				<select class="form-control" id='region' aria-describedby="input-region">
@@ -41,15 +48,16 @@
 				</div>
 				<!-- 舱位 END -->
 			</div>
-
+			<hr>
 			<div class="input-group">
 				<input type="submit" value="查询" name='dosubmit' id='dosubmit' class="btn btn-primary">
 			</div>
 
 			<div class="input-group">
-				<input type="submit" value="生成新的热门城市" name='setHotCity' id='setHotCity' class="btn btn-default">
+				<input type="submit" value="设置热门城市" name='setHotCity' id='setHotCity' class="btn btn-default">
 			</div>
 
+			<label for="">默认值来源于 `已设置的热门城市` ，查询后请点击 `设置热门城市` 按钮来设置新的热门城市</label>
 		</div>
 		<!-- form-inline -->
 	</div>
@@ -62,12 +70,28 @@
 <script>
 require(['eterm', 'dt'], function (eterm, dt){
 
+var tpl = {
+	mkTable:mkTable,
+	mkSelect: mkSelect,
+	mkSelectCabin: mkSelectCabin,
+}
+
+var hotCityData  = [], // 选择的热门城市数据
+	  hotCityCabin = [], // 选择的舱位数据
+	  hotCityAllData,    // 查询的城市结果
+	  hotCityQuery = '', // 查询参数
+	  searchAllCabin;    // 查询的舱位数据
+
 var setCommend = function(command){
 
-	// 默认查询结果
+	command.searchHotCitySelect();
+
+	// 查询hotcity表结果
 	command.searchHotCity()
 
+	// 从 result 查询结果
 	// command.searchHotCityFromResult({
+	// 		depart: 'BJS',
 	// 		aircompany: 'UA',
 	// 		region: 'PA',
 	// 		rule: 'CNCNR',
@@ -75,117 +99,237 @@ var setCommend = function(command){
 
 	// 开始查询
 	$('#dosubmit').click(function(){
-		command.searchHotCityFromResult({
+		var query = {
 			aircompany: $('#aircompany').val(),
+			depart: $('#depart').val(),
 			region: $('#region').val(),
 			rule: $('#rule').val()
-		})
+		};
+
+		hotCityQuery   = query;
+		// command.searchHotCitySelect(query);
+		command.searchCabinRule(query);
+		command.searchHotCityFromResult(query);
 	})
 
+	// 设置热门城市
 	$('#setHotCity').click(function(){
-		setHotCity();
-		console.log(selectedHotCity)
-		if(selectedHotCity) {
-			command.setHotCity({
-				selected: selectedHotCity
-			})
-		}
+
+		// 设置舱位
+		setHotCityCabin();
+
+		// 回填数据
+		command.setHotCity({
+			selected: { 
+				data:  hotCityData.length !== 0 ? JSON.stringify( hotCityData ) : JSON.stringify( hotCityAllData ), 
+				query: JSON.stringify( hotCityQuery ), 
+				cabin: hotCityCabin.length >0 ? JSON.stringify( hotCityCabin ) : '',
+			}
+		})
+		
 	})
+
 }
 
-var tpl = {
-	mkTable:mkTable,
-	mkSelect: mkSelect,
-}
-
-// 选中的热门城市
-var selectedHotCity;
-
-// 热门城市数据
-var HotCityData;
-
-// 配置setCommand()
-// 装载模板mkTable()
 setCommend(eterm.createCommand(eterm.eterm,tpl));
+
+
+
+function cabinInRuleHtml(inner){
+	return '<label class="checkbox-inline"><input type="checkbox" class="checkbox-cabin" value="'+inner+'">'+inner+'</label>'
+}
+
+
+
+function mkSelectCabin(data){
+	// 回填舱位数据
+	if(searchAllCabin.length > 0){
+		html = '';
+
+		var cabinInRule = [];
+		// 生成标签
+		if(data.cabin_rule.length > 0){
+			cabinInRule = {
+				'Y' : [], // 经济舱
+				'S' : [], // 超级经济舱
+				'C' : [], // 公务舱
+				'F' : [], // 头等舱
+			}
+			for(var j in data.cabin_rule){
+
+				for(var i in searchAllCabin){
+					if (searchAllCabin[i].cabin && data.cabin_rule[j].cabin == searchAllCabin[i].cabin ){
+						// 插入经济舱
+						if(data.cabin_rule[j].basisCode === 'Y'){
+							cabinInRule['Y'].push({
+								cabin: searchAllCabin[i].cabin,
+								description: data.cabin_rule[j].description
+							})
+							continue;
+						}
+
+						// 插入超级经济舱
+						if(data.cabin_rule[j].basisCode === 'S'){
+							cabinInRule['S'].push({
+								cabin: searchAllCabin[i].cabin,
+								description: data.cabin_rule[j].description
+							})
+							continue;
+						}
+
+						// 插入公务舱
+						if(data.cabin_rule[j].basisCode === 'C'){
+							cabinInRule['C'].push({
+								cabin: searchAllCabin[i].cabin,
+								description: data.cabin_rule[j].description
+							})
+							continue;
+						}
+
+						// 插入头等舱
+						if(data.cabin_rule[j].basisCode === 'F'){
+							cabinInRule['F'].push({
+								cabin: searchAllCabin[i].cabin,
+								description: data.cabin_rule[j].description
+							})
+							continue;
+						}
+					}
+				}
+
+			}
+		}else{
+			cabinInRule.default = searchAllCabin;
+		}
+
+
+		// 没有舱位等级区分时
+		if(cabinInRule.default){
+			for(var c in cabinInRule.default){
+				if(cabinInRule.default[c].cabin != ''){
+					html += cabinInRuleHtml(cabinInRule.default[c].cabin);
+				}
+			}
+		}else{
+			html += ` <label>经济舱：</label>`;
+			if( cabinInRule.Y.length >0  ){
+				for(var c in cabinInRule.Y){
+					html += cabinInRuleHtml(cabinInRule.Y[c].cabin);
+				}
+			}
+
+			html += ` <label>超级经济舱：</label>`;
+			if( cabinInRule.S.length>0  ){
+				for(var c in cabinInRule.Y){
+					html += cabinInRuleHtml(cabinInRule.S[c].cabin);
+				}
+			}
+
+			html += ` <label>公务舱：</label>`;
+			if( cabinInRule.C.length >0 ){
+				for(var c in cabinInRule.C){
+					html += cabinInRuleHtml(cabinInRule.C[c].cabin);
+				}
+			}
+
+			html += ` <label>头等舱：</label>`;
+			if( cabinInRule.F.length > 0){
+				for(var c in cabinInRule.F){
+					html += cabinInRuleHtml(cabinInRule.F[c].cabin);
+				}
+			}
+		}
+
+		$('#cabin').html(html)
+	}	
+}
 
 function mkSelect(data){
 	'use strict';
 
 	let html = '';
 
-	// 回填航空公司数据
-	if(data.aircompany){
-		html = '<option value="">请选择</option>';
-		for(var i in data.aircompany){
-			html += '<option value='+data.aircompany[i].aircompany+'>'+data.aircompany[i].aircompany+'</option>';
+	function mkSelectByName(name){
+		if(data[name].length > 0){
+			html = '<option value="">请选择</option>';
+			for(var i in data[name]){
+				html += '<option value='+data[name][i][name]+'>'+data[name][i][name]+'</option>';
+			}
+			$('#'+name).html(html)
 		}
-		$('#aircompany').html(html)
 	}
 
-	// 回填舱位数据
-	// if(data.cabin){
-	// 	html = '';
-	// 	for(var i in data.cabin){
-	// 		if (data.cabin[i].cabin){
-	// 			html += `
-	// 					<label class="checkbox-inline">
-	// 					  <input type="checkbox" id="${i}" value="${data.cabin[i].cabin}"> ${data.cabin[i].cabin}
-	// 					</label>
-	// 			`
-	// 		}
-	// 	}
-	// 	$('#cabin').html(html)
-	// }	
+	// 回填航空公司数据
+	mkSelectByName('aircompany');
+
+	// 回填出发地数据
+	mkSelectByName('depart');
 
 	// 回填区域
-	if(data.region){
-		html = '<option value="">请选择</option>';
-		for(var i in data.region){
-			if(data.region[i].region){
-				html += '<option value='+data.region[i].region+'>'+data.region[i].region+'</option>';
-			}
-		}
-		$('#region').html(html)
-	}
+	mkSelectByName('region');
 
 	// 回填规则
-	if(data.rule){
-		html = '<option value="">请选择</option>';
-		for(var i in data.rule){
-			if(data.rule[i].rule){
-				html += '<option value='+data.rule[i].rule+'>'+data.rule[i].rule+'</option>';
+	mkSelectByName('rule');
+
+
+	// 回填舱位数据
+	if(data.cabin.length > 0){
+		html = '';
+		searchAllCabin = data.cabin;
+
+		var cabinInRule = [];
+		// 生成标签
+		cabinInRule.default = data.cabin;
+
+		// 没有舱位等级区分时
+		if(cabinInRule.default){
+			for(var c in cabinInRule.default){
+				if(cabinInRule.default[c].cabin != ''){
+					html += cabinInRuleHtml(cabinInRule.default[c].cabin);
+				}
 			}
 		}
-		$('#rule').html(html)
-	}
+
+		$('#cabin').html(html)
+	}	
 }
 
-function setHotCity(){
-	selectedHotCity = { data: JSON.stringify( HotCityData.result), query: JSON.stringify( HotCityData.query )} ;
+function setHotCityCabin(){
+	hotCityCabin = [];
+	$('.checkbox-cabin:checked').each(function(){
+	 	hotCityCabin.push($(this).val());
+	})
 }
 
-function mkTable(data, wrap, type){
+function mkTable(data, target, wrap, type){
 
 	'use strict';
 
 	let html = '', 
+			cabinHtml = '',
 			appendType = type !== ""? type : 'w',
 	  	context = wrap !== "" ? wrap : document;
 
-	if( data.result.length <= 0 ) return;
+	if( !data.result ) return;
+
+	for( var i in data.cabin)
+		cabinHtml += data.cabin[i]+'/';
+
+	cabinHtml = cabinHtml.substr(0, cabinHtml.length-1);
 
 	// 暴露至全局
-	HotCityData = data
+	hotCityAllData = data.result;
 
+	html += `<div class='${target}'>`;
 	html +=`
 	<div class="row">
-		<div class="col-lg-8">
+		<div class="col-lg-10">
 			<div class="panel panel-default">
-				<div class="panel-heading">目的地（共：${data.result.length}个）</div>
+				<div class="panel-heading">出发地：${data.result[0].depart} - 目的地（共：${data.result.length}个），航空公司：${data.result[0].aircompany}</div>
 				<div class="panel-body">
 	`
 	for(var i in data.result){
-		html += `<kbd style="float:left;margin:0 3px 3px 0;">${data.result[i].arrive}</kbd>`
+		html += "<button type='button' class='btn btn-info btn-sm btn-hotcity' data-hotcity = "+JSON.stringify(data.result[i])+">"+data.result[i].arrive+"</button>"
 	}
 	html += `
 				</div>
@@ -193,22 +337,46 @@ function mkTable(data, wrap, type){
 		</div>
 
 		<!-- 查询条件 -->
-		<div class="col-lg-4">
+		<div class="col-lg-2">
 			<div class="panel panel-default">
-				<div class="panel-heading">查询条件</div>
+				<div class="panel-heading">条件</div>
 				<ul class="list-group">
 					<li class="list-group-item">航空公司: ${data.query.aircompany}</li>
+					<li class="list-group-item">出发: ${data.query.depart}</li>
 					<li class="list-group-item">区域: ${data.query.region}</li>
 					<li class="list-group-item">规则: ${data.query.rule}</li>
+					<li class="list-group-item">舱位: ${cabinHtml}</li>
 				</ul>
 			</div>
 		</div>
 	</div>
 	`
-
-
+	html += `</div>`;
 	appendType === 'a'? $(context).append(html): $(context).html(html);
 }
+
+// 选择城市
+$('#content').on('click', '.btn-hotcity', function(){
+		$(this).toggleClass('active');
+		var thisData = $(this).data('hotcity');
+		if($(this).hasClass('active')){
+			hotCityData.push(thisData);
+		}else{
+			for(var i in hotCityData){
+				if (hotCityData[i].arrive === thisData.arrive){
+					hotCityData.splice(i, 1);
+					break;
+				}
+			}
+		}
+})
+
+
+$(function(){
+	// 导航
+	$('.nav>li').removeClass('active');
+	$('.nav>.basis').addClass('active');
+})
 
 })
 
