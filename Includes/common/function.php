@@ -56,6 +56,26 @@ function import($path, $basePath = ""){
 }
 
 /**
+ * 使用其他类的方法
+ * @access public
+ * @param  $module       模块名
+ * @param  $controller   方法
+ * @return classObject 
+ */
+function reflect($controller, $module = 'Controller'){
+    if(!$controller) return;
+
+    $localfiles = substr($_SERVER['SCRIPT_FILENAME'], 0, -9);
+    $path = "app/".\BYS\BYS::$_GLOBAL['app']."/{$module}/".$controller."{$module}.class.php";
+    if(is_file($localfiles.$path))
+        include_once $localfiles.$path;
+    else
+        echo 'no file reflect target;';
+    $class = BYS\BYS::$_GLOBAL['app']."\\{$module}\\".ucfirst($controller).$module;
+    return new $class;
+}
+
+/**
  * 字符串命名风格转换
  * type 0 将Java风格转换为C的风格 1 将C风格转换为Java的风格 (驼峰输入法)
  * @param string $name 字符串

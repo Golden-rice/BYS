@@ -68,9 +68,9 @@ $a->build('xfsd', array(
 	// advp 提前出票
 	'xfsd_Advp'      => 'varchar(10) DEFAULT NULL',
 	// allowDateStart 适用日期起始
-	'xfsd_DateStart' => 'datetime DEFAULT NULL',
+	'xfsd_DateStart' => 'date DEFAULT NULL',
 	// allowDateEnd 适用日期结束
-	'xfsd_DateEnd'   => 'datetime DEFAULT NULL',
+	'xfsd_DateEnd'   => 'date DEFAULT NULL',
 	// backLineFee 往返费用
 	'xfsd_RoundFee'  => 'float(10,2) NOT NULL',
 	// singleLineFee 单程费用

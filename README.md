@@ -66,6 +66,7 @@ index.php                  # 入口文件
 
 * 计划任务：定期查询热门城市表，然后查询xfsd
 
+	* 计划任务增加客户代码
 	守护进程不停的查询 hotcity/startplan
 	
 	startplan -> 检查: checkXfsd checkAvh checkRouting

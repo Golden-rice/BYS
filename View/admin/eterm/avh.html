@@ -95,7 +95,6 @@ var setCommend = function(command){
 
 	$('#test').click(function(){
 		command.avh({
-			dosubmit: 'cabin',
 			start: 'BJS',
 			end: 'NYC',
 			startDate: "05JUN",
@@ -107,8 +106,6 @@ var setCommend = function(command){
 
 	$('#dosubmit').click(function(){
 		command.avh({
-			dosubmit: 'cabin',
-			// remove: 1, // 删除缓存
 			start: $('#start').val(),
 			end: $('#end').val(),
 			startDate: $('#startDate').val(),

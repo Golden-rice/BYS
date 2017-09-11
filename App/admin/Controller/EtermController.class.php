@@ -5,6 +5,10 @@ class EtermController extends Controller {
 
 	private $cache = array(); // 临时储存
 
+	public function test(){
+		echo 'test form etermController';
+	}
+
 	// xfsd 运价 前台展示
   public function xfsd(){
   	$this->display();
@@ -145,7 +149,7 @@ class EtermController extends Controller {
   private function hasCmdSource($command = '', $cmd = ''){
   	$m = model("{$cmd}_source");
   	$result = $m ->where('`command` ="'.$command.'" ')->select();
-
+  					// var_dump($result);
   	// 为空返回false
   	if(!$result || empty($result[0]) ) return false;
   	$col = $result[0]; // 仅一条
@@ -181,7 +185,7 @@ class EtermController extends Controller {
 	}
 
 	// 更新 cmd 的result
-	public function updateCmdResult($array = array(), $id = NULL, $command = '', $cmd = 'test'){
+	private function updateCmdResult($array = array(), $id = NULL, $command = '', $cmd = 'test'){
 		if( count($array) == 0 ) return;
 
 		$this->deleteCmdResult($id, $cmd);
@@ -195,10 +199,18 @@ class EtermController extends Controller {
 	}
 
 	// 删除 cmd 的result
-	public function deleteCmdResult($id, $cmd = ''){
+	private function deleteCmdResult($id, $cmd = ''){
 		if(!$id) return;
 		$m = model("{$cmd}_result");
 		$result = $m->where("`sid` = {$id}")->delete();
+	}
+
+	// 根据sid查询 cmd 的 result
+	private function searchCmdResult($sid, $cmd = ''){
+		if($cmd == '') return;
+		$m = model("{$cmd}_result");
+
+		return $m->where("`sid` = {$sid}")->select();
 	}
 
   public function searchXfsdByDefault(){
@@ -277,6 +289,16 @@ class EtermController extends Controller {
   	}
   }
 
+  public function searchXfsdResult(){
+  	$result = $this->searchCmdResult($_POST['sid'], 'xfsd');
+  	echo json_encode(array('result'=>$result));
+  }
+
+  public function searchAvhResult(){
+  	$result = $this->searchCmdResult($_POST['sid'], 'avh');
+  	echo json_encode(array('result'=>$result));
+  }
+
   // 通过输入框查询xfsd 
   public function searchXfsdByInput($return = false){
   	import('vender/eterm/app.php');
@@ -286,7 +308,7 @@ class EtermController extends Controller {
 		$startDate  = $_POST['startDate'];
 		$aircompany = $_POST['aircompany'];
 		$code       = $_POST['private'];
-		$tripType   = $_POST['tripType'];
+		$tripType   = '*'.ltrim($_POST['tripType'], '*');
 		$other      = $_POST['other'];
 		$ab_flag    = preg_match("/[\/]2|[\/]2[\/]|2[\/]/",$other, $str) ? true:false;
 		$endArr     = explode(',', rtrim($endMore,','));  // 多地点录入时
@@ -338,12 +360,15 @@ class EtermController extends Controller {
 			}
 			// 有，但是储存时间不大于一天，读取数据库数据
 			elseif( isset($result['GmtModified']) && $result['GmtModified'] + 24*60*60 >= time()){
+				$id = $result['Id'];
 				$xfsd->wtTmp($result['Detail']);
 				$resultArr   = $ab_flag ? $xfsd->analysis(array(2,3,4)) : $xfsd->analysis(array(2,3));
 				$array[$end] = $resultArr;
+
 			}
 			// 无，从新查询，并临时保存 source 及 result 
 			else{
+
 				$xfsd->command($command, "w");
 				$resultArr   = $ab_flag ? $xfsd->analysis(array(1,2,3,4)) : $xfsd->analysis(array(1,2,3));
 				$array[$end] = $resultArr;
@@ -364,7 +389,8 @@ class EtermController extends Controller {
 		}
 
 		if($return){
-			return 1;
+			if(!isset($id)) $id = NULL; // 返回储存和更新的sid
+			return array('array'=>$array, 'msg'=> \BYS\Report::printLog(), 'id'=>$id);
 		}else{
 			echo json_encode(array('array'=>$array, 'time'=>'更新时间：'.date('Y-m-d H:i:s', $xfsd->fileTime)) );
 		}
@@ -409,7 +435,7 @@ class EtermController extends Controller {
 				// end 到达
 				'xfsd_Arr'       => $value['end'],
 				// aircompany 航空公司
-				'xfsd_Owner'     => $list['aircompany'],
+				'xfsd_Owner'     => $value['aircompany'],
 				// direction 区域
 			  'xfsd_Region'    => $value['direction'],
 				// allowWeek 作用点
@@ -503,78 +529,84 @@ class EtermController extends Controller {
 	}
 
 	// 通过输入框查询avh 
-	public function searchAvhByInput(){
+	public function searchAvhByInput($return = false){
 		import('vender/eterm/app.php');
 		$avh = new \Avh($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
 
 		// 读取avh数据
-		if($_POST['dosubmit'] == 'cabin'){
+		$start      = $_POST['start']; 
+		$end        = $_POST['end'];
+		$startDate  = $_POST['startDate'];        
+		$endDate    = $_POST['endDate']; 
+		$aircompany = $_POST['aircompany'];   
+		$other      = $_POST['other'];    
 
-			$start      = $_POST['start']; 
-			$end        = $_POST['end'];
-			$startDate  = $_POST['startDate'];        
-			$endDate    = $_POST['endDate']; 
-			$airCompany = $_POST['airCompany'];   
-			$other      = $_POST['other'];    
+		// 多目的地
+		if(preg_match("/,/", $end))
+			$endArr   = explode(",", $end);
 
-			// 多目的地
-			if(preg_match("/,/", $end))
-				$endArr   = explode(",", $end);
+		// 多出发地
+		if(preg_match("/,/", $start))
+			$startArr = explode(",", $start);
 
-			// 多出发地
-			if(preg_match("/,/", $start))
-				$startArr = explode(",", $start);
+		// 其他参数
+		if($other)
+			$other    = '/'.$other;
 
-			// 其他参数
-			if($other)
-				$other    = '/'.$other;
+ 		$startTime  = isset($startTime) ? '/'.$startTime : "";
+		$during     = (strtotime($endDate)-strtotime($startDate))/(24*60*60);
+		$array      = array();
+		$repeat     = array('data' => array($end), 'type'=> 'signle', 'pos'=>'end');
 
-	 		$startTime  = isset($startTime) ? '/'.$startTime : "";
-			$during     = (strtotime($endDate)-strtotime($startDate))/(24*60*60);
-			$array      = array();
-			$repeat     = array('data' => array($end), 'type'=> 'signle', 'pos'=>'end');
+		if( isset($endArr) )
+			$repeat = array('data'=>$endArr, 'type'=>'array','pos'=>'end');
+		else if( isset($startArr) )
+			$repeat = array('data'=>$startArr, 'type'=>'array','pos'=>'start');
+		
+		// 循环 
+		foreach ($repeat['data'] as $value) {
+			$array[$value] = array();
 
-			if( isset($endArr) )
-				$repeat = array('data'=>$endArr, 'type'=>'array','pos'=>'end');
-			else if( isset($startArr) )
-				$repeat = array('data'=>$startArr, 'type'=>'array','pos'=>'start');
-			
-			// 循环 
-			foreach ($repeat['data'] as $value) {
-				$array[$value] = array();
-
-				// 拼装命令及执行
-				for ($i = 0; $i <= $during; $i++) { 
-					$days    = strtotime($startDate) +$i*24*60*60;
-					$m       = strtoupper(date('M',$days));
-					$d       = strtoupper(date('d',$days));
-					$date    = $d.$m;
-					$command = $repeat['pos'] == 'start' ? 'AVH/'.$value.$end.$date.$startTime.$other.'/'.$airCompany : 'AVH/'.$start.$value.$date.$startTime.$other.'/'.$airCompany;
-					$result  = $this->hasCmdSource($command, 'avh');
-					if ( isset($result['GmtModified']) && $result['GmtModified'] + 24*60*60 < time() ){ 
-						// 有且存储时间大于一天，更新
-						$avh->command($command, "w", false);
-						$array[$value] = array_merge($array[$value], $avh->analysis(array(1,2,6)));
-						$id = $this->updateCmdSource(array('source' => $avh->readSource(), 'command' => $command),'avh');
-						// 更新result
-						$this->updateCmdResult($array[$value], $id, $command,'avh');
-					}
-					elseif( isset($result['GmtModified']) && $result['GmtModified'] + 24*60*60 >= time()){
-						// 有，但是储存时间不大于一天，读取数据库数据
-						$avh->wtTmp($result['Detail']);
-						$array[$value] = array_merge($array[$value], $avh->analysis(array(1,2,6)));
-					}
-					else{
-						// 没有，新增
-						$avh->command($command, "w", false);
-						$array[$value] = array_merge($array[$value], $avh->analysis(array(1,2,6)));
-						$id = $this->saveCmdSource(array('source' => $avh->readSource(), 'command' => $command), 'avh'); // 储存至数据库
-						$this->saveAvhResult($array[$value], $id, $command);
-					}
+			// 拼装命令及执行
+			for ($i = 0; $i <= $during; $i++) { 
+				$days    = strtotime($startDate) +$i*24*60*60;
+				$m       = strtoupper(date('M',$days));
+				$d       = strtoupper(date('d',$days));
+				$date    = $d.$m;
+				$command = $repeat['pos'] == 'start' ? 'AVH/'.$value.$end.$date.$startTime.$other.'/'.$aircompany : 'AVH/'.$start.$value.$date.$startTime.$other.'/'.$aircompany;
+				$result  = $this->hasCmdSource($command, 'avh');
+				if ( isset($result['GmtModified']) && $result['GmtModified'] + 24*60*60 < time() ){ 
+					// 有且存储时间大于一天，更新
+					$avh->command($command, "w", false);
+					$array[$value] = array_merge($array[$value], $avh->analysis(array(1,2,6)));
+					$id = $this->updateCmdSource(array('source' => $avh->readSource(), 'command' => $command),'avh');
+					// 更新result
+					$this->updateCmdResult($array[$value], $id, $command,'avh');
+				}
+				elseif( isset($result['GmtModified']) && $result['GmtModified'] + 24*60*60 >= time()){
+					// 有，但是储存时间不大于一天，读取数据库数据
+					$id = $result['Id'];
+					$avh->wtTmp($result['Detail']);
+					$array[$value] = array_merge($array[$value], $avh->analysis(array(1,2,6)));
+				}
+				else{
+					// 没有，新增
+					$avh->command($command, "w", false);
+					$array[$value] = array_merge($array[$value], $avh->analysis(array(1,2,6)));
+					$id = $this->saveCmdSource(array('source' => $avh->readSource(), 'command' => $command), 'avh'); // 储存至数据库
+					$this->saveAvhResult($array[$value], $id, $command);
 				}
 			}
+		}
+
+		if($return){
+			if(!isset($id)) $id = NULL; // 返回储存和更新的sid
+			return array('array'=>$array, 'msg'=> \BYS\Report::printLog(), 'id'=>$id);
+		}
+		else{
 			echo json_encode(array('array'=>$array, "type"=>'array'));
-		}	
+		}
+		
 	}
 
 	// 储存 avh_result
@@ -699,6 +731,7 @@ class EtermController extends Controller {
 		$result = $this->hasCmdSource($command, 'fsl');
 		// 比default多个analysis 
 		if ( isset($result['GmtModified']) && $result['GmtModified'] + 30*24*60*60 > time() ){ 
+			$id = $result['Id'];
 			$fsl -> wtTmp($result['Detail']);
 			$fsl_result = $fsl -> analysis(array(3,4), array('aircompany'=>$aircompany)); 
 
@@ -714,11 +747,13 @@ class EtermController extends Controller {
 				$array["{$start}{$end}/{$aircompany}"] = $fsl_result;
 				$array["{$start}{$end}/{$aircompany}"]['length'] = count($array["{$start}{$end}/{$aircompany}"])-1;
 			}			
-			$this-> saveCmdSource(array('source' => $fsl->readSource(), 'command' => $command), 'fsl');
+			$id = $this-> saveCmdSource(array('source' => $fsl->readSource(), 'command' => $command), 'fsl');
 		}
 
-		if($return)
-			return array('array'=>$array, 'msg'=> \BYS\Report::printLog());
+		if($return){
+			if(!isset($id)) $id = NULL; // 返回储存和更新的sid
+			return array('array'=>$array, 'msg'=> \BYS\Report::printLog(), 'id'=>$id);
+		}
 		else
 			echo json_encode(array('array'=>$array, 'msg'=> \BYS\Report::printLog()));
 	}

@@ -123,7 +123,7 @@ var setCommend = function(command){
 			selected: { 
 				data:  hotCityData.length !== 0 ? JSON.stringify( hotCityData ) : JSON.stringify( hotCityAllData ), 
 				query: JSON.stringify( hotCityQuery ), 
-				cabin: hotCityCabin.length >0 ? JSON.stringify( hotCityCabin ) : '',
+				cabin: hotCityCabin.length >0 ? hotCityCabin.toString() : '',
 			}
 		})
 		
@@ -134,12 +134,9 @@ var setCommend = function(command){
 setCommend(eterm.createCommand(eterm.eterm,tpl));
 
 
-
 function cabinInRuleHtml(inner){
 	return '<label class="checkbox-inline"><input type="checkbox" class="checkbox-cabin" value="'+inner+'">'+inner+'</label>'
 }
-
-
 
 function mkSelectCabin(data){
 	// 回填舱位数据

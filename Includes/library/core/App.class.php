@@ -169,7 +169,7 @@ class [MODEL]Model extends Model {
     }else{
     		// 操作方法不是Public 抛出异常
     		throw new \ReflectionException();
-    	}
+    }
 	}
 
 	/** 

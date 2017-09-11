@@ -1132,7 +1132,7 @@ var createCommand = function(recevier, tpl){
 			// 默认计划任务中有数据
 			if(data.result[0]){
 				data.query = eval('['+data.result[0].query+']')[0];
-				data.cabin = eval('['+data.result[0].cabin+']')[0];
+				data.cabin = data.result[0].cabin.split(",");
 			}
 
 			mkTable(data, recevier.target, recevier.context, 'w');
@@ -1205,6 +1205,29 @@ var createCommand = function(recevier, tpl){
 		});	
 	}
 
+	var showHotCityPlan = function(){
+		recevier.link( Controller + 'show', {} , function(data){
+			console.log(data)
+			mkTable(data.result, 'hotcity-plan', '#content', 'w')
+		});	
+	}
+
+	var searchXfsdResult = function(query){
+		rmTable(recevier.target);
+		recevier.target = 'xfsd-result';
+		
+		var xfsdTpl = tpl.xfsdTpl;
+		recevier.link( Project + 'index.php/admin/eterm/searchXfsdResult', {sid: query.sid} , function(data){
+			console.log(data)
+
+			xfsdTpl(data.result, recevier.target)
+		});	
+	}
+
+	var searchAvhResult = function(){
+
+	}
+
 	return {
 		xfsd: xfsd,                                       // 获得xfsd数据，并用table回填到页面中
 		selected: selected,                               // 选择
@@ -1233,6 +1256,9 @@ var createCommand = function(recevier, tpl){
 		setHotCity: setHotCity,                           // 保存数据：生成热门城市计划表
 		searchHotCitySelect: searchHotCitySelect,         // 基础数据：全部result中筛选的数据
 		searchCabinRule: searchCabinRule,                 // 基础数据：查询舱位等级
+		showHotCityPlan: showHotCityPlan,                 // 合成数据：热门城市
+		searchXfsdResult: searchXfsdResult,               // 查询xfsd数据
+		searchAvhResult: searchAvhResult,                 // 查询avh数据
 	}
 }
 

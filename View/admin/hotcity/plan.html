@@ -4,65 +4,191 @@
 <{block name="content"}>
 
 <div id="content"></div>
-
-<!-- 设置计划弹出框 -->
-<div class="modal fade" id="setPlanModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
+<!-- other modal -->
+<div class="modal fade" id="otherModal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" >
+  <div class="modal-dialog modal-lg" role="document" style='width:1400px'>
     <div class="modal-content">
+
       <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
-        <h4 class="modal-title" id="myModalLabel">计划</h4>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="modalLabel"> </h4>
       </div>
+      <!-- modal header -->
+
       <div class="modal-body">
-      	<div id='hotcityContent'></div>
+        <div id="modal-content">
+            
+
+        </div>
       </div>
+      <!-- modal body -->
+
       <div class="modal-footer">
         <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
       </div>
+      <!-- modal footer -->
+
     </div>
   </div>
 </div>
-<!-- 设置计划弹出框 END -->
+<!-- other modal end -->
 
 <script>
 require(['eterm', 'dt'], function (eterm, dt){
 
-var setCommend = function(command){
-$('#setPlan').click(function(){
-	$('#setPlanModal').modal()
-})
+// 弹出框   
+var OtherModel = function(title, content, footer){
 
+    $("#otherModal .modal-title").html(title);
+    $("#otherModal #modal-content").html(content);
+    $("#otherModal .modal-footer").html(footer?footer:`<button type="button" class="btn btn-default"  data-dismiss="modal">关闭</button>`);
+
+    return {
+        hide: function(){
+            $("#otherModal").modal("hide");
+        },
+        show: function(){
+            $("#otherModal").modal();
+        }
+    }
 }
 
 var tpl = {
-	mkTable:mkTable,
+	mkTable: mkTable,
+	xfsdTpl: xfsdTpl,
+	avhTpl: avhTpl,
 }
 
-setCommend(eterm.createCommand(eterm.eterm,tpl));
+var setCommand = function(command){
+	command.showHotCityPlan();
 
-function mkTable(data, wrap, type){
+	// 查看 xfsd
+	$("#content").on("click", ".xfsd-result", function(){
+		command.searchXfsdResult({sid: $(this).data('sid')});
+
+	  // 弹出
+	  var xfsdModal = new OtherModel("运价结果", '');
+	  xfsdModal.show();
+	})
+}
+
+
+setCommand(eterm.createCommand(eterm.eterm,tpl));
+
+function mkTable(array, target, wrap, type){
 
 	'use strict';
+
+	if(!array) return;
 
 	let html = '', 
 			appendType = type !== ""? type : 'w',
 	  	context = wrap !== "" ? wrap : document;
 
-
-
 	html +=`
-
+		  <table class="${target} table table-hover table-bordered table-responsive">
+		  <thead>
+				<tr>
+					<th>序号</th>
+					<th>出发</th>
+					<th>到达</th>
+					<th>航路</th>
+					<th>航空公司</th>
+					<th>目标舱位</th>
+					<th>计划来源</th>
+					<th>运价状态</th>
+					<th>舱位状态</th>
+					<th>状态</th>
+					<th>创建时间</th>
+					<th>更新时间</th>
+				</tr>
+			</thead>
 	`
+	for(var i in array){
 
+		html +=`
+				<tr>
+					<td>${i}</td>
+					<td>${array[i].HC_Depart}</td>
+					<td>${array[i].HC_Arrive}</td>
+					<td>${array[i].HC_Depart}</td>
+					<td>${array[i].HC_Aircompany}</td>
+					<td>${array[i].HC_Cabin}</td>
+					<td>航空公司：${JSON.parse(array[i].HC_Query)['aircompany']} | 出发：${JSON.parse(array[i].HC_Query)['depart']} | 区域：${JSON.parse(array[i].HC_Query)['region']} | 规则：${JSON.parse(array[i].HC_Query)['rule']}</td>
+					<td>`
+		html +=	array[i].HC_XfsdResult_Status == 2 ? `<a href="#" class="xfsd-result" data-sid="${array[i].HC_XfsdResult_Sid}">查看</a>`: '等待'
+		html +=`</td>
+					<td>`
+		html += array[i].HC_AvhResult_Status == 2? `<a href="#" class="avh-result" data-sid="${array[i].HC_AvhResult_Sid}">查看</a>`: '等待'
+		html +=`</td>
+					<td>${array[i].HC_Status == 2? '完成': '等待'}</td>
+					<td>${new Date((array[i].GmtCreate -0)*1000).format("yyyy-MM-dd hh:mm:ss")}</td>
+					<td>${new Date((array[i].GmtModified -0)*1000).format("yyyy-MM-dd hh:mm:ss")}</td>
+				</tr>
+		`
+	}
+
+	html += '</table>';
 
 	appendType === 'a'? $(context).append(html): $(context).html(html);
 }
 
-	$(function(){
-		// 导航
-		$('.nav>li').removeClass('active');
-		$('.nav>.hotcity').addClass('active');
-	})
+function xfsdTpl(array, dom){
+	let html =`<table class="${dom} table table-hover table-bordered table-responsive">
+				<tr>
+					<th>序号</th>
+					<th>fare</th>
+					<th>命令</th>
+					<th>提前出票</th>
+					<th>单程价格</th>
+					<th>往返价格</th>
+					<th>舱位</th>
+					<th>最短停留</th>
+					<th>最长停留</th>
+					<th>适用截止日期</th>
+					<th>退票规则</th>
+					<th>可用星期</th>
+					<th>出发</th>
+					<th>到达</th>
+					<th>航空公司</th>
+					<th>方向</th>
+					<th>查询日期</th>
+				</tr>`
+	for(var i in array){
+		html += `
+			<tr>
+					<td>${i}</td>
+					<td>${array[i]['FareBasis']}</td>
+					<td>${array[i]['Command']}</td>
+					<td>${array[i]['xfsd_Advp']}</td>
+					<td>${array[i]['xfsd_SingleFee']}</td>
+					<td>${array[i]['xfsd_RoundFee']}</td>
+					<td>${array[i]['xfsd_Cabin']}</td>
+					<td>${array[i]['xfsd_MinStay']}</td>
+					<td>${array[i]['xfsd_MaxStay']}</td>
+					<td>${array[i]['xfsd_DateStart']}>${array[i]['xfsd_DateEnd']}</td>
+					<td>${array[i]['xfsd_Rule']}</td>
+					<td>${array[i]['xfsd_Indicator']}</td>
+					<td>${array[i]['xfsd_Dep']}</td>
+					<td>${array[i]['xfsd_Arr']}</td>
+					<td>${array[i]['xfsd_Owner']}</td>
+					<td>${array[i]['xfsd_Region']}</td>
+					<td>${new Date((array[i]['gmtCreate'] -0)*1000).format("yyyy-MM-dd hh:mm:ss")}</td>
+			</tr>
+		`
+	}
+	$('#modal-content').html(html);
+}
+
+function avhTpl(array, dom){
+
+}
+
+$(function(){
+	// 导航
+	$('.nav>li').removeClass('active');
+	$('.nav>.hotcity').addClass('active');
+})
 
 })
 
