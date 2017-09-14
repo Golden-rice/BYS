@@ -1207,24 +1207,84 @@ var createCommand = function(recevier, tpl){
 
 	var showHotCityPlan = function(){
 		recevier.link( Controller + 'show', {} , function(data){
-			console.log(data)
+			// console.log(data)
 			mkTable(data.result, 'hotcity-plan', '#content', 'w')
 		});	
 	}
 
 	var searchXfsdResult = function(query){
 		rmTable(recevier.target);
-		recevier.target = 'xfsd-result';
-		
+		recevier.target = 'xfsd-result-model';
 		var xfsdTpl = tpl.xfsdTpl;
-		recevier.link( Project + 'index.php/admin/eterm/searchXfsdResult', {sid: query.sid} , function(data){
-			console.log(data)
+		var sidArray = query.sid.split(',');
+		var xfsdResultArray = [], i;
 
-			xfsdTpl(data.result, recevier.target)
+		for(i in sidArray){
+			recevier.link( Project + 'index.php/admin/eterm/searchXfsdResult', {sid: sidArray[i]} , function(data){
+				xfsdResultArray.push(data)
+				if(xfsdResultArray.length === sidArray.length ){
+					xfsdTpl(xfsdResultArray, recevier.target, true)
+				}
+			});	
+		}
+
+	}
+
+	var searchAvhResult = function(query){
+		rmTable(recevier.target);
+		recevier.target = 'avh-result-model';
+		var avhTpl = tpl.avhTpl;
+		recevier.link( Project + 'index.php/admin/eterm/searchAvhResult', {sid: query.sid} , function(data){
+			avhTpl(data.result, recevier.target)
 		});	
 	}
 
-	var searchAvhResult = function(){
+	var searchXfsdSmpResult = function(query){
+		recevier.target = 'xfsd-result-model';
+		var xfsdTpl = tpl.xfsdTpl;
+		var sidArray = query.sid.split(',');
+		var xfsdResultArray = [], i;
+
+		function uniqueXfsd(result){
+			if(!result || result.length == 0) {
+				return;
+			}
+			// 过滤重复舱位，保存最便宜的
+			var tmpCabin = result[0].xfsd_Cabin,      // 临时舱位
+					tmpXfsd = {},                         // 临时xfsd
+					array = [];                           // 最后返回结果
+
+			tmpXfsd[result[0].xfsd_Cabin] = result[0];  // 初始化
+
+			// 去重
+			for (var i in result){
+				if(tmpCabin !== result[i].xfsd_Cabin && tmpXfsd[result[i].xfsd_Cabin] == undefined ){
+					tmpXfsd[result[i].xfsd_Cabin] = result[i]
+					tmpCabin = result[i].xfsd_Cabin;
+				}
+			}
+
+			for (var j in tmpXfsd){
+				array.push(tmpXfsd[j])
+			}
+			return array;
+		}
+
+		for(i in sidArray){
+			recevier.link( Project + 'index.php/admin/eterm/searchXfsdResult', {sid: sidArray[i]} , function(data){
+				xfsdResultArray.push(data)
+				if(xfsdResultArray.length === sidArray.length ){
+					if(xfsdResultArray.length >0){
+						var xfsd_smp = [];
+						for(var i in xfsdResultArray){
+							var unique = uniqueXfsd(xfsdResultArray[i].result);
+							if(unique) xfsd_smp.push({'result': unique});
+						}
+						xfsdTpl(xfsd_smp, 'xfsd-result-model', true);
+					}
+				}
+			});	
+		}
 
 	}
 
@@ -1259,6 +1319,7 @@ var createCommand = function(recevier, tpl){
 		showHotCityPlan: showHotCityPlan,                 // 合成数据：热门城市
 		searchXfsdResult: searchXfsdResult,               // 查询xfsd数据
 		searchAvhResult: searchAvhResult,                 // 查询avh数据
+		searchXfsdSmpResult: searchXfsdSmpResult,         // 查询xfsd精简的数据
 	}
 }
 

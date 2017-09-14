@@ -45,8 +45,9 @@ class Avh extends Eterm{
 
   	for ($i=0; $i < count($arr); $i++) {  // 逐条遍历
   		if(substr($arr[$i],0,1) == " " && substr($arr[$i],1,1) != ' '){
-  			// $curDate = substr($arr[$i], 1, 10); // 带星期
   			$curDate = substr($arr[$i], 1, 5); // 不带星期
+  		}else{
+  			$curDate = substr($arr[$i], 1, 10); // 带星期
   		}
   		$j = $i+1;
 

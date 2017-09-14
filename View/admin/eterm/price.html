@@ -1,0 +1,96 @@
+<{extends file='../layout.html'}>
+
+<{block name="title"}>舱位价格查询(from eterm)<{/block}>
+<{block name="content"}>
+
+<div class="row">
+	<div class="col-lg-8">
+		<!-- 输入框 -->
+		<div class="panel panel-default">
+		  <div class="panel-body">
+				<div class="form-inline">
+						<div class="input-group">
+							<span class="input-group-addon" id="input-start">出发</span><input type="text" name='start' id='start' placeholder='城市代码' aria-describedby="input-start" class='form-control' onblur="upper(this)" style='width:100px'>
+
+							<span class="input-group-addon" id="input-end">到达</span><input type="text" name='end' id='end' value='' aria-describedby="input-end" class='form-control' placeholder='城市代码' onblur="upper(this)" style='width:100px'>
+
+							<span class="input-group-addon" id="input-aircompany">航空公司</span><input type="text" name='aircompany' id='aircompany' value='' aria-describedby="input-aircompany" class='form-control'  onblur="upper(this)"  style='width:100px'>
+
+							<span class="input-group-addon" id="input-departureDate">去程日期</span><input type="text" name='departureDate' id='departureDate' value='' aria-describedby="input-departureDate" class='form-control'  onblur="upper(this)"  style='width:100px'>
+
+							<span class="input-group-addon" id="input-returnDate">回程日期</span><input type="text" name='returnDate' id='returnDate' value='' aria-describedby="input-returnDate" class='form-control'  onblur="upper(this)"  style='width:100px'>
+						</div>
+
+						<div class="input-group">
+							<input type="submit" name='dosubmit' id='docommand'  value='查询' class='btn btn-primary'>
+						</div>
+						
+				</div>
+			</div>
+		</div>
+		<!-- 输入框 END -->
+	</div>
+	
+	<!-- 侧边辅助栏 -->
+	<div class="col-lg-4">
+
+		<!-- 工具 -->
+		<div class="panel panel-default">
+			<div class="panel-body">
+				<label for="">导入</label>
+				<input type="file" id="importExl"  class='btn btn-default'/> 
+			</div>
+		</div>
+		<!-- 工具结束 -->
+
+	</div>
+	<!-- 侧边辅助栏END -->
+
+
+</div>
+
+<div id="content"></div>
+<!-- 内容 END -->
+
+
+<script>
+
+
+require(['eterm', "xlsx"], function(eterm, xlsx){
+
+var setCommend = function(command){
+
+	// 测试
+	$('#test').click(function(){
+			command.rate();
+			
+			command.xfsd({
+				dosubmit: "",
+				start: 'BJS',
+				end: 'NYC',
+				startDate: '15SEP',
+				aircompany: 'UA',
+				private: '',
+				tripType:"",
+				other: ""
+			})
+
+	})
+
+}
+
+// 配置setCommand()
+// 装载模板mkTable()
+setCommend(eterm.createCommand(eterm.eterm));
+
+
+
+
+$(function(){
+	$('.nav>li').removeClass('active');
+	$('.nav>.price').addClass('active');
+})
+
+})
+</script>
+<{/block}>

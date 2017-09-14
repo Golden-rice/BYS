@@ -33,8 +33,13 @@ class Eterm{
 			// filesize 返回没正确结果时也重新读取
 			// if(!file_exists($this->tmp) || !filesize($this->tmp)>150 ){
 		 		$requestURL='http://eterm.cctba.com:8350/COMMAND?USER='.$this->name.'&PASSWORD='.$this->password.'&RESOURCEETERM-SHARE-'.$this->resource.'&COMMAND='.urlencode($command);
-		 	 	$file = file_get_contents($requestURL);
-		 	 	$this->saveStr($file, $type);
+		 	 	try{
+			 	 	$file = file_get_contents($requestURL);
+		 	 	}catch(Exception $e){
+		 	 		 echo 'Caught exception: ',  $e->getMessage(), "\n";
+		 	 		 return;
+		 	 	}
+			 	$this->saveStr($file, $type);
 			// }
 	  }
 

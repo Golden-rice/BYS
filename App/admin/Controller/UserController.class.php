@@ -19,10 +19,15 @@ class UserController extends Controller {
 					if($eterm[1][0]){
 						$_SESSION['name'] = $_POST['name'];
 						$_SESSION['password'] = $_POST['password'];	
-						$_SESSION['resource'] = $_POST['resource'];	
+						// 根据反馈重置resource
+						if(!empty($eterm[1][0]) && $eterm[1][0] != $_POST['resource']){
+							$_SESSION['resource'] = $eterm[1][0];
+						}
+						else{
+							$_SESSION['resource'] = $_POST['resource'];	
+						}
 						
-			  		$res = array('name'=>$_POST['name'],'resource'=>$eterm[1][0]);
-			  		echo json_encode(array('status'=>1,'res'=>$res));
+			  		echo json_encode(array('status'=>1,'res'=>array('name'=>$_POST['name'],'resource'=>$eterm[1][0])));
 		  		}
 				}else{
 					echo json_encode(array('status'=>0));

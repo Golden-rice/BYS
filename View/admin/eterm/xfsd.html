@@ -97,7 +97,9 @@
 
 		<!-- 提醒 -->
 		<ul class="list-group">
-		  <li class="list-group-item">默认排序（/X），混舱以FaraBasis区分</li>
+		  <li class="list-group-item">默认排序（/X）</li>
+		   <li class="list-group-item">默认NUC数值，显示数值会乘汇率，使用命令行输入时请注意添加NUC</li>
+		  <li class="list-group-item">混舱以FaraBasis区分，可能会多增加数据</li>
 		  <li class="list-group-item time">时间</li>
 		  <li class="list-group-item" id="labtoCNY">汇率</li>
 		</ul>
@@ -241,31 +243,6 @@ $("#importExl").change(function(){
 })
 
 var setCommend = function(command){
-
-	$('#removeAndSubmit').click(function(){
-
-		if( $('#command').val() !== "" ){
-			command.xfsd({
-				dosubmit: 'command',
-				remove: 1,
-				command: $('#command').val()
-			})
-		}else{
-			command.xfsd({
-					dosubmit: "",
-					remove: 1,
-					start: $('#start').val(),
-					end: $('#end').val(),
-					startDate: $('#startDate').val(),
-					aircompany: $('#aircompany').val(),
-					private: $("#private").val() || "",
-					tripType: $(".tripType:checked").val(),
-					other: $("#other").val() || ""			
-			})
-		}
-
-		$('#allPolicy').attr('removeRuntime',1);
-	})
 
 	// 输入框
 	$('#dosubmit').click(function(){

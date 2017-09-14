@@ -70,7 +70,7 @@ $a->build('xfsd', array(
 	// allowDateStart 适用日期起始
 	'xfsd_DateStart' => 'date DEFAULT NULL',
 	// allowDateEnd 适用日期结束
-	'xfsd_DateEnd'   => 'date DEFAULT NULL',
+	'xfsd_DateEnd'   => 'date DEFAULT "2099-12-30"',
 	// backLineFee 往返费用
 	'xfsd_RoundFee'  => 'float(10,2) NOT NULL',
 	// singleLineFee 单程费用
@@ -118,6 +118,8 @@ $a->build('avh',array(
 	'avh_DepTime'   => 'time NOT NULL',
 	// endTime 到达时间
 	'avh_ArrTime'   => 'time NOT NULL',
+	// flightTime 飞行日期
+	'avh_FlightTime'   => 'time NOT NULL',
 	// startDate 查询日期
 	'avh_Date'      => 'datetime DEFAULT NULL',
 	// flight 航班号

@@ -6,7 +6,7 @@
 <div id="content"></div>
 <!-- other modal -->
 <div class="modal fade" id="otherModal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" >
-  <div class="modal-dialog modal-lg" role="document" style='width:1400px'>
+  <div class="modal-dialog modal-lg" role="document" style='width:1600px'>
     <div class="modal-content">
 
       <div class="modal-header">
@@ -41,7 +41,7 @@ var OtherModel = function(title, content, footer){
 
     $("#otherModal .modal-title").html(title);
     $("#otherModal #modal-content").html(content);
-    $("#otherModal .modal-footer").html(footer?footer:`<button type="button" class="btn btn-default"  data-dismiss="modal">关闭</button>`);
+    $("#otherModal .modal-footer").html(footer ? footer:`<button type="button" class="btn btn-default"  data-dismiss="modal">关闭</button>`);
 
     return {
         hide: function(){
@@ -59,21 +59,58 @@ var tpl = {
 	avhTpl: avhTpl,
 }
 
+// 弹出层 暴露至全局
+var xfsdModal, avhModal, mixModal;
+
+
+var cabin = [], // 全局变量：目标舱位
+		xfsd_src,   // 全局变量：xfsd 原始数据
+		avh;        // 全局变量：avh
+
 var setCommand = function(command){
+
 	command.showHotCityPlan();
 
 	// 查看 xfsd
 	$("#content").on("click", ".xfsd-result", function(){
+		xfsdModal = new OtherModel("运价结果", '');
 		command.searchXfsdResult({sid: $(this).data('sid')});
+	})
 
-	  // 弹出
-	  var xfsdModal = new OtherModel("运价结果", '');
-	  xfsdModal.show();
+	// 查看 avh
+	$("#content").on("click", ".avh-result", function(){
+		avhModal  = new OtherModel("舱位结果", '');
+		command.searchAvhResult({sid: $(this).data('sid')});
+	})
+
+	// 查看 简化结果
+	$("#content").on("click", ".simplify-xfsd", function(){
+		xfsdModal = new OtherModel("精简运价结果", '');
+		command.searchXfsdSmpResult({sid: $(this).data('sid')})
+	})
+
+	// 混舱 xfsd 
+	$("#content").on('click', '.mix-cabin', function(){
+		mixModal  = new OtherModel("混舱", '');
+		mkMixCabin()
+		
 	})
 }
 
-
 setCommand(eterm.createCommand(eterm.eterm,tpl));
+
+
+// 混舱
+function mkMixCabin(){
+	if(!xfsd_src || xfsd_src.length == 0) {
+		console.log('no xfsd');
+		return;
+	}
+
+	// 选择目标舱位
+	console.log(xfsd_src)
+}
+
 
 function mkTable(array, target, wrap, type){
 
@@ -84,6 +121,9 @@ function mkTable(array, target, wrap, type){
 	let html = '', 
 			appendType = type !== ""? type : 'w',
 	  	context = wrap !== "" ? wrap : document;
+
+	// 暴露至全局
+	cabin = array[0].HC_Cabin.split(',');
 
 	html +=`
 		  <table class="${target} table table-hover table-bordered table-responsive">
@@ -101,29 +141,31 @@ function mkTable(array, target, wrap, type){
 					<th>状态</th>
 					<th>创建时间</th>
 					<th>更新时间</th>
+					<th>操作</th>
 				</tr>
 			</thead>
 	`
 	for(var i in array){
-
+		var query = JSON.parse(array[i].HC_Query);
 		html +=`
 				<tr>
 					<td>${i}</td>
 					<td>${array[i].HC_Depart}</td>
 					<td>${array[i].HC_Arrive}</td>
-					<td>${array[i].HC_Depart}</td>
+					<td>${array[i].HC_Routing}</td>
 					<td>${array[i].HC_Aircompany}</td>
 					<td>${array[i].HC_Cabin}</td>
-					<td>航空公司：${JSON.parse(array[i].HC_Query)['aircompany']} | 出发：${JSON.parse(array[i].HC_Query)['depart']} | 区域：${JSON.parse(array[i].HC_Query)['region']} | 规则：${JSON.parse(array[i].HC_Query)['rule']}</td>
+					<td>航空公司：${query? query['aircompany'] : ""} | 出发：${query? query['depart'] : ''} | 区域：${query? query['region'] : ''} | 规则：${query? query['rule']: ''}</td>
 					<td>`
-		html +=	array[i].HC_XfsdResult_Status == 2 ? `<a href="#" class="xfsd-result" data-sid="${array[i].HC_XfsdResult_Sid}">查看</a>`: '等待'
+		html +=	array[i].HC_XfsdResult_Status == 2 ? `<a href="javascript:void(0)" class="xfsd-result" data-sid="${array[i].HC_XfsdResult_Sid}">全部</a> | <a href="javascript:void(0)" class="simplify-xfsd" data-sid="${array[i].HC_XfsdResult_Sid}">精简</a> `: '等待'
 		html +=`</td>
 					<td>`
-		html += array[i].HC_AvhResult_Status == 2? `<a href="#" class="avh-result" data-sid="${array[i].HC_AvhResult_Sid}">查看</a>`: '等待'
+		html += array[i].HC_AvhResult_Status == 2? `<a href="javascript:void(0)" class="avh-result" data-sid="${array[i].HC_AvhResult_Sid}">查看</a>`: '等待'
 		html +=`</td>
 					<td>${array[i].HC_Status == 2? '完成': '等待'}</td>
 					<td>${new Date((array[i].GmtCreate -0)*1000).format("yyyy-MM-dd hh:mm:ss")}</td>
 					<td>${new Date((array[i].GmtModified -0)*1000).format("yyyy-MM-dd hh:mm:ss")}</td>
+					<td><a href='javascript:void(0)' class='mix-cabin' data-xfsdsid="${array[i].HC_XfsdResult_Sid}" data-avhsid="${array[i].HC_AvhResult_Sid}">混舱</a></td>
 				</tr>
 		`
 	}
@@ -133,56 +175,124 @@ function mkTable(array, target, wrap, type){
 	appendType === 'a'? $(context).append(html): $(context).html(html);
 }
 
-function xfsdTpl(array, dom){
-	let html =`<table class="${dom} table table-hover table-bordered table-responsive">
-				<tr>
-					<th>序号</th>
-					<th>fare</th>
-					<th>命令</th>
-					<th>提前出票</th>
-					<th>单程价格</th>
-					<th>往返价格</th>
-					<th>舱位</th>
-					<th>最短停留</th>
-					<th>最长停留</th>
-					<th>适用截止日期</th>
-					<th>退票规则</th>
-					<th>可用星期</th>
-					<th>出发</th>
-					<th>到达</th>
-					<th>航空公司</th>
-					<th>方向</th>
-					<th>查询日期</th>
-				</tr>`
+function xfsdTpl(array, dom, show){
+
+	// 暴露至全局
+	xfsd_src = array;
+
+	show = show ? true: false;
+	let html = "<div class='${dom}'>";
 	for(var i in array){
-		html += `
-			<tr>
-					<td>${i}</td>
-					<td>${array[i]['FareBasis']}</td>
-					<td>${array[i]['Command']}</td>
-					<td>${array[i]['xfsd_Advp']}</td>
-					<td>${array[i]['xfsd_SingleFee']}</td>
-					<td>${array[i]['xfsd_RoundFee']}</td>
-					<td>${array[i]['xfsd_Cabin']}</td>
-					<td>${array[i]['xfsd_MinStay']}</td>
-					<td>${array[i]['xfsd_MaxStay']}</td>
-					<td>${array[i]['xfsd_DateStart']}>${array[i]['xfsd_DateEnd']}</td>
-					<td>${array[i]['xfsd_Rule']}</td>
-					<td>${array[i]['xfsd_Indicator']}</td>
-					<td>${array[i]['xfsd_Dep']}</td>
-					<td>${array[i]['xfsd_Arr']}</td>
-					<td>${array[i]['xfsd_Owner']}</td>
-					<td>${array[i]['xfsd_Region']}</td>
-					<td>${new Date((array[i]['gmtCreate'] -0)*1000).format("yyyy-MM-dd hh:mm:ss")}</td>
-			</tr>
-		`
+		html += `<table class="table table-hover table-bordered table-responsive">
+					<tr>
+						<th>序号</th>
+						<th>fare</th>
+						<th>命令</th>
+						<th>提前出票</th>
+						<th>单程价格</th>
+						<th>往返价格</th>
+						<th>舱位</th>
+						<th>最短停留</th>
+						<th>最长停留</th>
+						<th>适用截止日期</th>
+						<th>退票规则</th>
+						<th>可用星期</th>
+						<th>出发</th>
+						<th>到达</th>
+						<th>航空公司</th>
+						<th>方向</th>
+						<th>创建日期</th>
+					</tr>`
+		for(var j in array[i].result){
+			var value = array[i]['result'][j];
+			html += `
+				<tr>
+						<td>${j}</td>
+						<td>${value['FareBasis']}</td>
+						<td>${value['Command']}</td>
+						<td>${value['xfsd_Advp']}</td>
+						<td>${value['xfsd_SingleFee']}</td>
+						<td>${value['xfsd_RoundFee']}</td>
+						<td>${value['xfsd_Cabin']}</td>
+						<td>${value['xfsd_MinStay']}</td>
+						<td>${value['xfsd_MaxStay']}</td>
+						<td>${value['xfsd_DateStart']}>${value['xfsd_DateEnd']}</td>
+						<td>${value['xfsd_Rule']}</td>
+						<td>${value['xfsd_Indicator']}</td>
+						<td>${value['xfsd_Dep']}</td>
+						<td>${value['xfsd_Arr']}</td>
+						<td>${value['xfsd_Owner']}</td>
+						<td>${value['xfsd_Region']}</td>
+						<td>${new Date((value['gmtCreate'] -0)*1000).format("yyyy-MM-dd hh:mm:ss")}</td>
+				</tr>
+			`
+		}
 	}
+	html += "</div>";
+	if(show){
+		$('#modal-content').html(html);
+		xfsdModal.show();
+	}
+}
+
+function avhTpl(array, dom){ // (data, className, container)
+	// 暴露至全局
+	avh = array.result;
+
+	let html = "<table class='${dom} table table-hover table-bordered table-responsive'>";
+	for( var i in array ){ 
+			var avhCabin = eval('['+array[i].avh_Cabin+']')[0];
+						
+			html += "<tr>";
+			html += `
+				<td>${i}</td>
+				<td>${array[i].avh_Flight}</td>
+				<td>${array[i].avh_Dep}</td>
+				<td>${array[i].avh_Arr}</td>
+				<td>${array[i].avh_DepTime}-${array[i].avh_ArrTime}<!--${array[i].avh_FlightTime}--></td>
+				<td>
+			`
+			// 显示特定舱位
+			if(cabin[0] != '' && cabin.length > 0){
+				for(var s in cabin){
+					if( avhCabin[cabin[s]] ){ // 屏蔽掉无舱位数据
+						if( avhCabin[cabin[s]] -0 >3){
+							html += "<span style='color:red'>"+cabin[s]+'('+avhCabin[cabin[s]]+")</span>/";
+						}else{
+							html += cabin[s]+'('+avhCabin[cabin[s]]+")/";
+						}
+					}
+				}
+			}
+			// 未设置特定舱位
+			else{
+				for(var s in avhCabin){
+					if(avhCabin[s]-0 >3){
+						html += "<span style='color:red'>"+s+'('+avhCabin[s]+")</span>/";
+					}else{
+						html += s+'('+avhCabin[s]+")/";
+					}
+				}
+			}
+			html += "</td>";
+			html += `<td>${new Date((array[i].gmtModified -0)*1000).format("yyyy-MM-dd hh:mm:ss")}</td>`;
+			html += "</tr>";
+	}
+	html += '</table>';
+
 	$('#modal-content').html(html);
+	avhModal.show();
 }
 
-function avhTpl(array, dom){
-
+// 生成fsi
+function mkFsi(){
+        // XS FSI/UA
+        // S UA   1000K26SEP BJS0100 0200CHI0X    76W 
+        // S UA   2000K26SEP CHI0300 0400ABQ0S    76W 
+        // S UA   3000K29SEP ABQ0100 0200CHI0X    76W
+        // S UA   4000K29SEP CHI0300 0400BJS0S    76W 
 }
+
 
 $(function(){
 	// 导航

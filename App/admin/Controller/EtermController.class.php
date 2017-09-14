@@ -5,10 +5,6 @@ class EtermController extends Controller {
 
 	private $cache = array(); // 临时储存
 
-	public function test(){
-		echo 'test form etermController';
-	}
-
 	// xfsd 运价 前台展示
   public function xfsd(){
   	$this->display();
@@ -26,6 +22,11 @@ class EtermController extends Controller {
 
   // fsl 航程 前台展示
   public function fsl(){
+  	$this->display();
+  }
+
+  // price 合成政策 前台展示
+  public function price(){
   	$this->display();
   }
 
@@ -308,7 +309,7 @@ class EtermController extends Controller {
 		$startDate  = $_POST['startDate'];
 		$aircompany = $_POST['aircompany'];
 		$code       = $_POST['private'];
-		$tripType   = '*'.ltrim($_POST['tripType'], '*');
+		$tripType   = $_POST['tripType'] == '' ? '':'*'.ltrim($_POST['tripType'], '*');
 		$other      = $_POST['other'];
 		$ab_flag    = preg_match("/[\/]2|[\/]2[\/]|2[\/]/",$other, $str) ? true:false;
 		$endArr     = explode(',', rtrim($endMore,','));  // 多地点录入时
@@ -453,46 +454,6 @@ class EtermController extends Controller {
   	$m_xfsd->addAll($addAll);
   }
 
-  // 储存xfsd source资源
-  // private function saveXfsdSource($array = array()){
-  // 	$m_xfsd = model('xfsd_source');
-  // 	$add = array(
-  // 		'office'  => $_SESSION['resource'],
-  // 		'status'  => 2,
-  // 		'command' => isset($array['command'])? $array['command'] : '',
-  // 		'detail'  => isset($array['source'])? $array['source']: '',
-  // 	);
-  // 	return $m_xfsd->add($add);
-  // }
-
-	// 查询command，如果存在，且不只一条，比较他们的firstpage，如果相同，则返回这个source。如果不相同，则返回false
-  // private function hasXfsdSource($array = array()){
-  // 	import('vender/eterm/app.php');
-
-  // 	$m_xfsd    = model('xfsd_source');
-  // 	$result    = $m_xfsd ->where('`command` ="'.$array['command'].'" ')->select();
-
-  // 	// 为空时
-  // 	if(!$result || empty($result[0]) ) return false;
-
-  // 	foreach ($result as $cols) {
-  // 		// 一天的保留时间
-  // 		if( $cols['GmtModified'] + 24*60*60 >= time() ) {
-  // 			return $cols;
-  // 		}
-  // 		else{
-  // 			$xfsd      = new \Xfsd($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
-  // 			$firstPage = $xfsd->getFirstPage();
-  // 		}
-  // 		// 第一页
-  // 		if(is_string($firstPage) && $flength = strlen($firstPage)  ){
-  // 			if ( isset($cols['Detail']) && $firstPage == substr($cols['Detail'], 0 , $flength) ) 
-  // 				return $cols;
-  // 		}
-  // 	}
-  // 	return false;
-  // }
-
   // 通过command查询xfsd
   public function searchXfsdByCommand(){
   	import('vender/eterm/app.php');
@@ -606,7 +567,6 @@ class EtermController extends Controller {
 		else{
 			echo json_encode(array('array'=>$array, "type"=>'array'));
 		}
-		
 	}
 
 	// 储存 avh_result
@@ -640,10 +600,12 @@ class EtermController extends Controller {
 						'avh_DepTime'   => $value['startTime'],
 						// endTime 到达时间
 						'avh_ArrTime'   => $value['endTime'],
+						// 飞行时间
+						'avh_FlightTime'=> $value['flightTime'],
 						// startDate 出发日期
 						'avh_Date'      => date('Y-m-d',strtotime($value['startDate'])),
 						// flight 航班号
-						'avh_Flight'    => $value['startTime'],
+						'avh_Flight'    => $value['flight'],
 						// carrier 实际承运
 						'avh_Operation' => $value['carrier'],
 						// cabin 舱位
@@ -666,56 +628,6 @@ class EtermController extends Controller {
 
   	$m_avh -> addAll($addAll);
 	}
-
-	// 更新 avh_result
-	// public function updateAvhResult($array = array(), $id = 0, $command = ''){
- //  	if( count($array) == 0 ) return;
-		
-	// 	// 删除 
-	// 	$this->deleteCmdResult($id, 'avh');
-
-	// 	// 再插入
-	// 	$this->saveAvhResult($array, $id, $command);
-	// }
-
-	// 更新 avh_source
-	// private function updateAvhSource($array = array()){
-	// 	$m_avh = model('avh_source');
- //  	$update = array(
- //  		'detail' => isset($array['source'])? $array['source']: '',
- //  		'GmtModified' => time()
- //  	);
- //  	$m_avh->where('`command` = "'.$array['command'].'" ')->update($update);
- //  	// 仅有一条
- //  	$result = $m_avh->where('`command` = "'.$array['command'].'" ')->select();
- //  	return $result[0]['Id'];
-	// }
-
-	// 保存 avh_source
-	// private function saveAvhSource($array = array()){
-	// 	$m_avh = model('avh_source');
- //  	$add = array(
- //  		'office' => $_SESSION['resource'],
- //  		'status' => 2,
- //  		'command'=> isset($array['command'])? $array['command'] : '',
- //  		'detail' => isset($array['source'])? $array['source']: '',
- //  	);
- //  	return $m_avh->add($add);
-	// }
-
-	// 是否有 avh_source，如果有且生产时间大于一天则更新，如果有但生产时间没有大于一天则读取，没有则添加新数据
-	// private function hasAvhSource($array = array()){
- //  	$m_avh = model('avh_source');
- //  	$result = $m_avh ->where('`command` ="'.$array['command'].'" ')->select();
-
- //  	// 为空返回false
- //  	if(!$result || empty($result[0]) ) return false;
- //  	$col = $result[0]; // 仅一条
-	// 	if ( isset($col['Command']) && $array['command'] == $col['Command'] ) 
-	// 		return array('Detail' =>$col['Detail'], 'GmtModified' =>$col['GmtModified'] );
-
- //  	return false;
-	// }
 
 	public function searchFslByInput($return = false){
 		import('vender/eterm/app.php');
@@ -803,6 +715,85 @@ class EtermController extends Controller {
 
 		\BYS\Report::p($array);
 	}
+
+	// 混舱
+	public function searchPriceByInput(){
+		// 利用精简后的数据 根据sid 获得 result
+		$start          = $_POST['start'];
+		$end            = $_POST['end'];
+		$aircompany     = $_POST['aircompany'];
+		$departureDate  = $_POST['departureDate']; // 去程日期
+		$returnDate     = $_POST['returnDate'];    // 回程日期
+
+		$xfsd_model = model('xfsd_result');
+		$where = '';
+		// 必填
+		if($start != '')
+			$where = "`xfsd_Dep` = '${start}'";
+		
+		if($end != '')
+			$where .= " AND `xfsd_Arr` = '${end}'";
+		
+		if($aircompany != '')
+			$where .= " AND `xfsd_Owner` = '${aircompany}'";
+		
+		if($departureDate != '')
+			$where .= "AND `xfsd_DateEnd` < '${departureDate}'";
+
+		$xfsd_model->prepare("SELECT * FROM (SELECT  * ,COUNT( DISTINCT xfsd_Cabin, xfsd_RoundFee) FROM e_cmd_xfsd_result group by `xfsd_RoundFee`)AS A WHERE 	A.xfsd_Dep = 'BJS'
+AND A.xfsd_Arr = 'ABQ'
+AND A.xfsd_Owner = 'UA'
+AND A.xfsd_DateEnd > '2017-09-20'");
+		$xfsd_result = $xfsd_model->execute();
+		var_dump($xfsd_result);
+		// 精简，舱位
+		$smpXfsd  = array();  // 临时xfsd并初始化
+
+		// 去程 、回程
+/*
+// 去重语句 select *, count(distinct name) from (select * from table……等嵌套语句) group by name
+SELECT DISTINCT
+	FareBasis,
+	xfsd_Cabin,
+	xfsd_RoundFee,
+	xfsd_SingleFee,
+	xfsd_Arr,
+	xfsd_Dep,
+	xfsd_Owner,
+	xfsd_Region,
+	xfsd_MinStay,
+	xfsd_MaxStay,
+	xfsd_DateStart,
+	xfsd_DateEnd
+FROM
+	e_cmd_xfsd_result
+WHERE
+	`xfsd_Dep` = 'BJS'
+AND `xfsd_Arr` = 'ABQ'
+AND `xfsd_Owner` = 'UA'
+AND `xfsd_DateEnd` > '2017-09-20'
+AND `xfsd_DateStart` < '2017-09-14';
+
+直接使用DISTINCT 会去除这几个字段且重复的
+
+SELECT * FROM (
+SELECT 
+	* ,COUNT(DISTINCT xfsd_Cabin, xfsd_RoundFee)
+FROM
+	e_cmd_xfsd_result
+group by `xfsd_RoundFee`)AS A
+WHERE
+	A.xfsd_Dep = 'BJS'
+AND A.xfsd_Arr = 'ABQ'
+AND A.xfsd_Owner = 'UA'
+AND A.xfsd_DateEnd > '2017-09-20';
+
+63 条
+*/
+
+	}
+
+
 
 	// 新增混舱
 	public function addMixCabin(){
