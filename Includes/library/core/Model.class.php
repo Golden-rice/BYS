@@ -353,7 +353,7 @@
 	        if($this->prepare->rowCount() > 1)
 	        	return $this->prepare->fetchALL();
 	        else
-	        	return $this->prepare->fetch();
+	        	return array(0=>$this->prepare->fetch());
 	    }catch(PDOException $e){
 	    		Db::$link->rollback();
 	        echo '错误是：'.$e->getMessage();

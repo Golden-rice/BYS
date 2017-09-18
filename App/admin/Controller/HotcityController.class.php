@@ -6,6 +6,10 @@ class HotcityController extends Controller {
   	$this->display();
   }
 
+  public function sleep(){
+    sleep(3600);
+  }
+
   // 展示计划执行状况
   public function show(){
   	$hotcity = model('hot_city');

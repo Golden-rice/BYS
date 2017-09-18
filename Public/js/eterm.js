@@ -1296,6 +1296,7 @@ var createCommand = function(recevier, tpl){
 		recevier.link( Controller + 'searchPriceByInput', query , function(data){
 			console.log(data)
 			recevier.progress.complete();
+			// 判断获取的数据是否为一条
 			tpl.mkMainTable(data.result, recevier.target)
 		});	
 	}
