@@ -19,6 +19,8 @@
 		protected $distinct         = '';
 		// 排序语句
 		protected $order            = '';
+		// 限制
+		protected $limit            = '';
 
 	 	function __construct($className = ""){
 		 	// 声明全局变量
@@ -113,7 +115,6 @@
 	 			}		
 	 			$sql = rtrim($sql, ',').') '.rtrim($val, ',').'); '; 			
  			}
-
  			$this->prepare($sql);
  			$this->execute();
 	 	}
@@ -197,6 +198,15 @@
 	  	return $this;
 	  }
 
+	  /* 限制 */
+	  public function limit($limit){
+	  	if ($limit != '')
+		  	$this->limit = ' LIMIT '.$limit;
+		  else 
+		  	$this->limit = '';
+	  	return $this;
+	  }
+
 	  /**
 		 * 查询数据
 		 * @return mix 结果
@@ -212,7 +222,7 @@
 		 	if( $this->distinct != '')
 		 		$sql = "SELECT {$this->distinct} ";
 
-		 	$sql .= " FROM ".$this->tableName.$this->join.$this->where.$this->order;
+		 	$sql .= " FROM ".$this->tableName.$this->join.$this->where.$this->order.$this->limit;
 
 	 		$this->prepare($sql);
 	 		$result = $this->execute();
@@ -261,7 +271,6 @@
 		 */	 	
 	 	public function delete(){
  			$sql = "DELETE FROM {$this->tableName} ";
-
 	 		$sql = $sql.$this->where;
 
 	 		$this->prepare($sql);
@@ -322,7 +331,8 @@
 	 	public function prepare($sql = ''){
 	 		if($sql == '') Report::warning('无查询语句');
 		 	try{
-	        $this->prepare = Db::$link -> prepare($sql); // 返回类似于数组
+	        $this->sql = $sql;
+	        $this->prepare = Db::$link -> prepare($this->sql); // 返回类似于数组
 	    }catch(PDOException $e){
 	    		Db::$link->rollback();
 	        echo '错误是：'.$e->getMessage();

@@ -40,10 +40,12 @@ class Avh extends Eterm{
 	}   
 
 	private function to2Arr($arr){
+		if(empty($arr)) return;
 		// 按照航程划分，返回二维数组
 		$arr_date = array(); // 存放同一天数组
 
-  	for ($i=0; $i < count($arr); $i++) {  // 逐条遍历
+  	for ($i=0; $i < count($arr)-1; $i++) {  // 逐条遍历
+  		if(!isset($arr[$i]) || !strlen($arr[$i]) >2 ) continue;
   		if(substr($arr[$i],0,1) == " " && substr($arr[$i],1,1) != ' '){
   			$curDate = substr($arr[$i], 1, 5); // 不带星期
   		}else{
@@ -52,7 +54,6 @@ class Avh extends Eterm{
   		$j = $i+1;
 
   		if(!isset($arr[$j]) || !strlen($arr[$j]) >2 ) continue;
-
   		if(substr($arr[$j],0,1) !=" " && $j < count($arr)){
   			$cur = substr($arr[$j], 0, 1);
 
@@ -99,9 +100,8 @@ class Avh extends Eterm{
 	}
 	public function display($arr){
 		// 展示数据
-		if(empty($arr)) {
-			return;
-		} 
+		if(empty($arr))  return;
+		 
 		// 根据航空公司匹配舱位及设置舱位等级
 		// $seatArr = $this->getSeat(array("airCompany"=>$this->data['airCompany']),'2');
 		

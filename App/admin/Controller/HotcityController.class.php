@@ -16,7 +16,7 @@ class HotcityController extends Controller {
   // 执行计划，一天以后则更新
   public function run(){
   	$hotcity = model('hot_city');
-  	$result  = $hotcity->where("`HC_Status` = 0 OR `GmtModified` < ".(time()-24*60*60))->select();
+  	$result  = $hotcity->where("`HC_Status` = 0 OR `GmtModified` < ".(time()-24*60*60))->limit('3')->select();
   	$eterm   = reflect('eterm');
 
   	// 所有日期未当日往后15天
@@ -73,7 +73,7 @@ class HotcityController extends Controller {
       $result_update = $hotcity->where("`Id` = {$col['Id']}")->update($update);
 
       // 生成混舱数据
-      $eterm->searchPriceSource();
+      // $eterm->searchPriceSource();
 
       // 打印至 log 记录
       \BYS\Report::p($col);

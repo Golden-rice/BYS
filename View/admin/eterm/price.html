@@ -10,19 +10,37 @@
 		  <div class="panel-body">
 				<div class="form-inline">
 						<div class="input-group">
-							<span class="input-group-addon" id="input-start">出发</span><input type="text" name='start' id='start' placeholder='城市代码' aria-describedby="input-start" class='form-control' onblur="upper(this)" style='width:100px'>
 
-							<span class="input-group-addon" id="input-end">到达</span><input type="text" name='end' id='end' value='' aria-describedby="input-end" class='form-control' placeholder='城市代码' onblur="upper(this)" style='width:100px'>
+							<!-- 区域  -->
+							<span class="input-group-addon" id="input-aircompany">航空公司</span>
+							<select class="form-control" id='aircompany' aria-describedby="input-aircompany">
+							  <option>——</option>
+							</select>
+							<!-- 区域 END -->
 
-							<span class="input-group-addon" id="input-aircompany">航空公司</span><input type="text" name='aircompany' id='aircompany' value='' aria-describedby="input-aircompany" class='form-control'  onblur="upper(this)"  style='width:100px'>
+							<!-- 出发  -->
+							<span class="input-group-addon" id="input-depart">出发</span>
+							<select class="form-control" id='depart' aria-describedby="input-depart">
+							  <option>——</option>
+							</select>
+							<!-- 出发 END -->
 
-							<span class="input-group-addon" id="input-departureDate">去程日期</span><input type="text" name='departureDate' id='departureDate' value='' aria-describedby="input-departureDate" class='form-control'  onblur="upper(this)"  style='width:100px'>
+							<!-- 到达  -->
+							<span class="input-group-addon" id="input-arrive">到达</span>
+							<select class="form-control" id='arrive' aria-describedby="input-arrive">
+							  <option>——</option>
+							</select>
+							<!-- 到达 END -->
 
-							<span class="input-group-addon" id="input-returnDate">回程日期</span><input type="text" name='returnDate' id='returnDate' value='' aria-describedby="input-returnDate" class='form-control'  onblur="upper(this)"  style='width:100px'>
+							<!-- 日期  -->
+							<span class="input-group-addon" id="input-departureDate">日期</span>
+							<input  class="form-control datetimepicker" id='departureDate' aria-describedby="input-departureDate" type="text">
+							<!-- 日期 END -->
+
 						</div>
 
 						<div class="input-group">
-							<input type="submit" name='dosubmit' id='docommand'  value='查询' class='btn btn-primary'>
+							<input type="submit" name='dosubmit' id='dosubmit'  value='查询' class='btn btn-primary'>
 						</div>
 						
 				</div>
@@ -46,45 +64,130 @@
 	</div>
 	<!-- 侧边辅助栏END -->
 
-
 </div>
 
 <div id="content"></div>
-<!-- 内容 END -->
-
+<div id="content-progress"></div>
 
 <script>
+require(['eterm', "dt"], function(eterm, dt){
 
+// 日期控件
+$('.datetimepicker').datetimepicker({
+  language:  'fr',
+  format: 'yyyy-mm-dd',
+  weekStart: 1,
+  todayBtn:  1,
+  autoclose: 1,
+  todayHighlight: 1,
+  startView: 2,
+  minView: 2,
+  forceParse: 0
+});
 
-require(['eterm', "xlsx"], function(eterm, xlsx){
-
-var setCommend = function(command){
-
-	// 测试
-	$('#test').click(function(){
-			command.rate();
-			
-			command.xfsd({
-				dosubmit: "",
-				start: 'BJS',
-				end: 'NYC',
-				startDate: '15SEP',
-				aircompany: 'UA',
-				private: '',
-				tripType:"",
-				other: ""
-			})
-
-	})
-
+var tpl = {
+	mkSelect: mkSelect,
+	mkMainTable: mkMainTable,
 }
 
-// 配置setCommand()
-// 装载模板mkTable()
-setCommend(eterm.createCommand(eterm.eterm));
+var setCommend = function(command){
+	command.searchPriceSelect();
+
+	$('#dosubmit').click(function(){
+		command.searchPriceSource({
+			start: $('#depart').val(),
+			end: $('#arrive').val(),
+			departureDate: $('#departureDate').val(),
+			aircompany: $('#aircompany').val(),
+		})
+
+	})
+}
+
+setCommend(eterm.createCommand(eterm.eterm, tpl));
+
+function mkSelect(data){
+	'use strict';
+
+	let html = '';
+
+	function mkSelectByName(name){
+		if(data[name].length > 0){
+			html = '<option value="">请选择</option>';
+			for(var i in data[name]){
+				html += '<option value='+data[name][i]+'>'+data[name][i]+'</option>';
+			}
+			$('#'+name).html(html)
+		}
+	}
+
+	// 回填航空公司数据
+	mkSelectByName('aircompany');
+
+	// 回填出发地数据
+	mkSelectByName('depart');
+
+	// 回填出发地数据
+	mkSelectByName('arrive');
+}
+
+function mkMainTable(array, target){
+	let html = "";
+
+	html += `<table class="${target} table table-hover table-bordered table-responsive">
+	<thead>
+				<tr>
+					<th>序号</th>
+					<th>fare</th>
+					<th>命令</th>
+					<th>提前出票</th>
+					<th>单程价格</th>
+					<th>往返价格</th>
+					<th>舱位</th>
+					<th>最短停留</th>
+					<th>最长停留</th>
+					<th>适用截止日期</th>
+					<th>退票规则</th>
+					<th>可用星期</th>
+					<th>出发</th>
+					<th>到达</th>
+					<th>航空公司</th>
+					<th>方向</th>
+					<th>创建日期</th>
+				</tr></thead></table>`
+	
+	for(var j in array){
+		array[j]['index'] =	j;
+		array[j]['date']  =	array[j]['xfsd_DateStart']+">"+array[j]['xfsd_DateEnd'];
+		array[j]['time']  = new Date((array[j]['gmtCreate'] -0)*1000).format("yyyy-MM-dd hh:mm:ss");
+	}
+
+	$('#content').html(html);
+	$('.'+target).DataTable({
+      data: array,
+      columns: [
+          { data: "index" },
+          { data: "FareBasis" },
+          { data: "Command" },
+          { data: "xfsd_Advp" },
+          { data: "xfsd_SingleFee" },
+          { data: "xfsd_RoundFee" },
+          { data: "xfsd_Cabin" },
+          { data: "xfsd_MinStay" },
+          { data: "xfsd_MaxStay" },
+          { data: "date" },
+          { data: "xfsd_Rule" },
+          { data: "xfsd_Indicator" },
+          { data: "xfsd_Dep" },
+          { data: "xfsd_Arr" },
+          { data: "xfsd_Owner" },
+          { data: "xfsd_Region" },
+          { data: "time" },
+      ]
+  }); 
 
 
-
+}
 
 $(function(){
 	$('.nav>li').removeClass('active');

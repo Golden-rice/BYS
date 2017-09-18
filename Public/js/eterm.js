@@ -5,7 +5,7 @@ require.config({
       "progress": "lib/bootstrap.progress",
 			'extend': "lib/extend",
 			'bootstrap': "lib/bootstrap.min",
-
+			'datetimepicker': "lib/datetimepicker/js/bootstrap-datetimepicker",
    }
 });
 
@@ -1214,9 +1214,10 @@ var createCommand = function(recevier, tpl){
 
 	var searchXfsdResult = function(query){
 		rmTable(recevier.target);
+		console.log(query.sid)
 		recevier.target = 'xfsd-result-model';
 		var xfsdTpl = tpl.xfsdTpl;
-		var sidArray = query.sid.split(',');
+		var sidArray = (query.sid+'').split(',');
 		var xfsdResultArray = [], i;
 
 		for(i in sidArray){
@@ -1227,7 +1228,6 @@ var createCommand = function(recevier, tpl){
 				}
 			});	
 		}
-
 	}
 
 	var searchAvhResult = function(query){
@@ -1285,7 +1285,37 @@ var createCommand = function(recevier, tpl){
 				}
 			});	
 		}
+	}
 
+	var searchPriceSource = function(query){
+		recevier.target = 'price-source';
+		recevier.progress = progress();
+		recevier.progress.create('#content-progress');
+
+		rmTable(recevier.target);
+		recevier.link( Controller + 'searchPriceByInput', query , function(data){
+			console.log(data)
+			recevier.progress.complete();
+			tpl.mkMainTable(data.result, recevier.target)
+		});	
+	}
+
+	var searchPriceSelect = function(){
+		recevier.getData( Project + 'index.php/admin/basis/searchHotCity', '', function(data){
+			var aircompany = [], depart = [], arrive = [];
+			for(var j in data.result){
+				aircompany.push(data.result[j].aircompany)
+				depart.push(data.result[j].depart)
+				arrive.push(data.result[j].arrive)
+			}
+
+			mkSelect({
+				aircompany: $.unique(aircompany),
+				depart: $.unique(depart),
+				arrive: $.unique(arrive)
+			});
+
+		});	
 	}
 
 	return {
@@ -1320,6 +1350,8 @@ var createCommand = function(recevier, tpl){
 		searchXfsdResult: searchXfsdResult,               // 查询xfsd数据
 		searchAvhResult: searchAvhResult,                 // 查询avh数据
 		searchXfsdSmpResult: searchXfsdSmpResult,         // 查询xfsd精简的数据
+		searchPriceSource: searchPriceSource,             // 查询政策数据（混舱前）
+		searchPriceSelect: searchPriceSelect,             // 查询政策选择框， 即热门城市
 	}
 }
 

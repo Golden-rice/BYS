@@ -424,9 +424,9 @@ class EtermController extends Controller {
 				// advp 提前出票
 				'xfsd_Advp'      => $value['ADVPDay'],
 				// allowDateStart 适用日期起始
-				'xfsd_DateStart' => date('Y-m-d',strtotime($value['allowDateStart'])),
+				'xfsd_DateStart' => empty($value['allowDateStart'])? '1970-01-01' : date('Y-m-d',strtotime($value['allowDateStart'])),
 				// allowDateEnd 适用日期结束
-				'xfsd_DateEnd'   => date('Y-m-d',strtotime($value['allowDateEnd'])),
+				'xfsd_DateEnd'   => empty($value['allowDateEnd'])  ? '2099-12-30' : date('Y-m-d',strtotime($value['allowDateEnd'])),
 				// backLineFee 往返费用
 				'xfsd_RoundFee'  => $value['backLineFee'],
 				// singleLineFee 单程费用
@@ -576,6 +576,7 @@ class EtermController extends Controller {
   	$m_avh = model('avh_result');
   	$addAll = array();
   	$totel = 0;
+
   	// 日期
   	foreach($array as $day){
   		// 航程
@@ -696,7 +697,6 @@ class EtermController extends Controller {
 				$fsl        = new \Fsl($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
 				$result     = $this->hasCmdSource($command, 'fsl');
 
-
 				// 数据保留1个月
 				if ( isset($result['GmtModified']) && $result['GmtModified'] + 30*24*60*60 > time() ){ 
 					$fsl -> wtTmp($result['Detail']);
@@ -716,81 +716,53 @@ class EtermController extends Controller {
 		\BYS\Report::p($array);
 	}
 
-	// 混舱
+	// 查询出发至到达的运价
 	public function searchPriceByInput(){
 		// 利用精简后的数据 根据sid 获得 result
 		$start          = $_POST['start'];
 		$end            = $_POST['end'];
 		$aircompany     = $_POST['aircompany'];
 		$departureDate  = $_POST['departureDate']; // 去程日期
-		$returnDate     = $_POST['returnDate'];    // 回程日期
 
 		$xfsd_model = model('xfsd_result');
 		$where = '';
 		// 必填
 		if($start != '')
-			$where = "`xfsd_Dep` = '${start}'";
+			$where = "xfsd_Dep = '${start}'";
 		
 		if($end != '')
-			$where .= " AND `xfsd_Arr` = '${end}'";
+			$where .= " AND xfsd_Arr = '${end}'";
 		
 		if($aircompany != '')
-			$where .= " AND `xfsd_Owner` = '${aircompany}'";
+			$where .= " AND xfsd_Owner = '${aircompany}'";
 		
 		if($departureDate != '')
-			$where .= "AND `xfsd_DateEnd` < '${departureDate}'";
+			$where .= "AND xfsd_DateEnd > '${departureDate}'";
 
-		$xfsd_model->prepare("SELECT * FROM (SELECT  * ,COUNT( DISTINCT xfsd_Cabin, xfsd_RoundFee) FROM e_cmd_xfsd_result group by `xfsd_RoundFee`)AS A WHERE 	A.xfsd_Dep = 'BJS'
-AND A.xfsd_Arr = 'ABQ'
-AND A.xfsd_Owner = 'UA'
-AND A.xfsd_DateEnd > '2017-09-20'");
+		$xfsd_model->prepare("SELECT
+				*, COUNT(DISTINCT A.FareBasis, A.xfsd_RoundFee, A.xfsd_indicator, A.xfsd_Cabin, A.xfsd_DateEnd) # 去重
+			FROM
+				(
+					SELECT
+						*
+					FROM
+						e_cmd_xfsd_result
+					WHERE {$where} AND  
+						xfsd_SingleFee = 0
+					ORDER BY 
+						xfsd_RoundFee ASC # 显示最低价格
+				) AS A
+			GROUP BY  # 精简
+				A.xfsd_Cabin,
+				A.xfsd_indicator,
+			  A.xfsd_DateEnd 
+			ORDER BY 
+				A.xfsd_Cabin, A.xfsd_RoundFee ASC # 展示优化 " );
+		// var_dump($xfsd_model->testSql());
 		$xfsd_result = $xfsd_model->execute();
-		var_dump($xfsd_result);
-		// 精简，舱位
-		$smpXfsd  = array();  // 临时xfsd并初始化
 
-		// 去程 、回程
-/*
-// 去重语句 select *, count(distinct name) from (select * from table……等嵌套语句) group by name
-SELECT DISTINCT
-	FareBasis,
-	xfsd_Cabin,
-	xfsd_RoundFee,
-	xfsd_SingleFee,
-	xfsd_Arr,
-	xfsd_Dep,
-	xfsd_Owner,
-	xfsd_Region,
-	xfsd_MinStay,
-	xfsd_MaxStay,
-	xfsd_DateStart,
-	xfsd_DateEnd
-FROM
-	e_cmd_xfsd_result
-WHERE
-	`xfsd_Dep` = 'BJS'
-AND `xfsd_Arr` = 'ABQ'
-AND `xfsd_Owner` = 'UA'
-AND `xfsd_DateEnd` > '2017-09-20'
-AND `xfsd_DateStart` < '2017-09-14';
-
-直接使用DISTINCT 会去除这几个字段且重复的
-
-SELECT * FROM (
-SELECT 
-	* ,COUNT(DISTINCT xfsd_Cabin, xfsd_RoundFee)
-FROM
-	e_cmd_xfsd_result
-group by `xfsd_RoundFee`)AS A
-WHERE
-	A.xfsd_Dep = 'BJS'
-AND A.xfsd_Arr = 'ABQ'
-AND A.xfsd_Owner = 'UA'
-AND A.xfsd_DateEnd > '2017-09-20';
-
-63 条
-*/
-
+		// 按照舱位及价格已精简
+		echo json_encode(array('result'=>$xfsd_result));
 	}
 
 
