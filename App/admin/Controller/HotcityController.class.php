@@ -15,9 +15,18 @@ class HotcityController extends Controller {
 
   // 执行计划，一天以后则更新
   public function run(){
+
+    if(!isset($_SESSION['name'])){
+      $_SESSION['name']     = 'dongmin';
+      $_SESSION['password'] = '12341234'; 
+      $_SESSION['resource'] = 'BJS248';
+    }
+
   	$hotcity = model('hot_city');
   	$result  = $hotcity->where("`HC_Status` = 0 OR `GmtModified` < ".(time()-24*60*60))->limit('3')->select();
   	$eterm   = reflect('eterm');
+
+    $log =  fopen('log.txt', 'a');
 
   	// 所有日期未当日往后15天
   	$startDate = '26SEP'; // strtoupper( date('dM',time() + 15*24*60*60) )
@@ -26,6 +35,9 @@ class HotcityController extends Controller {
     // 舱位
     if(empty($result)) {
       echo '无查询数据';
+      $logContent = '['.date('Y-m-d H:i:s',time())."]: No plan for run!\x0a";
+      fwrite($log , $logContent);
+      fclose($log);
       return;
     }
 
@@ -78,11 +90,17 @@ class HotcityController extends Controller {
       // 打印至 log 记录
       \BYS\Report::p($col);
     	\BYS\Report::p($result_update);
+      $logContent = '['.date('Y-m-d H:i:s',time()).']: status:'.($result_update? 'success': 'failed')."; {$col['HC_Depart']}-{$col['HC_Arrive']}-{$col['HC_Aircompany']}; progress-xfsd:".($col['HC_XfsdResult_Status'] == 2 ? 'success': 'failed').';progress-avh'.($col['HC_AvhResult_Status'] == 2 ? 'success': 'failed')."\x0a";
+
+      // 记录结果
+      fwrite($log , $logContent);
       // 增加缓存输出
       // sleep(3);
       ob_flush();
       flush();
     }
+
+    fclose($log);
   }
 
   // 是否需要继续跑数据
