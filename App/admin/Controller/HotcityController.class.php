@@ -39,7 +39,7 @@ class HotcityController extends Controller {
     // 舱位
     if(empty($result)) {
       echo '无查询数据';
-      $logContent = '['.date('Y-m-d H:i:s',time())."]: No plan for run!\x0a";
+      $logContent = '['.date('Y-m-d H:i:s',time())."]: No plan for run!\r\n\x0a";
       fwrite($log , $logContent);
       fclose($log);
       return;
@@ -94,7 +94,7 @@ class HotcityController extends Controller {
       // 打印至 log 记录
       \BYS\Report::p($col);
     	\BYS\Report::p($result_update);
-      $logContent = '['.date('Y-m-d H:i:s',time()).']: status:'.($result_update? 'success': 'failed')."; {$col['HC_Depart']}-{$col['HC_Arrive']}-{$col['HC_Aircompany']}; progress-xfsd:".($col['HC_XfsdResult_Status'] == 2 ? 'success': 'failed').';progress-avh'.($col['HC_AvhResult_Status'] == 2 ? 'success': 'failed')."\x0a";
+      $logContent = '['.date('Y-m-d H:i:s',time()).']: status:'.($result_update? 'success': 'failed')."; {$col['HC_Depart']}-{$col['HC_Arrive']}-{$col['HC_Aircompany']}; progress-xfsd:".($col['HC_XfsdResult_Status'] == 2 ? 'success': 'failed').';progress-avh'.($col['HC_AvhResult_Status'] == 2 ? 'success': 'failed')."\r\n\x0a";
 
       // 记录结果
       fwrite($log , $logContent);
@@ -109,29 +109,29 @@ class HotcityController extends Controller {
 
   // 是否需要继续跑数据
   private function is_continue($array = array(), $hc_cabin = array()){
-      // 去重数据：仅在所有舱位中取一条，默认按照第一条为选中。
-      $tmpXfsd  = array();  // 临时xfsd并初始化
+    // 去重数据：仅在所有舱位中取一条，默认按照第一条为选中。
+    $tmpXfsd  = array();  // 临时xfsd并初始化
 
-      if($hc_cabin != ''){
-        foreach ($array as $row){
-          if(!is_array($row)) break;
-          if(!in_array($row['seat'], $tmpXfsd) && time() + 30*60*60 < strtotime($row['allowDateEnd']) ){
-            $tmpXfsd[$row['seat']] = $row;
-          }
-        }
-      }else{
-        foreach ($array as $row){
-          if(!is_array($row)) break;
-          if( (!in_array($row['seat'], $tmpXfsd) && in_array($row['seat'], $hc_cabin)) && time() + 30*60*60 < strtotime($row['allowDateEnd']) ){
-            $tmpXfsd[$row['seat']] = $row;
-          }
+    if($hc_cabin != ''){
+      foreach ($array as $row){
+        if(!is_array($row)) break;
+        if(!in_array($row['seat'], $tmpXfsd) && time() + 30*60*60 < strtotime($row['allowDateEnd']) ){
+          $tmpXfsd[$row['seat']] = $row;
         }
       }
+    }else{
+      foreach ($array as $row){
+        if(!is_array($row)) break;
+        if( (!in_array($row['seat'], $tmpXfsd) && in_array($row['seat'], $hc_cabin)) && time() + 30*60*60 < strtotime($row['allowDateEnd']) ){
+          $tmpXfsd[$row['seat']] = $row;
+        }
+      }
+    }
 
-      if(!empty($tmpXfsd))
-        return $tmpXfsd;
+    if(!empty($tmpXfsd))
+      return $tmpXfsd;
 
-      return false;
+    return false;
   }
 
 

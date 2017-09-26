@@ -48,9 +48,8 @@ class Avh extends Eterm{
   		if(!isset($arr[$i]) || !strlen($arr[$i]) >2 ) continue;
   		if(substr($arr[$i],0,1) == " " && substr($arr[$i],1,1) != ' '){
   			$curDate = substr($arr[$i], 1, 5); // 不带星期
-  		}else{
-  			$curDate = substr($arr[$i], 1, 10); // 带星期
   		}
+
   		$j = $i+1;
 
   		if(!isset($arr[$j]) || !strlen($arr[$j]) >2 ) continue;
@@ -104,7 +103,7 @@ class Avh extends Eterm{
 		 
 		// 根据航空公司匹配舱位及设置舱位等级
 		// $seatArr = $this->getSeat(array("airCompany"=>$this->data['airCompany']),'2');
-		
+
 		$arr_tmp = array();
 		foreach ($arr as $date => $li){
 			foreach($li as $part => $airLine){

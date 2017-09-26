@@ -1319,6 +1319,37 @@ var createCommand = function(recevier, tpl){
 		});	
 	}
 
+	var saveNote = function(note, noteSrc){
+		recevier.link( Controller + 'saveNote', {source: noteSrc, note: note} , function(data){
+			console.log(data)
+			if(data.status){
+				alert('保存成功');
+			}else{
+				alert(data.msg)
+			}
+		});	
+	}
+
+	var searchAll = function(){
+		recevier.link( Controller + 'searchAll', '' , function(data){
+			console.log(data)
+			mkTable(data.result, 'searchAll', '#content');
+		});	
+	}
+
+	var deleteNote = function(query){
+		recevier.link( Controller + 'deleteNote', query, function(data){
+			console.log(data)
+		});	
+	}
+
+	var searchNotePrice = function (query){
+		return;
+		recevier.link( Controller + '', query, function(data){
+			console.log(data)
+		});	
+	}
+
 	return {
 		xfsd: xfsd,                                       // 获得xfsd数据，并用table回填到页面中
 		selected: selected,                               // 选择
@@ -1353,6 +1384,12 @@ var createCommand = function(recevier, tpl){
 		searchXfsdSmpResult: searchXfsdSmpResult,         // 查询xfsd精简的数据
 		searchPriceSource: searchPriceSource,             // 查询政策数据（混舱前）
 		searchPriceSelect: searchPriceSelect,             // 查询政策选择框， 即热门城市
+		lowcabin: {																				// 降舱
+			saveNote: saveNote,                               // 保存记录
+			searchAll: searchAll,                             // 查询记录
+			deleteNote: deleteNote,                           // 删除记录
+			searchNotePrice: searchNotePrice,                 // 查看记录详情
+		}
 	}
 }
 

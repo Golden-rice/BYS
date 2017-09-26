@@ -7,6 +7,7 @@ class UserController extends Controller {
     }
 
     public function login(){
+
     		if(isset($_POST["dosubmit"])){
 
 				$url = "http://eterm.cctba.com:8350/COMMAND?USER=".$_POST['name']."&PASSWORD=".$_POST['password']."&RESOURCEETERM-SHARE-".$_POST['resource']."=&COMMAND=ddi:";

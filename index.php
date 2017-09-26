@@ -22,5 +22,5 @@ define('BIND_APP', 'admin');
 define('APP_DEBUG', true);
 
 // 引入入口文件
-require './includes/set.php';
+require './Includes/set.php';
 

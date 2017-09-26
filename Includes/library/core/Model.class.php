@@ -80,8 +80,8 @@
 	 					}
 	 				}
 	 			}
-	 			$sql = rtrim($sql, ',').') '.rtrim($val, ',').')';
-				$this->exec($sql);
+	 			$this->sql = rtrim($sql, ',').') '.rtrim($val, ',').')';
+				$this->exec($this->sql);
 				$lastId = Db::$link->lastInsertId();
 				return $lastId;
 	 	}
@@ -115,7 +115,8 @@
 	 			}		
 	 			$sql = rtrim($sql, ',').') '.rtrim($val, ',').'); '; 			
  			}
- 			$this->prepare($sql);
+ 			$this->sql = $sql;
+ 			$this->prepare($this->sql);
  			$this->execute();
 	 	}
 
@@ -123,7 +124,8 @@
 		 * 清空表
 		 */	
 	 	public function deleteAll(){
- 			$this->prepare("TRUNCATE {$this->tableName}");
+	 		$this->sql = "TRUNCATE {$this->tableName}";
+ 			$this->prepare($this->sql);
  			$this->execute();
 	 	}
 
@@ -224,10 +226,9 @@
 
 		 	$sql .= " FROM ".$this->tableName.$this->join.$this->where.$this->order.$this->limit;
 
-	 		$this->prepare($sql);
+ 			$this->sql = $sql;
+	 		$this->prepare($this->sql);
 	 		$result = $this->execute();
-	 		if(is_bool($result) && $result == false)
-	 			$this->sql = $sql;
 
 	 		// 如果有结果均按数组返回
 	 		if(is_array($result) && isset($result[0])){
@@ -349,11 +350,18 @@
 		 	try{
 	        $this->prepare->execute($param);
 	        // 生成关联数组
-
-	        if($this->prepare->rowCount() > 1)
+	        if($this->prepare->rowCount() > 1){
 	        	return $this->prepare->fetchALL();
-	        else
-	        	return array(0=>$this->prepare->fetch());
+	        }
+	        else{
+		        $result = $this->prepare->fetch();
+		        if(is_array($result)){
+		        	return array(0=>$result);
+		        }
+	        	return $result;
+	        }
+	        
+	        	
 	    }catch(PDOException $e){
 	    		Db::$link->rollback();
 	        echo '错误是：'.$e->getMessage();

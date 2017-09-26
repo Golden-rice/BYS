@@ -195,6 +195,15 @@ Date.prototype.format = function(format){
    return format;
 }
 
+// 清除两边空格 
+String.prototype.trim = function(Symbol) {
+  if(Symbol){
+    var patten = new RegExp("/(^"+Symbol+"*)|("+Symbol+"*$)/",'g');
+    return this.replace(patten, ''); 
+  }
+  return this.replace(/(^\s*)|(\s*$)/g, ''); 
+}; 
+
 // AOP 
 Function.prototype.after = function(fn){
   var _self = this;
