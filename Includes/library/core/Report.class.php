@@ -33,12 +33,10 @@ class Report {
 
 	static public function printLog(){
 		$log = '';
-
 		if(!empty(self::$log))
 			foreach (self::$log as $words) {
 				$log .= $words;
 			}
-
 		return $log;
 	}
 }

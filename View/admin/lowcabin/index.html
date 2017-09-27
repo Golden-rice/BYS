@@ -109,6 +109,8 @@ var tpl = {
 	mkTable: mkTable
 }
 
+var note_length = 1;
+
 // 查看 xfsd
 $("#add-new").click(function(){
 	noteModel = new OtherModel("贴入记录", 
@@ -154,11 +156,12 @@ var setCommand = function(command){
 	})
 
 	$('#start-lowcabin').click(function(){
-		var audio = document.createElement('audio');
+
+		var audio  = document.createElement('audio');
 		var source = document.createElement('source');
 		source.src = '__PUBLIC__media/audio/alert.mp3';
-		audio.appendChild(source);
 		audio.loop = 'loop';
+		audio.appendChild(source);
 
 		var timer = setInterval(function(){
 			eterm.eterm.link(eterm.const.Controller + 'tmpRun', {}, function(msg){
@@ -166,7 +169,10 @@ var setCommand = function(command){
 
 				var html = '', alertSwitch = false;
 				for(var i in msg){
-					console.log(msg)
+						console.log(msg)
+					if(msg[i].msg != ''){
+						alert(msg[i].msg);
+					}
 					if(msg[i].status){
 						alertSwitch = true;
 						html += `<textarea class="form-control" id='note-input' cols="30" rows="5" style='background-color:black;color:green;'>${msg[i].source}</textarea>
@@ -204,7 +210,7 @@ var setCommand = function(command){
 					clearInterval(timer);
 				}
 			})
-		}, 10000); // 30*60*1000
+		}, note_length*5*60*1000); // 30*60*1000 1*5*60*1000
 
 	})
 
@@ -305,6 +311,8 @@ function mkTable(array, target, wrap, type){
 	let html = '', 
 			appendType = type !== ""? type : 'w',
 	  	context = wrap !== "" ? wrap : document;
+
+	  note_length = array.length;
 
 		html =`
 		  <table class="${target} table table-hover table-bordered table-responsive">

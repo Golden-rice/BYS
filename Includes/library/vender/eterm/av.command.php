@@ -61,6 +61,13 @@ class Av extends Eterm{
 		$hasPn     = preg_match('/PAGE[\s]*(\w+)\/(\w+)/', $this->tmp);
 		$fkey      = -1;
 		$pattern   = "/$departAndArrive/";
+		$depart    = '';
+		$arrive    = '';
+		if(preg_match("/没有资源。/is", $this->tmp)) {
+			\BYS\Report::log($this->tmp);
+			return;
+		} 
+
 		$cabin_src = parent::fromToArray($this->tmp, 2, 2);
 		foreach ($cabin_src as $src_key => $src_val) {
 			if($fkey < 0 && preg_match($pattern, $src_val)){
@@ -78,6 +85,12 @@ class Av extends Eterm{
 				}
 			}
 		}
+		
+		if($fkey <0){
+			\BYS\Report::log($this->tmp);
+			return;
+		}
+
 		$cabin  = preg_replace('/\s{2,}/', ' ', $cabin_src[$fkey].$cabin_src[$fkey+1]);
 		$depart = substr($cabin, 0, 3);
 		$arrive = substr($cabin, 3, 3);

@@ -107,7 +107,7 @@ class LowcabinController extends Controller {
  		$lowcabin->mixCommand(array("RT{$array['pnr']}", "QTE:/{$aircompany}"), 'a');
  		$log        = $lowcabin->rtTmp();
  		if(!empty($low_return)){
-	 		$log      = $lowcabin->rtTmp();
+	 		// $log      = $lowcabin->rtTmp();
 	 		$m_source->where("`Id` = {$id}")->update(array('Log'=>$log));
 	 		$logList  = $lowcabin->initFile($log);
 	 		$totalFee = 0;
@@ -286,7 +286,7 @@ class LowcabinController extends Controller {
   	$result_source = $m_source -> where('Status = 0')->limit('3')->select();
   	if(!$result_source) return;
   	
-  	$av           = new \Av('dongmin', '12341234', 'BJS248');
+  	$av           = new \Av('av66', 'av66av66', 'BJS248');
   	$source_array = array();
   	foreach ($result_source as $source) {
   		$result_result = $m_result->where("`Sid` = {$source['Id']}")->select();
@@ -329,7 +329,8 @@ class LowcabinController extends Controller {
   				}
   				rtrim($result_result[$rKey]['LC_Cabin'], ',');
   			}else{
-  				var_dump($av_result, $av->rtTmp());
+  				continue;
+  				// var_dump($av_result, $av->rtTmp());
   			}
   		}
 
@@ -349,7 +350,7 @@ class LowcabinController extends Controller {
   			}
   		}
 
-  		$source_array[$source['Id']] = array('status'=> $alert, 'source'=>$source['Source'],'result'=> $result_result);
+  		$source_array[$source['Id']] = array('status'=> $alert, 'source'=>$source['Source'],'result'=> $result_result, 'msg'=>\BYS\Report::printLog());
   		ob_flush();
   		flush();
 
