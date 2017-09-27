@@ -66,16 +66,17 @@ class Eterm{
     public function wtTmp($str = ''){
         if ($str != '') $this->tmp = $str;
     }
-	  protected function getAllPage($dataFrom, $command){
+	  protected function getAllPage($dataFrom, $command, $type = 'a'){
 			// 获取除了第一页的其他页数据
 	    $f = $this->initFile($dataFrom, 0, 1);
 			preg_match_all('/PAGE[\s]*(\w+)\/(\w+)/', end($f), $str); // 获取页码
 
+			if(!isset($str[2][0])) return;
 			$pageTotal = intval($str[2][0]);   // 总页码
 	    $pageCur   = intval($str[1][0]);   // 当前页码
 
     	while($pageCur < $pageTotal){
-    		$this->addCommand($command ,'a'); // 回填tmp文件
+    		$this->addCommand($command, $type); // 回填tmp文件
     		$pageCur++;
     	}
 		}
@@ -128,6 +129,7 @@ class Eterm{
 	  }
 
 	  // $rangeStart 截取的起始位置， $rangeEnd 截取的结束位置
+	  // 0,(1,2,3,)4,5 start = 1, length = 2 => $rangeStart = 1, $rangeEnd = 3
 		protected function initFile($dataFrom, $rangeStart = 0, $rangeEnd = 0){
 			// 格式化成数组，并截取rangeStart至总长度-rangeEnd的长度
 	    $file    = $dataFrom;
@@ -136,12 +138,16 @@ class Eterm{
 
 			foreach ($newFile[1] as $pageNum => $Page) {
     		$pageArr = explode("\r",$Page);
-    		$valDate = array_slice($pageArr, $rangeStart, count($pageArr)-$rangeEnd); 
+    		$valDate = array_slice($pageArr, $rangeStart, count($pageArr)-$rangeStart-$rangeEnd); 
   			$arr_tmp = array_merge($arr_tmp, $valDate);
     	}
     	return $arr_tmp;
 		} 
 
+
+		protected function fromToArray($dataFrom, $rangeStart = 0, $rangeEnd = 0){
+			return $this->initFile($dataFrom, $rangeStart, $rangeEnd);
+		}
 
 		protected function readData($file){
 			preg_match_all("/\[CDATA\[(.*?)\]\]/is", $file, $newFile);

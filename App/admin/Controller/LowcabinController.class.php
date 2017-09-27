@@ -287,7 +287,7 @@ class LowcabinController extends Controller {
   	$result_source = $m_source -> where('Status = 0')->limit('3')->select();
   	if(!$result_source) return;
   	
-  	$av         = new \Av('av66', 'av66av66', 'BJS248');
+  	$av           = new \Av('dongmin', '12341234', 'BJS248');
   	$source_array = array();
   	foreach ($result_source as $source) {
   		$result_result = $m_result->where("`Sid` = {$source['Id']}")->select();
@@ -317,7 +317,7 @@ class LowcabinController extends Controller {
   			if($rVal['LC_Cabin_List'] == '') continue; 
 
   			$av->command("AV:{$rVal['Flight']}/{$rVal['Date']}");
-  			$av_result = $av->parseSrource();
+  			$av_result = $av->parseSrource("{$rVal['Depart']}{$rVal['Arrive']}");
   			if($av_result['depart'] == $rVal['Depart'] && $av_result['arrive'] == $rVal['Arrive']){
   				$target_cabin = explode(',', $rVal['LC_Cabin_List']);
   				if(empty($target_cabin)) continue;
@@ -328,9 +328,9 @@ class LowcabinController extends Controller {
   						$result_result[$rKey]['LC_Cabin'] .= $tv."({$av_result['cabin'][$tv]})".',';
   					}
   				}
-  			rtrim($result_result[$rKey]['LC_Cabin'], ',');
+  				rtrim($result_result[$rKey]['LC_Cabin'], ',');
   			}else{
-  				var_dump($av_result);
+  				var_dump($av_result, $av->rtTmp());
   			}
   		}
 
@@ -351,7 +351,8 @@ class LowcabinController extends Controller {
   		}
 
   		$source_array[$source['Id']] = array('status'=> $alert, 'source'=>$source['Source'],'result'=> $result_result);
-
+  		ob_flush();
+  		flush();
 
   		// 默认一个中转城市
   		// if(count($depart)>1){
@@ -427,7 +428,6 @@ class LowcabinController extends Controller {
   		flush();
   	}
 
-  	var_dump($fsi_Result);
   	if(empty($fsi_Result)) return;
 
 		// 价格最小的组

@@ -203,7 +203,7 @@ var setCommand = function(command){
 					clearInterval(timer);
 				}
 			})
-		}, 5000); // 30*60*1000
+		}, 10000); // 30*60*1000
 
 	})
 
@@ -288,7 +288,7 @@ function mkNoteTable(array){
 					<td>${array.note[i].date}</td>
 					<td>${array.note[i].departTime}</td>
 					<td>${array.note[i].arriveTime}</td>
-					<td><input type='text' class='form-control' id="cabin-${i}" placeholder='多个舱位请用,隔开' value=''><br></td>
+					<td><input type='text' class='form-control' id="cabin-${i}" onblur="upper(this)" placeholder='多个舱位请用,隔开' value=''><br></td>
 				</tr>
 		`
 	}
