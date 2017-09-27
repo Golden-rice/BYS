@@ -152,7 +152,7 @@ var eterm = {
 	},
 }
 
-var createCommand = function(recevier, tpl){
+var createCommand = function(recevier, tpl, set){
 
 	// 生成模板
 	if(tpl){
@@ -1335,6 +1335,7 @@ var createCommand = function(recevier, tpl){
 		recevier.link( Controller + 'searchAll', '' , function(data){
 			console.log(data)
 			mkTable(data.result, 'searchAll', '#content');
+
 		});	
 	}
 
