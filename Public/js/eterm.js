@@ -15,15 +15,15 @@ define('eterm', ['jquery', 'progress', 'extend', 'bootstrap'], function ($, prog
 // 重置函数	
 // var $        = $.jquery;
 var	progress = progress.progress,
-	parseURL = extend.parseURL,
-	isArray  = extend.isArray,
-	isString = extend.isString,
-	isNumber = extend.isNumber,
-	isObject = extend.isObject,
+	parseURL   = extend.parseURL,
+	isArray    = extend.isArray,
+	isString   = extend.isString,
+	isNumber   = extend.isNumber,
+	isObject   = extend.isObject,
 	isFunction = extend.isFunction,
-	upper    = extend.upper,
-	checkbox = extend.checkbox,
-	copy     = extend.copy,
+	upper      = extend.upper,
+	checkbox   = extend.checkbox,
+	copy       = extend.copy,
 	getElementsByClassName = extend.getElementsByClassName;
 
 var Controller = /^\/(.)+\//.exec(window.location.pathname)[0],
@@ -1319,11 +1319,12 @@ var createCommand = function(recevier, tpl){
 		});	
 	}
 
-	var saveNote = function(note, noteSrc){
-		recevier.link( Controller + 'saveNote', {source: noteSrc, note: note} , function(data){
+	var saveNote = function(query){
+		recevier.link( Controller + 'saveNote', query, function(data){
 			console.log(data)
 			if(data.status){
 				alert('保存成功');
+				window.location.reload();
 			}else{
 				alert(data.msg)
 			}
@@ -1340,6 +1341,7 @@ var createCommand = function(recevier, tpl){
 	var deleteNote = function(query){
 		recevier.link( Controller + 'deleteNote', query, function(data){
 			console.log(data)
+			window.location.reload();
 		});	
 	}
 
@@ -1717,9 +1719,13 @@ function appendPolicy(recevier){
 }
 
 return {
-	rmTable: rmTable,
-	createCommand: createCommand,
-	eterm: eterm
+	'const': {
+		'Controller': Controller ,
+		'Project': Project
+	},
+	'rmTable': rmTable,
+	'createCommand': createCommand,
+	'eterm': eterm
 }
 
 })

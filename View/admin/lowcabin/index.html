@@ -40,9 +40,12 @@
 						</div>
 
 						<div class="input-group">
-							<input type="submit" name='add-new' id='add-new'  value='新增记录' class='btn btn-primary'>
+							<input type="submit" id='add-new'  value='新增记录' class='btn btn-default'>
 						</div>
-						
+						<div class="input-group">
+							<input type="submit" id='start-lowcabin'  value='开启降舱' class='btn btn-primary'>
+						</div>
+						<div class="input-group" id='lowcabin-label'></div>
 				</div>
 			</div>
 		</div>
@@ -82,6 +85,7 @@
 <!-- other modal end -->
 
 <script>
+
 require(['eterm', 'dt'], function (eterm, dt){
 
 // 弹出框   
@@ -108,8 +112,8 @@ var tpl = {
 // 查看 xfsd
 $("#add-new").click(function(){
 	noteModel = new OtherModel("贴入记录", 
-		`<textarea class="form-control" id='note-input' cols="30" rows="5" style='background-color:black;color:green;'></textarea><div id='note-anlysis-result'></div>`,
-		`<button type="button" class="btn btn-primary" id='note-anlysis'>解析并保存</button><button type="button" class="btn btn-default"  data-dismiss="modal" onclick='javascript:window.location.reload();'>关闭</button>`
+		`<textarea class="form-control" id='note-input' cols="30" rows="5" style='background-color:black;color:green;'></textarea><br><div id='note-anlysis-result'></div>`,
+		`<button type="button" class="btn btn-primary" id='note-submit'>保存</button><button type="button" class="btn btn-default" id='note-anlysis'>解析</button><button type="button" class="btn btn-default"  data-dismiss="modal" onclick='javascript:window.location.reload();'>关闭</button>`
 	);
 
 	noteModel.show();
@@ -120,15 +124,25 @@ $("#add-new").click(function(){
 var setCommand = function(command){
 
 	command.lowcabin.searchAll();
-
+	var noteSrc, note;
+	// 解析
 	$("#otherModal").on('click', '#note-anlysis', function(){
-		var noteSrc = $('#note-input').val();
-		var note = parseNoteInput(noteSrc);
+		noteSrc = $('#note-input').val();
+		note = parseNoteInput(noteSrc);
 		console.log(note)
 		mkNoteTable( note );
-		command.lowcabin.saveNote(note, noteSrc);
+	})
+	// 保存
+	$("#otherModal").on('click', '#note-submit', function(){
+			// 回填舱位
+		for(var i in note.note){
+			note.note[i].cabinList = $('#cabin-'+i).val();
+		}
+		console.log(note)
+		command.lowcabin.saveNote( { 'note': note, 'source': noteSrc} );
 	})
 
+	// 删除路
 	$("#content").on('click', '.delete-note', function(){
 		command.lowcabin.deleteNote( { sid:$(this).data('sid')} );
 	})
@@ -138,6 +152,60 @@ var setCommand = function(command){
 		command.lowcabin.searchNotePrice( { sid: $(this).data('sid')} );
 	})
 
+	$('#start-lowcabin').click(function(){
+		var audio = document.createElement('audio');
+		var source = document.createElement('source');
+		source.src = '__PUBLIC__media/audio/alert.mp3';
+		audio.appendChild(source);
+		audio.loop = 'loop';
+
+		var timer = setInterval(function(){
+			eterm.eterm.link(eterm.const.Controller + 'tmpRun', {}, function(msg){
+				$('#lowcabin-label').text('更新时间：'+(new Date()).format('yyyy-MM-dd hh:mm:ss'))
+
+				var html = '', alertSwitch = false;
+				for(var i in msg){
+					console.log(msg)
+					if(msg[i].status){
+						alertSwitch = true;
+						html += `<textarea class="form-control" id='note-input' cols="30" rows="5" style='background-color:black;color:green;'>${msg[i].source}</textarea>
+							  <table class="table table-hover table-bordered table-responsive">
+							  <thead>
+									<tr>
+										<th>出发</th>
+										<th>到达</th>
+										<th>航班号</th>
+										<th>目标舱位</th>
+										<th>降舱舱位</th>
+									</tr>
+								</thead>
+								`
+						for(var j in msg[i].result){
+							var val = msg[i].result[j];
+							html += `
+							<tr>
+								<td>${val.Depart}</td>
+								<td>${val.Arrive}</td>
+								<td>${val.Flight}</td>
+								<td>${val.LC_Cabin_List}</td>
+								<td>${val.LC_Cabin}</td>
+							</tr>`
+						}
+					}
+				}
+
+				if(alertSwitch){
+					var lowCabinModel = new OtherModel("降舱", html ,`<button type="button" class="btn btn-default"  data-dismiss="modal" >关闭</button>`
+					);
+
+					audio.play();
+					lowCabinModel.show();
+					clearInterval(timer);
+				}
+			})
+		}, 5000); // 30*60*1000
+
+	})
 
 }
 
@@ -203,6 +271,7 @@ function mkNoteTable(array){
 					<th>日期</th>
 					<th>出发时间</th>
 					<th>到达时间</th>
+					<th>目标舱位</th>
 				</tr>
 			</thead>
 	`
@@ -219,6 +288,7 @@ function mkNoteTable(array){
 					<td>${array.note[i].date}</td>
 					<td>${array.note[i].departTime}</td>
 					<td>${array.note[i].arriveTime}</td>
+					<td><input type='text' class='form-control' id="cabin-${i}" placeholder='多个舱位请用,隔开' value=''><br></td>
 				</tr>
 		`
 	}
@@ -266,7 +336,7 @@ function mkTable(array, target, wrap, type){
 					}
 		html += `</td>
 					<td>${new Date((array[i].GmtCreate -0)*1000).format("yyyy-MM-dd hh:mm:ss")}</td>
-					<td><a href='#' class='note-display' data-sid="${array[i].Id}">查看详情</a> | <a href='#' data-sid="${array[i].Id}" class='delete-note'>删除</a></td>
+					<td><!--<a href='#' class='note-display' data-sid="${array[i].Id}">查看详情</a> | --><a href='#' data-sid="${array[i].Id}" class='delete-note'>删除</a></td>
 				</tr>
 		`
 	}

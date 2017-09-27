@@ -55,5 +55,21 @@ class Av extends Eterm{
 		}
 		$this->arr = $arr;
 	}
+
+	// AV:UA850/06OCT 解析指定航班及日期的舱位
+	public function parseSrource(){
+		$cabin_src = parent::initFile($this->tmp, 4, 6);
+		$cabin  = preg_replace('/\s{2,}/', ' ', $cabin_src[0].$cabin_src[1]);
+		$depart = substr($cabin, 0, 3);
+		$arrive = substr($cabin, 3, 3);
+		preg_match_all('/(?P<cabin>\w)(?P<num>\d)/', $cabin, $cabin_array);
+		$cabin_result = array();
+		if(isset($cabin_array['cabin'])){
+			foreach ($cabin_array['cabin'] as $k => $c) {
+				$cabin_result[$c] = $cabin_array['num'][$k];
+			}
+		}
+		return array('depart'=>$depart, 'arrive'=>$arrive, 'cabin'=>$cabin_result);
+	}
 } 
 ?>

@@ -118,6 +118,7 @@
  			$this->sql = $sql;
  			$this->prepare($this->sql);
  			$this->execute();
+ 			return Db::$link->lastInsertId();
 	 	}
 
 	 	/**

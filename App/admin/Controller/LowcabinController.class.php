@@ -38,9 +38,8 @@ class LowcabinController extends Controller {
 	}
 
 	public function saveNote(){
-		$source = $_POST['source'];
-		$note   = $_POST['note'];
-
+		$note     = $_POST['note'];
+		$source   = $_POST['source'];
 		if(empty($note)) return;
 
 		// 判断source中是否有，KeyWord, 去除空格的20个字符
@@ -51,9 +50,10 @@ class LowcabinController extends Controller {
 		}
 
 		if(isset($sid)){
-			$this->saveResult($note, $sid);
-			echo json_encode(array('status'=>1));
-			return; 
+			if($this->saveResult($note, $sid)){
+				echo json_encode(array('status'=>1));
+				return; 
+			}
 		}
 		echo json_encode(array('status'=>0, 'msg'=> '添加失败'));
 	}
@@ -85,6 +85,7 @@ class LowcabinController extends Controller {
 
   // 保存 result
   private function saveResult($array = array(), $id = NULL){
+
   	if( !isset($array['client'])) return;
 		if( $id == NULL) return;
 		$m_source   = model('low_cabin_source');
@@ -104,6 +105,7 @@ class LowcabinController extends Controller {
  		import('vender/eterm/app.php');
  		$lowcabin   = new \LowCabin('av66', 'av66av66', 'BJS248');
  		$lowcabin->mixCommand(array("RT{$array['pnr']}", "QTE:/{$aircompany}"), 'a');
+
  		if(!empty($lowcabin->rtTmp())){
 
 	 		$log      = $lowcabin->rtTmp();
@@ -226,15 +228,19 @@ class LowcabinController extends Controller {
 				'Arrive_Time'   => $value['arriveTime'],
 				'Note_Status'   => $value['status'],
 				'Aircompany'    => $aircompany,
-				'LC_Cabin_List' => implode($cabin_list, ','),
+				// 临时降舱列表
+				'LC_Cabin_List' => $value['cabinList'],
+				// 'LC_Cabin_List' => implode($cabin_list, ','),
 				'Sid'           => $id,
 				'LC_Status'     => isset($status)? $status: NULL
 			);
 		}
-		$m->addAll($addAll);
 
 		// 保存组数据
-		$this->saveGroup($group_add);
+		if($m->addAll($addAll)){
+			return $this->saveGroup($group_add);
+		}
+		return false;
   }
 
   private function saveGroup($array = array()){
@@ -254,7 +260,7 @@ class LowcabinController extends Controller {
 	  		));
   		}
   	}
-  	$m_group->addAll($addAll);
+  	return $m_group->addAll($addAll);
   }
 
   // 取数组的最小值
@@ -271,47 +277,81 @@ class LowcabinController extends Controller {
   	return array('value' => $min, 'key'=>$minKey);
   }
 
-  // 计划任务
-  public function run(){
-  	import('vender/eterm/app.php');
-  	$m_source = model('low_cabin_source');
-  	$m_result = model('low_cabin_result');
-  	$m_group  = model('low_cabin_group');
-  	// 未跑数据
+  // 临时计划任务
+  public function tmpRun(){
+		import('vender/eterm/app.php');
+		$m_source = model('low_cabin_source');
+		$m_result = model('low_cabin_result');
+
+		// 未跑数据
   	$result_source = $m_source -> where('Status = 0')->limit('3')->select();
   	if(!$result_source) return;
   	
-  	$av         = new \Av('dongmin', '12341234', 'BJS248');
-  	$lowcabin   = new \LowCabin('dongmin', '12341234', 'BJS248');
- 		$fsi_Result = array();
-
-
+  	$av         = new \Av('av66', 'av66av66', 'BJS248');
+  	$source_array = array();
   	foreach ($result_source as $source) {
   		$result_result = $m_result->where("`Sid` = {$source['Id']}")->select();
-  		$result_group  = $m_result->where("`Sid` = {$source['Id']}")->distinct("`Routing_Group`")->select();
 	 		// 组合出routing，然后在跑avh，区分去程和回程跑舱位
-  		$depart = array();
-  		$arrive = array();
+  		// $depart = array();
+  		// $arrive = array();
   		// 去程
-  		foreach ($result_result as $result_key => $result_val) {
-  			if($result_val['Routing_Type'] == 'S'){
-  				array_push($depart, $result_val);
-  				break;
+  		// foreach ($result_result as $result_key => $result_val) {
+  		// 	if($result_val['Routing_Type'] == 'S'){
+  		// 		array_push($depart, $result_val);
+  		// 		break;
+  		// 	}else{
+  		// 		array_push($depart, $result_val);
+  		// 	}
+  		// }
+  		// 回程，可能是单程
+  		// if(count($depart) < count($result_result)){
+	  	// 	foreach ($result_result as $result_key => $result_val) {
+	  	// 		if($result_key > count($depart)-1){
+	  	// 			array_push($arrive, $result_val);
+	  	// 		}
+	  	// 	}
+  		// }
+  		//AV:UA850/06OCT
+  		// 每个航段均跑舱位
+  		foreach($result_result as $rKey => $rVal){
+  			if($rVal['LC_Cabin_List'] == '') continue; 
+
+  			$av->command("AV:{$rVal['Flight']}/{$rVal['Date']}");
+  			$av_result = $av->parseSrource();
+  			if($av_result['depart'] == $rVal['Depart'] && $av_result['arrive'] == $rVal['Arrive']){
+  				$target_cabin = explode(',', $rVal['LC_Cabin_List']);
+  				if(empty($target_cabin)) continue;
+  				$result_result[$rKey]['LC_Log'] = $av_result;
+  				foreach ($target_cabin as $tv) {
+  					if(isset($av_result['cabin'][$tv]) && $av_result['cabin'][$tv] >=1){
+  						$result_result[$rKey]['LC_Has_Low'] = 1;
+  						$result_result[$rKey]['LC_Cabin'] .= $tv."({$av_result['cabin'][$tv]})".',';
+  					}
+  				}
+  			rtrim($result_result[$rKey]['LC_Cabin'], ',');
   			}else{
-  				array_push($depart, $result_val);
+  				var_dump($av_result);
   			}
   		}
-  		// 回程，可能是单程
-  		if(count($depart) < count($result_result)){
-	  		foreach ($result_result as $result_key => $result_val) {
-	  			if($result_key > count($depart)-1){
-	  				array_push($arrive, $result_val);
+
+  		$alert = false;
+  		// 是否开启提示
+  		foreach ($result_result as $rKey => $rVal) {
+  			if($rVal['LC_Cabin_List'] != '' && $result_result[$rKey]['LC_Has_Low'] != 1){
+  				break;
+  			}
+  			// 到最后时
+  			if($rKey == count($result_result)-1){
+	  			if($rVal['LC_Cabin_List'] != '' && $result_result[$rKey]['LC_Has_Low'] != 1){
+	  				break;
+	  			}else{
+	  				$alert = true;
 	  			}
-	  		}
+  			}
   		}
-  		//AV:UA850/06OCT
-  		// $av -> command()
-  		var_dump($arrive, $depart);
+
+  		$source_array[$source['Id']] = array('status'=> $alert, 'source'=>$source['Source'],'result'=> $result_result);
+
 
   		// 默认一个中转城市
   		// if(count($depart)>1){
@@ -323,6 +363,28 @@ class LowcabinController extends Controller {
   		// }
   		// 跑avh 
   		// continue;
+
+  	}
+  	echo json_encode($source_array);
+  }
+
+  // 计划任务
+  public function run(){
+  	import('vender/eterm/app.php');
+  	$m_source = model('low_cabin_source');
+  	$m_result = model('low_cabin_result');
+  	$m_group  = model('low_cabin_group');
+  	// 未跑数据
+  	$result_source = $m_source -> where('Status = 0')->limit('3')->select();
+  	if(!$result_source) return;
+  	
+  	$lowcabin   = new \LowCabin('dongmin', '12341234', 'BJS248');
+ 		$fsi_Result = array();
+
+
+  	foreach ($result_source as $source) {
+  		
+  		$result_group  = $m_result->where("`Sid` = {$source['Id']}")->distinct("`Routing_Group`")->select();
 			
   		// 每个航段均单独查询fsi
   		foreach ($result_group as $groupDate) {

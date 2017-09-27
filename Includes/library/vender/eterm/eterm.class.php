@@ -127,7 +127,7 @@ class Eterm{
 			$this->saveStr($file, $type);
 	  }
 
-
+	  // $rangeStart 截取的起始位置， $rangeEnd 截取的结束位置
 		protected function initFile($dataFrom, $rangeStart = 0, $rangeEnd = 0){
 			// 格式化成数组，并截取rangeStart至总长度-rangeEnd的长度
 	    $file    = $dataFrom;
