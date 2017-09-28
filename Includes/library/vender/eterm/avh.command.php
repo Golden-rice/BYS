@@ -43,7 +43,7 @@ class Avh extends Eterm{
 		if(empty($arr)) return;
 		// 按照航程划分，返回二维数组
 		$arr_date = array(); // 存放同一天数组
-
+		$curDate = '';
   	for ($i=0; $i < count($arr)-1; $i++) {  // 逐条遍历
   		if(!isset($arr[$i]) || !strlen($arr[$i]) >2 ) continue;
   		if(substr($arr[$i],0,1) == " " && substr($arr[$i],1,1) != ' '){

@@ -533,7 +533,7 @@ class EtermController extends Controller {
 				$m       = strtoupper(date('M',$days));
 				$d       = strtoupper(date('d',$days));
 				$date    = $d.$m;
-				$command = $repeat['pos'] == 'start' ? 'AVH/'.$value.$end.$date.$other.'/'.$aircompany : 'AVH/'.$start.$value.$date.$startTime.$other.'/'.$aircompany;
+				$command = $repeat['pos'] == 'start' ? 'AVH/'.$value.$end.$date.$other.'/'.$aircompany : 'AVH/'.$start.$value.$date.$other.'/'.$aircompany;
 				$result  = $this->hasCmdSource($command, 'avh');
 				if ( isset($result['GmtModified']) && $result['GmtModified'] + 24*60*60 < time() ){ 
 					// 有且存储时间大于一天，更新
