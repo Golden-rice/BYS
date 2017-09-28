@@ -106,7 +106,8 @@ class LowcabinController extends Controller {
  		$lowcabin   = new \LowCabin('av66', 'av66av66', 'BJS248');
  		$lowcabin->mixCommand(array("RT{$array['pnr']}", "QTE:/{$aircompany}"), 'a');
  		$log        = $lowcabin->rtTmp();
- 		if(!empty($low_return)){
+ 		if(!empty($log)){
+
 	 		// $log      = $lowcabin->rtTmp();
 	 		$m_source->where("`Id` = {$id}")->update(array('Log'=>$log));
 	 		$logList  = $lowcabin->initFile($log);
@@ -162,6 +163,8 @@ class LowcabinController extends Controller {
 
 	 		}
 
+ 		}else{
+ 			var_dump(	$log );
  		}
 
 		foreach($array['note'] as $key => $value) {
