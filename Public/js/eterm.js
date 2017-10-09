@@ -1348,6 +1348,50 @@ var createCommand = function(recevier, tpl, set){
 		});	
 	}
 
+	// 2017.10.09 更新至粒度更小的命令，原函数仍然保留，等有时间再重构
+	// 请求命令
+	var ReqCommand = function(config){
+	var _self = this;
+
+	// 回调函数
+	if(config.clk && Type.isFunction(config.clk)){
+		this.clk = config.clk;
+	}
+
+	// 配置请求方法
+	this.req = eterm.getData;
+
+	// 配置req的url
+	this.url = config.url;
+
+	// 配置req的query
+	this.query = config.query || "";
+
+	return {
+		// 执行
+		execute: function(query){
+			// execute 可更新 _self.query
+
+			_self.query = query || _self.query;
+			_self.query = _self.query || query;
+
+
+			if( !_self.query ){
+				console.log("未设置正确的查询语句:"+_self.query);
+				return;
+			}
+
+			_self.req(_self.url, _self.query).done(function(result){
+				if( config.clk && Type.isFunction(config.clk) ){
+					return _self.clk(result);
+				}
+			})
+
+		},
+	}
+}
+
+
 	return {
 		xfsd: xfsd,                                       // 获得xfsd数据，并用table回填到页面中
 		selected: selected,                               // 选择
@@ -1387,7 +1431,8 @@ var createCommand = function(recevier, tpl, set){
 			searchAll: searchAll,                             // 查询记录
 			deleteNote: deleteNote,                           // 删除记录
 			searchNotePrice: searchNotePrice,                 // 查看记录详情
-		}
+		},
+		ReqCommand: ReqCommand,                          // 请求命令
 	}
 }
 
