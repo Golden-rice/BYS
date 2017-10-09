@@ -342,24 +342,7 @@ var setCommend = function(command){
 					allowWeek: $(this).find(".add-allowWeek").val()
 				};
 
-				array.push({
-					aircompany: $(this).find(".add-aircompany").val(),
-					start: $(this).find(".add-start").val(),
-					end: $(this).find(".add-end").val(),
-					fare: $(this).find(".add-fare").val(),
-					ADVPDay: $(this).find(".add-ADVPDay").val(),
-					singleLineFee: $(this).find(".add-singleLineFee").val(),
-					backLineFee: $(this).find(".add-backLineFee").val(),
-					seat: $(this).find(".add-seat").val(),
-					minStay: $(this).find(".add-minStay").val(),
-					maxStay: $(this).find(".add-maxStay").val(),
-					allowDateStart: $(this).find(".add-allowDate").val().substr( 0, 5),
-					allowDateEnd:  $(this).find(".add-allowDate").val().substr( 6, 5),
-					allowWeek: $(this).find(".add-allowWeek").val()
-				})
 			})
-
-			// data[end] = array;
 
 			data[end].startDate = startDate;
 			data[end].from = from;
@@ -368,9 +351,7 @@ var setCommend = function(command){
 			command.addCabin(data)
 
 		}else{
-
 			command.selected('cSelect');
-
 			command.mixCabin({
 				modal: '#mixCabinModal',
 				container: '#mixCabinContent',
@@ -379,11 +360,7 @@ var setCommend = function(command){
 			
 		}
 
-		// setTimeout(function(){
-
 		$("#mixCabinModal").modal();
-
-		// },1000)
 	})
 
 	$('#clearMixCabin').click(function(){
@@ -395,20 +372,17 @@ var setCommend = function(command){
 	// 测试
 	$('#test').click(function(){
 			command.rate();
-			
 			command.xfsd({
 				dosubmit: "",
 				start: 'BJS',
-				end: 'NYC',
-				startDate: '15SEP',
+				end: 'CHI',
+				startDate: '15OCT',
 				aircompany: 'UA',
 				private: '',
 				tripType:"",
 				other: ""
 			})
-
 	})
-
 
 }
 
@@ -612,6 +586,7 @@ function mkMixTable(array, dom, wrap, type){
 			  context = wrap !== "" ? wrap : document;
 
 		for(let n in array){
+
 			// 控制面板
 			html += `
 			<div class="panel panel-default"> 

@@ -768,6 +768,7 @@ class EtermController extends Controller {
 
 	// 新增混舱
 	public function addMixCabin(){
+
 		if(isset($_POST['data']) && $_POST['action'] == 'add'){
 			if(!isset($_SESSION['data']) )  $_SESSION['data'] = array();
 			if( count($_SESSION['data']) < 2  )
@@ -803,11 +804,11 @@ class EtermController extends Controller {
 			\BYS\Report::error('ERROR: No Session Data !');
 
 		if(count($data) == 2){ // 最多2个航段
-
+			// $data = json_decode($data, true);
 			// 合并航段 (A+B)
 			foreach ($data as $num => $value) {
+				$data[$num] = json_decode($value, true);
 				foreach ($data[$num] as $end => $arr) {
-
 					for ($line = 0; $line < $arr['length']; $line++) {
 						$data_end_merge[] = $arr[$line];
 					}

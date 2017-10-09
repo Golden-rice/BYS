@@ -187,12 +187,7 @@ var createCommand = function(recevier, tpl, set){
 		}
 
 		// 请求数据
-		var url = '';
-		if ( query.dosubmit === 'command' ){
-			url = Controller + 'searchXfsdByCommand';
-		}else{
-			url = Controller + 'searchXfsdByInput';
-		}
+		var url = query.dosubmit === 'command' ? Controller + 'searchXfsdByCommand' :  Controller + 'searchXfsdByInput';
 
 		// 验证
 		if(query.end.length > 110){
@@ -423,14 +418,15 @@ var createCommand = function(recevier, tpl, set){
 
 		// 配置
 		var container = config.container,
-				deleter = config.deleter,
-				modal = config.modal,
-				action = "";  // 混舱操作
+				deleter   = config.deleter,
+				modal     = config.modal,
+				action    = "";  // 混舱操作
 				recevier.target = 'table';
 
 		for(var end in recevier.xfsd ){
 			// 标示航空公司
 			var aircompany = recevier.xfsd[end].aircompany;
+			break;
 		}
 		
 		// 模板
@@ -440,8 +436,6 @@ var createCommand = function(recevier, tpl, set){
 		}else{
 			console.log("'mkTable' or 'rmTable' haven't added in ")
 		}
-
-
 
 		if( recevier.fareJson !== undefined ){
 			// 有使用规则时
@@ -456,15 +450,9 @@ var createCommand = function(recevier, tpl, set){
 
 			// 获取选中的xfsd数据
 			var firstDate; // 检测数据
-			var aircompany; // 航空公司
 			for(var end in recevier.xfsd ){
 
 				recevier.xfsdJson[end] = {};
-
-				if(aircompany === undefined ){
-					aircompany = recevier.xfsd[end].aircompany;
-				}
-
 
 				for( var j in recevier.selected[end]){
 					for(var i = 0; i < recevier.xfsd[end].length; i++){
@@ -496,7 +484,6 @@ var createCommand = function(recevier, tpl, set){
 			// 检测数据
 			if(recevier.xfsdJson && firstDate === undefined){
 				console.log('** No xfsd Import ! **');
-				action = "";
 			}else if(recevier.xfsdJson){
 				console.log('** Get Cabin For Mixed ! **');
 				action = 'add';
@@ -504,10 +491,14 @@ var createCommand = function(recevier, tpl, set){
 
 		}	
 
-		recevier.link( Controller + 'addMixCabin', {'data': recevier.xfsdJson, 'aricompany': aircompany, 'action': action}, function(msg){
+		recevier.link( Controller + 'addMixCabin', {'data': JSON.stringify(recevier.xfsdJson), 'aricompany': aircompany, 'action': action}, function(msg){
 			// '/admin/mixCabin.php?forAction'
 
 			$(container).html("");
+			// 解析 msg 中的
+			for(var i in msg){
+				msg[i] = eval('['+msg[i]+']')[0];
+			}
 
 			// 展示session
 			recevier.mkMixTable(msg, recevier.target, config.container, 'a'); // recevier.xfsdJson 当前选择
@@ -529,16 +520,22 @@ var createCommand = function(recevier, tpl, set){
 	}
 
 	var addCabin = function(json){
-		
 		var container = '#mixCabinContent';
 
 		recevier.target = 'table';
 		var end = "";
+		// 不支持多个地点的混舱录入。
 		for(var i in json){
 			end = i;
+			break;
 		}
 
-		var aircompany = json[end][0].aircompany
+		var aircompany = json[end][0].aircompany?json[end][0].aircompany: '';
+
+		if(aircompany === ''){
+			console.log('混舱数据的航空公司未获取到')
+			return;
+		}
 
 		if(json && json[end][0].fare === ""){
 			console.log('** No xfsd Import ! **');
@@ -556,10 +553,8 @@ var createCommand = function(recevier, tpl, set){
 			console.log("'mkTable' or 'rmTable' haven't added in ")
 		}
 
-		console.log(json)
-		recevier.link( Controller + 'addMixCabin', {'data': json, 'aricompany': aircompany, 'action': action}, function(msg){
-			// '/admin/mixCabin.php?forAction'
 
+		recevier.link( Controller + 'addMixCabin', {'data': JSON.stringify(json), 'aricompany': aircompany, 'action': action}, function(msg){
 			console.log(msg)
 			// 展示session
 			recevier.mkMixTable(msg, recevier.target, container, 'w'); // recevier.xfsdJson 当前选择

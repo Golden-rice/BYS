@@ -119,12 +119,16 @@ class LowcabinController extends Controller {
 	 			// 匹配行程，增加note行程的中转直达标记，找到第一个段的位置
 	 			if($fsiKey < 0){
 	 				foreach ($array['note'] as $noteKey => $noteValue) {
-	 					$fsiPattern = "/S\s{$aircompany}\s{3}.*{$noteValue['cabin']}{$noteValue['date']}\s{$noteValue['depart']}{$noteValue['departTime']}[\s|>]".substr($noteValue['arriveTime'], 0, 4)."{$noteValue['arrive']}0(S|X)/";
-			 			preg_match($fsiPattern, $logList[$key+$noteKey], $fsiArr);
-			 			if(isset($fsiArr[1])){
-			 				$fsiKey  = $key;
-		 					$array['note'][$noteKey]['routingType'] = $fsiArr[1];
-			 			}
+	 					if(isset($logList[$key+$noteKey])){
+		 					$fsiPattern = "/S\s{$aircompany}\s{3}.*{$noteValue['cabin']}{$noteValue['date']}\s{$noteValue['depart']}{$noteValue['departTime']}[\s|>]".substr($noteValue['arriveTime'], 0, 4)."{$noteValue['arrive']}0(S|X)/";
+				 			preg_match($fsiPattern, $logList[$key+$noteKey], $fsiArr);
+				 			if(isset($fsiArr[1])){
+				 				$fsiKey  = $key;
+			 					$array['note'][$noteKey]['routingType'] = $fsiArr[1];
+				 			}else{
+				 				$array['note'][$noteKey]['routingType'] = '';
+				 			}
+	 					}
 	 				}
 	 			}
 
