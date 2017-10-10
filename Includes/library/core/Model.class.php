@@ -266,6 +266,27 @@
 	 		return $this->prepare->rowCount();
 	 	}
 
+	 	/**
+		 * 更新多条数据
+		 * $where的索引对应着$data二维数组的索引
+		 * @return mix 结果
+		 */	 	
+	 	public function updateAll($where = array(), $data = array()){
+	 		if (count($data) <=0) return;
+	 		$sql = '';
+	 		foreach ($where as $key => $whereVal) {
+	 			$sql .= "UPDATE {$this->tableName} SET ";
+	 			foreach ($data[$key] as $attr => $val) {
+	 				$sql .= "`{$attr}` = ".(is_string($val)? "'{$val}'" : (int)$val).',';
+	 			}
+	 			$sql = rtrim($sql, ',');
+	 			$sql .= ' WHERE '.$whereVal.';';
+	 		}
+	 		$this->sql = $sql;
+	 		$this->prepare($this->sql);
+	 		$this->execute();
+	 		return $this->prepare->rowCount();
+	 	}
 
 	 	/**
 		 * 删除数据

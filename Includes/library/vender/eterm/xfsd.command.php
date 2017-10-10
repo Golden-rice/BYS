@@ -214,7 +214,7 @@ class Xfsd extends Eterm{
                 'maxStay'=>preg_replace("/\s/", "", $maxStay), // str_replace('   ','',$maxStay)
                 'allowDateStart'=>preg_replace("/\s/", "", $allowDateStart), // str_replace('     ','',$allowDateStart)
                 'allowDateEnd'=>preg_replace("/\s/", "", $allowDateEnd), // str_replace('     ','',$allowDateEnd)
-                'reTicket'=>$reTicket, 
+                'reTicket'=>rtrim($reTicket), 
                 'allowWeek'=>$allowWeek,
                 'start' => $start,
                 'end' => $end,

@@ -25,11 +25,6 @@ class EtermController extends Controller {
   	$this->display();
   }
 
-  // price 合成政策 前台展示
-  public function price(){
-  	$this->display();
-  }
-
   // 获取汇率
   public function toCNY(){
   	import('vender/eterm/app.php');
@@ -714,57 +709,6 @@ class EtermController extends Controller {
 
 		\BYS\Report::p($array);
 	}
-
-	// 查询出发至到达的运价
-	public function searchPriceByInput(){
-		// 利用精简后的数据 根据sid 获得 result
-		$start          = $_POST['start'];
-		$end            = $_POST['end'];
-		$aircompany     = $_POST['aircompany'];
-		$departureDate  = $_POST['departureDate']; // 去程日期
-
-		$xfsd_model = model('xfsd_result');
-		$where = '';
-		// 必填
-		if($start != '')
-			$where = "xfsd_Dep = '${start}'";
-		
-		if($end != '')
-			$where .= " AND xfsd_Arr = '${end}'";
-		
-		if($aircompany != '')
-			$where .= " AND xfsd_Owner = '${aircompany}'";
-		
-		if($departureDate != '')
-			$where .= "AND xfsd_DateEnd > '${departureDate}'";
-
-		$xfsd_model->prepare("SELECT
-				*, COUNT(DISTINCT A.FareBasis, A.xfsd_RoundFee, A.xfsd_indicator, A.xfsd_Cabin, A.xfsd_DateEnd) # 去重
-			FROM
-				(
-					SELECT
-						*
-					FROM
-						e_cmd_xfsd_result
-					WHERE {$where} AND  
-						xfsd_SingleFee = 0
-					ORDER BY 
-						xfsd_RoundFee ASC # 显示最低价格
-				) AS A
-			GROUP BY  # 精简
-				A.xfsd_Cabin,
-				A.xfsd_indicator,
-			  A.xfsd_DateEnd 
-			ORDER BY 
-				A.xfsd_Cabin, A.xfsd_RoundFee ASC # 展示优化 " );
-		// var_dump($xfsd_model->testSql());
-		$xfsd_result = $xfsd_model->execute();
-
-		// 按照舱位及价格已精简
-		echo json_encode(array('result'=>$xfsd_result));
-	}
-
-
 
 	// 新增混舱
 	public function addMixCabin(){

@@ -1,0 +1,343 @@
+<{extends file='../layout.html'}>
+
+<{block name="title"}>舱位价格查询(from eterm)<{/block}>
+<{block name="content"}>
+
+<div class="row">
+	<div class="col-lg-12">
+		<!-- 输入框 -->
+		<div class="panel panel-default">
+		  <div class="panel-body">
+				<div class="form-inline">
+						<div class="input-group">
+
+							<!-- 区域  -->
+							<span class="input-group-addon" id="input-aircompany">航空公司</span>
+							<select class="form-control" id='aircompany' aria-describedby="input-aircompany">
+							  <option>——</option>
+							</select>
+							<!-- 区域 END -->
+
+							<!-- 出发  -->
+							<span class="input-group-addon" id="input-depart">出发</span>
+							<select class="form-control" id='depart' aria-describedby="input-depart">
+							  <option>——</option>
+							</select>
+							<!-- 出发 END -->
+
+							<!-- 到达  -->
+							<span class="input-group-addon" id="input-arrive">到达</span>
+							<select class="form-control" id='arrive' aria-describedby="input-arrive">
+							  <option>——</option>
+							</select>
+							<!-- 到达 END -->
+
+							<!-- 日期  -->
+							<span class="input-group-addon" id="input-departureDate">日期</span>
+							<input  class="form-control datetimepicker" id='departureDate' aria-describedby="input-departureDate" type="text">
+							<!-- 日期 END -->
+
+						</div>
+
+						<div class="input-group">
+							<input type="submit" name='dosubmit' id='dosubmit'  value='查询' class='btn btn-default'>
+						</div>
+
+						<div class="input-group">
+							<input type="submit" name='dosubmit2' id='dosubmit2'  value='开始生成' class='btn btn-primary'>
+						</div>
+
+				</div>
+			</div>
+		</div>
+		<!-- 输入框 END -->
+	</div>
+</div>
+
+<div id="content"></div>
+<div id="content-progress"></div>
+
+<!-- other modal -->
+<div class="modal fade" id="otherModal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" >
+  <div class="modal-dialog modal-lg" role="document" style='width:1600px'>
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="modalLabel"> </h4>
+      </div>
+      <!-- modal header -->
+
+      <div class="modal-body">
+        <div id="modal-content">
+            
+
+        </div>
+      </div>
+      <!-- modal body -->
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+      </div>
+      <!-- modal footer -->
+
+    </div>
+  </div>
+</div>
+<!-- other modal end -->
+
+<script>
+require(['eterm', "dt"], function(eterm, dt){
+
+// 弹出框   
+var OtherModel = function(title, content, footer){
+
+    $("#otherModal .modal-title").html(title);
+    $("#otherModal #modal-content").html(content);
+    $("#otherModal .modal-footer").html(footer ? footer:`<button type="button" class="btn btn-default"  data-dismiss="modal">关闭</button>`);
+
+    return {
+      hide: function(){
+          $("#otherModal").modal("hide");
+      },
+      show: function(){
+          $("#otherModal").modal();
+      }
+    }
+}
+
+// 日期控件
+$('.datetimepicker').datetimepicker({
+  language:  'fr',
+  format: 'yyyy-mm-dd',
+  weekStart: 1,
+  todayBtn:  1,
+  autoclose: 1,
+  todayHighlight: 1,
+  startView: 2,
+  minView: 2,
+  forceParse: 0
+});
+
+var tpl = {
+	mkSelect: mkSelect,
+	mkMainTable: mkMainTable,
+}
+
+function setQuery(){
+	return {
+		start: $('#depart').val(),
+		end: $('#arrive').val(),
+		departureDate: $('#departureDate').val(),
+		aircompany: $('#aircompany').val(),
+	}
+}
+
+function canSubmit(){
+	if($('#depart').val() === ''){
+		alert('出发未填')
+		return false;
+	}
+	return true;
+}
+var setCommend = function(command){
+	var hid; // 基础政策对应的hotcity的id
+	command.searchPriceSelect();
+
+
+	// 根据退票规则【设置】销售日期
+	var setPolicyStart = new command.ReqCommand({
+		url: eterm.const.Controller + 'setSaleDate',
+		clk: function(res){
+			var setSaleDateModel = new OtherModel('回填销售日期',
+			 mkSaleDateInsertTable(res.result), `<button type="button" class="btn btn-primary" id='set-saleDate'>下一步</button><button type="button" class="btn btn-default"  data-dismiss="modal">关闭</button>`);
+			
+			setSaleDateModel.show();
+		}
+	})
+
+	// 根据退票规则【更新】销售日期则
+	var updatePolicyStart = new command.ReqCommand({
+		url: eterm.const.Controller + 'updateSaleDate',
+		clk: function(res){
+
+			var updateSaleDateModel = new OtherModel('回填销售日期',
+			 mkSaleDateInsertTable(res.result), `<button type="button" class="btn btn-primary" id='set-saleDate'>下一步</button><button type="button" class="btn btn-default"  data-dismiss="modal">关闭</button>`);
+			
+			updateSaleDateModel.show();
+		}
+	})
+
+	// 保存政策的基础数据
+	var savePriceSource = new command.ReqCommand({
+		url: eterm.const.Controller + 'savePriceSource',
+		clk: function(res){
+			if(res.msg)
+				alert(res.msg)
+
+			// 设置销售日期
+			if(res.status === 1){
+				hid = res.hid;
+				setPolicyStart.execute(setQuery());
+			}
+
+			// 更新销售日期
+			if(res.status === 2){
+				hid = res.hid;
+				updatePolicyStart.execute({'hid': hid});
+			}
+			
+		}
+	}) 
+
+	// 更新基础政策
+	var updatePriceSource = new command.ReqCommand({
+		url: eterm.const.Controller + 'updatePriceSource',
+		clk: function(res){
+			if(res.msg)
+				alert(res.msg)
+
+			if(res.status)
+				setSaleDateModel.hide();
+		}
+	}) 
+
+
+	$('#dosubmit').click(function(){
+		if(canSubmit())
+			command.searchPriceSource(setQuery());
+	})
+
+	$('#dosubmit2').click(function(){
+		if(canSubmit()){
+			// 查询的price source 数据
+			var data = eterm.eterm.data;
+			savePriceSource.execute({data: JSON.stringify(data), query: setQuery()})
+		}
+	})
+
+	// 销售日期下一步
+	$('#otherModal').on('click', '#set-saleDate', function(){
+		var saleDateInputArray = {};
+		$('.saleDate').each(function(){
+			saleDateInputArray[$(this).data('rule')] = $(this).val();
+		})
+		// 更新
+		updatePriceSource.execute({'update': JSON.stringify(saleDateInputArray), 'hid': hid})
+	})
+
+}
+
+setCommend(eterm.createCommand(eterm.eterm, tpl));
+
+function mkSelect(data){
+	'use strict';
+
+	let html = '';
+
+	function mkSelectByName(name){
+		if(data[name].length > 0){
+			html = '<option value="">请选择</option>';
+			for(var i in data[name]){
+				html += '<option value='+data[name][i]+'>'+data[name][i]+'</option>';
+			}
+			$('#'+name).html(html)
+		}
+	}
+
+	// 回填航空公司数据
+	mkSelectByName('aircompany');
+
+	// 回填出发地数据
+	mkSelectByName('depart');
+
+	// 回填出发地数据
+	mkSelectByName('arrive');
+}
+
+function mkSaleDateInsertTable(array){
+	let html = '', saleDate = '';
+	html += `<table class="table table-hover table-bordered table-responsive">
+		<thead>
+			<tr>
+				<th>FareBasis</th>
+				<th>命令</th>
+				<th>销售日期</th>
+			</tr>
+		</thead>
+	`;
+
+	for(var i in array){
+		saleDate = array[i].SaleDate ? array[i].SaleDate: '';
+		html += `
+			<tr>
+				<td>${array[i].FareBasis}</td>
+				<td>XS/FSD${array[i].xfsd_Dep}${array[i].xfsd_Arr}//${array[i].xfsd_Owner}/#*${array[i].FareBasis}/${array[i].xfsd_Rule}//#</td>
+				<td><input type='text' class='form-control saleDate' data-rule="${array[i].xfsd_Rule}" value="${saleDate}"></td>
+			</tr>
+		`
+	}
+
+	return html;
+}
+
+function mkMainTable(array, target){
+	let html = "";
+
+	html += `<table class="${target} table table-hover table-bordered table-responsive">
+	<thead>
+				<tr>
+					<th>序号</th>
+					<th>fare</th>
+					<th>命令</th>
+					<th>提前出票</th>
+					<th>单程价格</th>
+					<th>往返价格</th>
+					<th>舱位</th>
+					<th>最短停留</th>
+					<th>最长停留</th>
+					<th>适用截止日期</th>
+					<th>退票规则</th>
+					<th>可用星期</th>
+					<th>出发</th>
+					<th>到达</th>
+					<th>航空公司</th>
+					<th>方向</th>
+					<th>创建日期</th>
+				</tr></thead></table>`
+	
+	for(var j in array){
+		array[j]['index'] =	j;
+		array[j]['date']  =	array[j]['xfsd_DateStart']+">"+array[j]['xfsd_DateEnd'];
+		array[j]['time']  = new Date((array[j]['gmtCreate'] -0)*1000).format("yyyy-MM-dd hh:mm:ss");
+	}
+
+	$('#content').html(html);
+	$('.'+target).DataTable({
+      data: array,
+      columns: [
+          { data: "index" },
+          { data: "FareBasis" },
+          { data: "Command" },
+          { data: "xfsd_Advp" },
+          { data: "xfsd_SingleFee" },
+          { data: "xfsd_RoundFee" },
+          { data: "xfsd_Cabin" },
+          { data: "xfsd_MinStay" },
+          { data: "xfsd_MaxStay" },
+          { data: "date" },
+          { data: "xfsd_Rule" },
+          { data: "xfsd_Indicator" },
+          { data: "xfsd_Dep" },
+          { data: "xfsd_Arr" },
+          { data: "xfsd_Owner" },
+          { data: "xfsd_Region" },
+          { data: "time" },
+      ]
+  }); 
+}
+
+
+})
+</script>
+<{/block}>

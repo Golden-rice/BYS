@@ -6,6 +6,11 @@ class HotcityController extends Controller {
   	$this->display();
   }
 
+  // price 合成政策 前台展示
+  public function price(){
+    $this->display();
+  }
+
   public function sleep(){
     sleep(3600);
   }
@@ -180,4 +185,197 @@ class HotcityController extends Controller {
 
   	return $update;
   }
+
+
+  // 查询出发至到达的运价
+  public function searchPriceByInput(){
+    $start         = $_POST['start'];
+    $end           = $_POST['end'];
+    $aircompany    = $_POST['aircompany'];
+    $departureDate = $_POST['departureDate'];
+    // 利用精简后的数据 根据sid 获得 result
+    $xfsd_model = model('xfsd_result');
+    $where = '';
+    // 必填
+    if($start != '')
+      $where = "xfsd_Dep = '{$start}'";
+    
+    if($end != '')
+      $where .= " AND xfsd_Arr = '{$end}'";
+    
+    if($aircompany != '')
+      $where .= " AND xfsd_Owner = '{$aircompany}'";
+    
+    // 去程日期
+    if($departureDate != ''){
+      $where .= "AND xfsd_DateEnd > '{$departureDate}'";
+    }else{
+      $where .= "AND xfsd_DateEnd > '".date('Y-m-d',time())."'";
+    }
+
+    $xfsd_model->prepare("SELECT
+        *, COUNT(DISTINCT A.FareBasis, A.xfsd_RoundFee, A.xfsd_indicator, A.xfsd_Cabin, A.xfsd_DateEnd) AS Count_duplicate # 去重
+      FROM
+        (
+          SELECT
+            *
+          FROM
+            e_cmd_xfsd_result
+          WHERE {$where} AND  
+            xfsd_SingleFee = 0
+          ORDER BY 
+            xfsd_RoundFee ASC # 显示最低价格
+        ) AS A
+      GROUP BY  # 精简
+        A.xfsd_Cabin,
+        A.xfsd_indicator,
+        A.xfsd_DateEnd 
+      ORDER BY 
+        A.xfsd_Cabin, A.xfsd_RoundFee ASC # 展示优化 " );
+    // var_dump($xfsd_model->testSql());
+    $xfsd_result = $xfsd_model->execute();
+
+    // 按照舱位及价格已精简
+    echo json_encode(array('result'=>$xfsd_result));
+    /* 销售日期
+XS/FSDBJSCHI/15OCT/UA/#*GLE03MC8///#
+xs/fsn1//15
+    */
+  }
+
+  public function updatePriceSource(){
+    $update_src     = json_decode($_POST['update'], true);
+    $hid            = $_POST['hid'];
+    $m              = model('price_source');
+    $result         = $m->where("`Hid` = {$hid}")->select();
+    if($result){
+      $whereArray   = array(); 
+      $updateArray  = array();
+      foreach ($update_src as $rule => $saleDate) {
+        array_push($whereArray, "`Rule` = '{$rule}'");
+        array_push($updateArray, array('SaleDate'=>$saleDate));
+      }
+      $m->updateAll($whereArray, $updateArray);
+      echo json_encode(array('msg'=>'更新成功', 'status'=>1));
+      return;
+    }
+    echo json_encode(array('msg'=>'更新失败', 'status'=>0));
+  }
+
+  public function savePriceSource(){
+    $m_price_source = model('price_source');
+    $m_hotcity      = model('hot_city');
+    $array          = json_decode($_POST['data'], true);
+    $query          = $_POST['query'];
+    $where          = "`HC_Depart` = '{$query['start']}' ";
+    if(!empty($query['end'])) $where .= " AND `HC_Arrive` = '{$query['end']}'";
+    if(!empty($query['aircompany'])) $where .= " AND `HC_Aircompany` = '{$query['aircompany']}'";
+    $hotcity_result = $m_hotcity->where($where)->select();
+
+    if($m_price_source->where("`Hid`= {$hotcity_result[0]['Id']}")->select()){
+      echo json_encode(array('msg'=>'已存在', 'status'=>2, 'hid'=>$hotcity_result[0]['Id']));
+      return;
+    }
+    if(empty($array)) {
+      echo json_encode(array('msg'=>'无数据'));
+      return ;
+    }
+    $addAll         = array();
+    foreach ($array as $num => $value) {
+      // from XFareEtermPriceDetailDTO
+      $addAll[] = array(
+        //  fareKey 关键字：dep_city/arr_city/airline/pax_type/source/source_office/source_agreement/other(其他字段)/fare_date
+        'FareKey'                 => $value['FareKey'], 
+        // 运价的时间，格式是 YYYYMM 201510，查询时间
+        // 'FareDate'                => '',
+        // 目标舱位
+        'FareCabin'               => $hotcity_result[0]['HC_Cabin'],
+        'Dep'                     => $value['xfsd_Dep'],
+        'Arr'                     => $value['xfsd_Arr'],
+        'Airline'                 => $value['xfsd_Owner'],
+        'FareBasis'               => $value['FareBasis'],
+        'Cabin'                   => $value['xfsd_Cabin'],
+        'PassengerType'           => 'ADT', // default 
+        'SingleFare'              => $value['xfsd_SingleFee'],
+        'RoundFare'               => $value['xfsd_RoundFee'],
+        'Currency'                => 'CNY',
+        // 'CabinFlag'               => '',
+        // 'FareFlag'                => '',
+        'MinStop'                 => $value['xfsd_MinStay'],
+        'MaxStop'                 => $value['xfsd_MaxStay'],
+        'ValidBegin'              => $value['xfsd_DateStart'],
+        'ValidEnd'                => $value['xfsd_DateEnd'],
+        'DepType'                 => $hotcity_result[0]['HC_Depart'],
+        'ArrType'                 => $hotcity_result[0]['HC_Arrive'],
+        'Direction'               => $value['xfsd_Region'],
+        // 'Tpm'                     => '',
+        // 'Mpm'                     => '',
+        'OutboundWeek'            => $value['xfsd_Indicator'],
+        'Advp'                    => $value['xfsd_Advp'],
+        // 10.00  货币进位取舍(6)
+        'RoundValue'              => 10.00,
+        // 'NucRate'                 => '',
+        // 'AtPage'                  => '',
+        // 'RouteFlag'               => '',
+        'Command'                 => $value['Command'],
+        'Hid'                     => $hotcity_result[0]['Id'],
+        'Rule'                    => $value['xfsd_Rule'],
+      );
+    }
+    $m_price_source->addAll($addAll);
+    echo json_encode(array('msg'=>'保存成功', 'status'=>1, 'hid'=>$hotcity_result[0]['Id']));
+  }
+
+  public function updateSaleDate(){
+    $hid    = $_POST['hid'];
+    $m      = model('price_source');
+    $m->prepare("SELECT FareBasis, Rule AS xfsd_Rule, Dep AS xfsd_Dep, Arr AS xfsd_Arr, Airline AS xfsd_Owner, ValidBegin AS xfsd_DateStart, SaleDate, COUNT(FareBasis) AS count FROM e_cmd_price_source WHERE `Hid` = {$hid}  GROUP BY Rule");
+    $result = $m->execute();
+    if($result){
+      echo json_encode(array('result'=>$result, 'status'=>1));
+    }
+    else
+      echo json_encode(array('msg'=>'出现错误', 'status'=>0));
+  }
+
+  public function setSaleDate(){
+    $start         = $_POST['start'];
+    $end           = $_POST['end'];
+    $aircompany    = $_POST['aircompany'];
+    $departureDate = $_POST['departureDate'];
+    // 利用精简后的数据 根据sid 获得 result
+    $xfsd_model = model('xfsd_result');
+    $where = '';
+    // 必填
+    if($start != '')
+      $where = "xfsd_Dep = '{$start}'";
+    
+    if($end != '')
+      $where .= " AND xfsd_Arr = '{$end}'";
+    
+    if($aircompany != '')
+      $where .= " AND xfsd_Owner = '{$aircompany}'";
+    
+    // 去程日期
+    if($departureDate != ''){
+      $where .= "AND xfsd_DateEnd > '{$departureDate}'";
+    }else{
+      $where .= "AND xfsd_DateEnd > '".date('Y-m-d',time())."'";
+    }
+
+    $xfsd_model->prepare("SELECT
+          FareBasis, xfsd_Rule, xfsd_Dep, xfsd_Arr, xfsd_Owner, xfsd_DateStart, COUNT(FareBasis) AS count
+        FROM
+          e_cmd_xfsd_result
+        WHERE {$where} AND  
+          xfsd_SingleFee = 0
+        GROUP BY
+          xfsd_Rule");
+
+    $xfsd_result =  $xfsd_model->execute();
+
+    echo json_encode(array('result'=>$xfsd_result));
+
+  }
+
 }

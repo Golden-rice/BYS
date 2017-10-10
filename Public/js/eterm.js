@@ -1290,6 +1290,7 @@ var createCommand = function(recevier, tpl, set){
 		rmTable(recevier.target);
 		recevier.link( Controller + 'searchPriceByInput', query , function(data){
 			console.log(data)
+			recevier.data = data.result;
 			recevier.progress.complete();
 			// 判断获取的数据是否为一条
 			tpl.mkMainTable(data.result, recevier.target)
@@ -1354,7 +1355,7 @@ var createCommand = function(recevier, tpl, set){
 	var _self = this;
 
 	// 回调函数
-	if(config.clk && Type.isFunction(config.clk)){
+	if(config.clk && recevier.isFunction(config.clk)){
 		this.clk = config.clk;
 	}
 
@@ -1375,17 +1376,17 @@ var createCommand = function(recevier, tpl, set){
 			_self.query = query || _self.query;
 			_self.query = _self.query || query;
 
-
 			if( !_self.query ){
 				console.log("未设置正确的查询语句:"+_self.query);
 				return;
 			}
 
-			_self.req(_self.url, _self.query).done(function(result){
-				if( config.clk && Type.isFunction(config.clk) ){
-					return _self.clk(result);
-				}
-			})
+			_self.req(_self.url, _self.query, _self.clk);
+			// _self.req(_self.url, _self.query).done(function(result){
+			// 	if( config.clk && recevier.isFunction(config.clk) ){
+			// 		return _self.clk(result);
+			// 	}
+			// })
 
 		},
 	}
