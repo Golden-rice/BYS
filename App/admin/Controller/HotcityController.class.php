@@ -38,7 +38,7 @@ class HotcityController extends Controller {
     $log =  fopen('log.txt', 'a');
 
   	// 所有日期未当日往后15天
-  	$startDate = '26SEP'; // strtoupper( date('dM',time() + 15*24*60*60) )
+  	$startDate = '15OCT'; // strtoupper( date('dM',time() + 15*24*60*60) ) OR 当月15号
   	// xfsd计划
   	// 测试一条
     // 舱位
@@ -120,6 +120,8 @@ class HotcityController extends Controller {
     if($hc_cabin != ''){
       foreach ($array as $row){
         if(!is_array($row)) break;
+        // 排除无限的适用日期
+        if($row['allowDateEnd'] == '2099-12-30') continue;
         if(!in_array($row['seat'], $tmpXfsd) && time() + 30*60*60 < strtotime($row['allowDateEnd']) ){
           $tmpXfsd[$row['seat']] = $row;
         }
@@ -127,6 +129,8 @@ class HotcityController extends Controller {
     }else{
       foreach ($array as $row){
         if(!is_array($row)) break;
+         // 排除无限的适用日期
+        if($row['allowDateEnd'] == '2099-12-30') continue;
         if( (!in_array($row['seat'], $tmpXfsd) && in_array($row['seat'], $hc_cabin)) && time() + 30*60*60 < strtotime($row['allowDateEnd']) ){
           $tmpXfsd[$row['seat']] = $row;
         }
@@ -182,7 +186,6 @@ class HotcityController extends Controller {
   		$update['HC_Status'] = 2;
   	}
 
-
   	return $update;
   }
 
@@ -194,7 +197,20 @@ class HotcityController extends Controller {
     $aircompany    = $_POST['aircompany'];
     $departureDate = $_POST['departureDate'];
     // 利用精简后的数据 根据sid 获得 result
-    $xfsd_model = model('xfsd_result');
+    $xfsd_model    = model('xfsd_result');
+    // 根据舱位筛选运价结果
+    $hotcity_model = model('hot_city');
+    $hotcity_result= $hotcity_model->where("`HC_Depart` = '{$start}' AND `HC_Arrive` = '{$end}' AND `HC_Aircompany` = '{$aircompany}'")->select();
+
+    if(!empty($hotcity_result[0]['HC_Cabin'])){
+      $where_cabin_array = explode(',', $hotcity_result[0]['HC_Cabin']);
+      $where_cabin = '(';
+      foreach ($where_cabin_array as $cabin) {
+        $where_cabin .= "'{$cabin}',";
+      }
+      $where_cabin = rtrim($where_cabin, ',').')';
+    }
+
     $where = '';
     // 必填
     if($start != '')
@@ -205,13 +221,15 @@ class HotcityController extends Controller {
     
     if($aircompany != '')
       $where .= " AND xfsd_Owner = '{$aircompany}'";
-    
+
     // 去程日期
-    if($departureDate != ''){
+    if($departureDate != '')
       $where .= "AND xfsd_DateEnd > '{$departureDate}'";
-    }else{
+    else
       $where .= "AND xfsd_DateEnd > '".date('Y-m-d',time())."'";
-    }
+    
+    if(isset($where_cabin))
+      $where .= " AND `xfsd_Cabin` IN {$where_cabin}";
 
     $xfsd_model->prepare("SELECT
         *, COUNT(DISTINCT A.FareBasis, A.xfsd_RoundFee, A.xfsd_indicator, A.xfsd_Cabin, A.xfsd_DateEnd) AS Count_duplicate # 去重
@@ -221,7 +239,7 @@ class HotcityController extends Controller {
             *
           FROM
             e_cmd_xfsd_result
-          WHERE {$where} AND  
+          WHERE {$where} AND 
             xfsd_SingleFee = 0
           ORDER BY 
             xfsd_RoundFee ASC # 显示最低价格
@@ -238,9 +256,9 @@ class HotcityController extends Controller {
     // 按照舱位及价格已精简
     echo json_encode(array('result'=>$xfsd_result));
     /* 销售日期
-XS/FSDBJSCHI/15OCT/UA/#*GLE03MC8///#
-xs/fsn1//15
-    */
+    XS/FSDBJSCHI/15OCT/UA/#*GLE03MC8///#
+    xs/fsn1//15
+        */
   }
 
   public function updatePriceSource(){
@@ -282,12 +300,13 @@ xs/fsn1//15
     }
     $addAll         = array();
     foreach ($array as $num => $value) {
+      preg_match("/\/(\d{2}\w{3})\//", $value['Command'], $fareDateMatch);
       // from XFareEtermPriceDetailDTO
       $addAll[] = array(
         //  fareKey 关键字：dep_city/arr_city/airline/pax_type/source/source_office/source_agreement/other(其他字段)/fare_date
         'FareKey'                 => $value['FareKey'], 
         // 运价的时间，格式是 YYYYMM 201510，查询时间
-        // 'FareDate'                => '',
+        'FareDate'                => isset($fareDateMatch[1])?$fareDateMatch[1]: '',
         // 目标舱位
         'FareCabin'               => $hotcity_result[0]['HC_Cabin'],
         'Dep'                     => $value['xfsd_Dep'],
@@ -338,13 +357,50 @@ xs/fsn1//15
       echo json_encode(array('msg'=>'出现错误', 'status'=>0));
   }
 
+  // 查询source
+  public function searchPriceSource(){
+    $hid    = $_POST['hid'];
+    $m      = model('price_source');
+    $result = $m->where("`Hid`={$hid}")->select();
+    if($result){
+      echo json_encode(array('result'=>$result, 'status'=>1));
+    }
+    else
+      echo json_encode(array('msg'=>'出现错误', 'status'=>0));
+  }
+
+  // 查询 hotcity byid
+  public function searchHotCityById(){
+    $id     = $_POST['id'];
+    $m      = model('hot_city');
+    $result = $m->where("`Id`={$id}")->select();
+    if($result){
+      echo json_encode(array('result'=>$result, 'status'=>1));
+    }
+    else
+      echo json_encode(array('msg'=>'出现错误', 'status'=>0));
+  }
+
   public function setSaleDate(){
     $start         = $_POST['start'];
     $end           = $_POST['end'];
     $aircompany    = $_POST['aircompany'];
     $departureDate = $_POST['departureDate'];
     // 利用精简后的数据 根据sid 获得 result
-    $xfsd_model = model('xfsd_result');
+    $xfsd_model    = model('xfsd_result');
+        // 根据舱位筛选运价结果
+    $hotcity_model = model('hot_city');
+    $hotcity_result= $hotcity_model->where("`HC_Depart` = '{$start}' AND `HC_Arrive` = '{$end}' AND `HC_Aircompany` = '{$aircompany}'")->select();
+
+    if(!empty($hotcity_result[0]['HC_Cabin'])){
+      $where_cabin_array = explode(',', $hotcity_result[0]['HC_Cabin']);
+      $where_cabin = '(';
+      foreach ($where_cabin_array as $cabin) {
+        $where_cabin .= "'{$cabin}',";
+      }
+      $where_cabin = rtrim($where_cabin, ',').')';
+    }
+
     $where = '';
     // 必填
     if($start != '')
@@ -362,7 +418,9 @@ xs/fsn1//15
     }else{
       $where .= "AND xfsd_DateEnd > '".date('Y-m-d',time())."'";
     }
-
+    if(isset($where_cabin))
+      $where .= " AND `xfsd_Cabin` IN {$where_cabin}";
+    
     $xfsd_model->prepare("SELECT
           FareBasis, xfsd_Rule, xfsd_Dep, xfsd_Arr, xfsd_Owner, xfsd_DateStart, COUNT(FareBasis) AS count
         FROM

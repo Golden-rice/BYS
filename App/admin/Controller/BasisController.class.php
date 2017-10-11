@@ -148,7 +148,8 @@ class BasisController extends Controller {
         $hot_city_model = model('hot_city');
 
         // 清空表 
-        $hot_city_model -> deleteAll();
+        // $hot_city_model -> deleteAll();
+        $hot_city_model -> deleteAllAction();
 
         $hotCityArray   = json_decode($_POST['selected']['data'], true);
         $addAll         = array();

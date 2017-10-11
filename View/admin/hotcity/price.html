@@ -138,19 +138,33 @@ function canSubmit(){
 		alert('出发未填')
 		return false;
 	}
+	if($('#arrive').val() === ''){
+		alert('到达未填')
+		return false;
+	}
+	if($('#aircompany').val() === ''){
+		alert('航空公司未填')
+		return false;
+	}
+
 	return true;
 }
 var setCommend = function(command){
-	var hid; // 基础政策对应的hotcity的id
 	command.searchPriceSelect();
 
+	var hid,     // 基础政策对应的hotcity的id
+			hotcity, // 存入数据的基础政策数据对应的hotcity
+			data;    // 存入数据库的基础政策数据
+
+	var setSaleDateModel,    // 设置销售日期的弹出框
+			updateSaleDateModel, // 更新销售日期的弹出框
+			mixCabinModel;       // 混舱弹出框
 
 	// 根据退票规则【设置】销售日期
 	var setPolicyStart = new command.ReqCommand({
 		url: eterm.const.Controller + 'setSaleDate',
 		clk: function(res){
-			var setSaleDateModel = new OtherModel('回填销售日期',
-			 mkSaleDateInsertTable(res.result), `<button type="button" class="btn btn-primary" id='set-saleDate'>下一步</button><button type="button" class="btn btn-default"  data-dismiss="modal">关闭</button>`);
+			setSaleDateModel = new OtherModel('回填销售日期', mkSaleDateInsertTable(res.result), `<button type="button" class="btn btn-primary" id='set-saleDate'>下一步</button><button type="button" class="btn btn-default"  data-dismiss="modal">关闭</button>`);
 			
 			setSaleDateModel.show();
 		}
@@ -160,11 +174,14 @@ var setCommend = function(command){
 	var updatePolicyStart = new command.ReqCommand({
 		url: eterm.const.Controller + 'updateSaleDate',
 		clk: function(res){
+			if(res.status){
+				updateSaleDateModel = new OtherModel('回填销售日期', mkSaleDateInsertTable(res.result), `<button type="button" class="btn btn-primary" id='set-saleDate'>下一步</button><button type="button" class="btn btn-default"  data-dismiss="modal">关闭</button>`);
+				
+				updateSaleDateModel.show();
+			}
 
-			var updateSaleDateModel = new OtherModel('回填销售日期',
-			 mkSaleDateInsertTable(res.result), `<button type="button" class="btn btn-primary" id='set-saleDate'>下一步</button><button type="button" class="btn btn-default"  data-dismiss="modal">关闭</button>`);
-			
-			updateSaleDateModel.show();
+			if(res.msg)
+				alert(res.msg);
 		}
 	})
 
@@ -186,7 +203,41 @@ var setCommend = function(command){
 				hid = res.hid;
 				updatePolicyStart.execute({'hid': hid});
 			}
-			
+
+			// 查询热门城市
+			if(hid)
+				reqHotCity.execute({'id': hid});
+		}
+	}) 
+
+	// 查询政策基础数据
+	var reqPriceSource = new command.ReqCommand({
+		url: eterm.const.Controller + 'searchPriceSource',
+		clk: function(res){
+
+			if(res.status){
+				// 混舱结果
+				mixCabinModel = new OtherModel('混舱', mkCabinTable(res.result, hotcity[0]), `<button type="button" class="btn btn-primary" id='set-saleDate'>下一步</button><button type="button" class="btn btn-default"  data-dismiss="modal">关闭</button>`);
+				// 混舱
+				mixCabinModel.show();
+			}
+				
+			if(res.msg)
+				alert(res.msg);
+		}
+	}) 
+
+	// 查询热门城市数据
+	var reqHotCity = new command.ReqCommand({
+		url: eterm.const.Controller + 'searchHotCityById',
+		clk: function(res){
+
+			if(res.status){
+				hotcity = res.result;
+			}
+				
+			if(res.msg)
+				alert(res.msg);
 		}
 	}) 
 
@@ -198,9 +249,10 @@ var setCommend = function(command){
 				alert(res.msg)
 
 			if(res.status)
-				setSaleDateModel.hide();
+				setSaleDateModel ? setSaleDateModel.hide() : updateSaleDateModel.hide();
 		}
 	}) 
+
 
 
 	$('#dosubmit').click(function(){
@@ -212,19 +264,25 @@ var setCommend = function(command){
 		if(canSubmit()){
 			// 查询的price source 数据
 			var data = eterm.eterm.data;
-			savePriceSource.execute({data: JSON.stringify(data), query: setQuery()})
+			savePriceSource.execute({data: JSON.stringify(data), query: setQuery()});
+
 		}
 	})
 
-	// 销售日期下一步
+	// 销售日期的【下一步】
 	$('#otherModal').on('click', '#set-saleDate', function(){
-		var saleDateInputArray = {};
+		var saleDateInput = {};
 		$('.saleDate').each(function(){
-			saleDateInputArray[$(this).data('rule')] = $(this).val();
+			saleDateInput[$(this).data('rule')] = $(this).val();
 		})
 		// 更新
-		updatePriceSource.execute({'update': JSON.stringify(saleDateInputArray), 'hid': hid})
+		updatePriceSource.execute({'update': JSON.stringify(saleDateInput), 'hid': hid});
+		
+		reqPriceSource.execute({'hid': hid});
+
 	})
+
+	// 选择模板类型
 
 }
 
@@ -272,7 +330,7 @@ function mkSaleDateInsertTable(array){
 		html += `
 			<tr>
 				<td>${array[i].FareBasis}</td>
-				<td>XS/FSD${array[i].xfsd_Dep}${array[i].xfsd_Arr}//${array[i].xfsd_Owner}/#*${array[i].FareBasis}/${array[i].xfsd_Rule}//#</td>
+				<td>XS/FSD${array[i].xfsd_Dep}${array[i].xfsd_Arr}//${array[i].xfsd_Owner}/#*${array[i].FareBasis}/${array[i].xfsd_Rule.replace(' ', '')}//#</td>
 				<td><input type='text' class='form-control saleDate' data-rule="${array[i].xfsd_Rule}" value="${saleDate}"></td>
 			</tr>
 		`
@@ -337,6 +395,95 @@ function mkMainTable(array, target){
   }); 
 }
 
+// 混舱模板
+function mkCabinTable(array, hotcity){
+	// console.log(array, hotcity);
+	if(JSON.stringify(array) === '{}') return;
+	// 内积 a^2
+	var result     = [],                        // 最终混舱结果
+			stayArray  = hotcity['HC_Routing'].split(','),       // 全部的中转城市
+			cabinMatch = hotcity['HC_Cabin'].split(','), // 热门城市舱位对照
+			date       = new Date();                  // 时间对象
+
+	function maxDate(date1, date2){
+		if(/\d/.exec(date1) && /\d/.exec(date2)){
+			return /\d/.exec(date1)[0]*(/D/.exec(date1)?1:30) > /\d/.exec(date2)[0]*(/D/.exec(date2)?1:30) ? date1 : date2;
+		}
+		else 
+			return '';
+	}
+
+	if(cabinMatch.length > 1 && cabinMatch[0] != '')
+		for(var a in array){
+			for(var c in cabinMatch){
+				if(cabinMatch[c] === array[a].Cabin)
+					break;
+				if(c === cabinMatch.length-1)
+					array[a].splice(a, 1);
+			}
+		}
+
+	// 筛选舱位
+	// 匹配中转城市
+	for(var s in stayArray){
+		var stay = stayArray[s];	
+		for(var i in array){   // 去程
+			for(var j in array){ // 回程
+
+	      // XS FSI/UA
+	      // S UA   1310\09SEP BJS0100 0200CHI0X    76W 
+	      // S UA   1310\09SEP CHI0300 0400NYC0S    76W 
+	      // S UA   981\09SEP BJS0100 0200CHI0X    76W
+	      // S UA   981\09SEP NYC0300 0400BJS0S    76W 
+
+				var fsi     = "XS FSI/"+array[i]['Airline']+"\r"; 
+				if(stay)
+					fsi +="S "+array[i]['Airline']+"   0000"+array[i]['Cabin']+array[i]['FareDate']+" "+array[i]['Dep']+"0100 0200"+stay+"0X    76W \r" 
+							+ "S "+array[i]['Airline']+"   0000"+array[i]['Cabin']+array[i]['FareDate']+" "+stay+"0300 0400"+array[i]['Arr']+"0S    76W \r"
+							+ "S "+array[j]['Airline']+"   0000"+array[j]['Cabin']+array[j]['FareDate']+" "+array[j]['Arr']+"0100 0200"+stay+"0X    76W \r" 
+							+ "S "+array[j]['Airline']+"   0000"+array[j]['Cabin']+array[j]['FareDate']+" "+stay+"0300 0400"+array[j]['Dep']+"0S    76W \r"
+				else
+					fsi +="S "+array[i]['Airline']+"   0000"+array[i]['Cabin']+array[i]['FareDate']+" "+array[i]['Dep']+"0100 0200"+array[i]['Arr']+"0S    76W \r" 
+							+ "S "+array[j]['Airline']+"   0000"+array[j]['Cabin']+array[j]['FareDate']+" "+array[j]['Arr']+"0300 0400"+array[j]['Dep']+"0S    76W \r"
+
+				// 按照中转再次拆分
+				result.push({
+					'FareBasis'     : array[i]['FareBasis']+'/'+array[j]['FareBasis'],
+					'Advp'          : maxDate(array[i]['Advp'], array[j]['Advp']),
+					'SingleFare'    : array[i]['SingleFare']-0 == 0 ? 0:(array[i]['SingleFare']-0)/2+(array[j]['SingleFare']-0)/2,
+					'RoundFare'     : array[i]['RoundFare']-0 == 0 ? 0:(array[i]['RoundFare']-0)/2+(array[j]['RoundFare']-0)/2,
+					// 出境的舱位，和境外的舱位存在争议
+					'Cabin'         : array[i]['Cabin']+(stay !== ''? '-'+array[i]['Cabin']+'-'+array[j]['Cabin']:'')+'-'+array[j]['Cabin'],
+					'MinStop'       : maxDate(array[i]['MinStop'], array[j]['MinStop']),
+					'MaxStop'       : maxDate(array[i]['MaxStop'], array[j]['MaxStop']),
+					'ValidBegin'    : date.max(array[i]['ValidBegin'], array[j]['ValidBegin']),
+					'ValidEnd'      : date.max(array[i]['ValidEnd'], array[j]['ValidEnd']),
+					'OutboundWeek'  : array[i]['OutboundWeek'],
+					'InboundWeek'   : array[j]['OutboundWeek'],
+					'Rule'          : array[i]['Rule']+'/'+array[j]['Rule'],
+					'Dep'           : array[i]['Dep'],
+					'Arr'           : array[i]['Arr'],
+					// 新增字段：中转城市
+					'Stay'          : stay, 
+					'Airline'       : array[i]['Airline'],
+					// 新增字段：航路
+					'Rounting'      :
+					// 去程
+						array[i]['Dep']+'-'+array[i]['Airline']+'-'+(stay !== ''?stay+'-'+array[i]['Airline']+'-':'')+array[i]['Arr']
+					// 回程
+						+'-'+array[j]['Airline']+'-'+(stay !== ''?stay+'-'+array[j]['Airline']+'-':'')+array[j]['Dep'],
+					// 新增字段：fsi
+					'Fsi'           : fsi
+				})
+			}
+		}
+	}
+	let html = `
+
+	`;
+	console.log(result)
+	return '';
+}
 
 })
 </script>

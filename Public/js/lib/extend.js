@@ -195,6 +195,12 @@ Date.prototype.format = function(format){
    return format;
 }
 
+// 两个日期比较，返回较大的
+Date.prototype.max = function(date1, date2){
+  return (new Date(date1)).valueOf() > (new Date(date2)).valueOf() ? date1 : date2;
+}
+
+
 // 清除两边空格 
 String.prototype.trim = function(Symbol) {
   if(Symbol){

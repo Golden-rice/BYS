@@ -130,6 +130,11 @@
  			$this->execute();
 	 	}
 
+	 	public function deleteAllAction(){
+	 		$this->sql = "DELETE FROM {$this->tableName}";
+ 			$this->prepare($this->sql);
+ 			$this->execute();
+	 	}
 
 	 	/**
 		 * 查询数据的筛选条件
