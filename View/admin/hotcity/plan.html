@@ -70,7 +70,8 @@ var setCommand = function(command){
 
 	command.showHotCityPlan();
 
-	// 查询精简 xfsd
+
+	// 查询全部且分组的 xfsd
 	var searchXfsdResultByHotcity = new command.ReqCommand({
 		url: eterm.const.Controller + 'searchXfsdResultByHotcity',
 		clk: function(res){
@@ -78,19 +79,33 @@ var setCommand = function(command){
 				alert(res.msg)
 
 			if(res.status){
-				console.log(res.result)
-				var mixModal  = new OtherModel("混舱", '');
-				xfsdTpl(res.result, 'xfsd-result-model')
+				console.log(res)
+				mixModal  = new OtherModel("运价结果", xfsdTable(res.inGroupResult, 'xfsd-result-model'));
 				mixModal.show();
 			}
 		}
 	}) 
 
+	// 查询精简且分组的 xfsd
+	var searchSmpXfsdResultByHotcity = new command.ReqCommand({
+		url: eterm.const.Controller + 'searchXfsdResultByHotcity',
+		clk: function(res){
+			if(res.msg)
+				alert(res.msg)
+
+			if(res.status){
+				console.log(res)
+				mixModal  = new OtherModel("精简运价结果", xfsdTable(res.inGroupResult, 'xfsd-result-model'));
+				mixModal.show();
+			}
+		}
+	}) 
 
 	// 查看 xfsd
 	$("#content").on("click", ".xfsd-result", function(){
-		xfsdModal = new OtherModel("运价结果", '');
-		command.searchXfsdResult({sid: $(this).data('sid')});
+		// xfsdModal = new OtherModel("运价结果", '');
+		// command.searchXfsdResult({sid: $(this).data('sid')});
+		searchXfsdResultByHotcity.execute({sid: $(this).data('sid')});
 	})
 
 	// 查看 avh
@@ -101,8 +116,9 @@ var setCommand = function(command){
 
 	// 查看 简化结果
 	$("#content").on("click", ".simplify-xfsd", function(){
-		xfsdModal = new OtherModel("精简运价结果", '');
-		command.searchXfsdResultByHotcity({sid: $(this).data('sid')})
+		// xfsdModal = new OtherModel("精简运价结果", '');
+		// command.searchXfsdResultByHotcity({sid: $(this).data('sid')})
+		searchSmpXfsdResultByHotcity.execute({sid: $(this).data('sid')});
 	})
 
 	// 混舱 xfsd 
@@ -113,7 +129,6 @@ var setCommand = function(command){
 }
 
 setCommand(eterm.createCommand(eterm.eterm,tpl));
-
 
 function mkTable(array, target, wrap, type){
 
@@ -178,6 +193,113 @@ function mkTable(array, target, wrap, type){
 	appendType === 'a'? $(context).append(html): $(context).html(html);
 }
 
+function xfsdTable(array, dom){
+	let html = "<div class='${dom}'>";
+	for(var j in array){
+		html += `<table class="table table-hover table-bordered table-responsive">
+					<tr>
+						<th>序号</th>
+						<th>fare</th>
+						<th>命令</th>
+						<th>提前出票</th>
+						<th>单程价格</th>
+						<th>往返价格</th>
+						<th>舱位</th>
+						<th>最短停留</th>
+						<th>最长停留</th>
+						<th>适用截止日期</th>
+						<th>退票规则</th>
+						<th>可用星期</th>
+						<th>出发</th>
+						<th>到达</th>
+						<th>航空公司</th>
+						<th>方向</th>
+						<th>创建日期</th>
+					</tr>`
+		var value ;
+		for(var i in array[j]){
+			value = array[j][i];
+			html += `
+				<tr>
+						<td>${i}</td>
+						<td>${value['FareBasis']}</td>
+						<td>${value['Command']}</td>
+						<td>${value['xfsd_Advp']}</td>
+						<td>${value['xfsd_SingleFee']}</td>
+						<td>${value['xfsd_RoundFee']}</td>
+						<td>${value['xfsd_Cabin']}</td>
+						<td>${value['xfsd_MinStay']}</td>
+						<td>${value['xfsd_MaxStay']}</td>
+						<td>${value['xfsd_DateStart']}>${value['xfsd_DateEnd']}</td>
+						<td>${value['xfsd_Rule']}</td>
+						<td>${value['xfsd_Indicator']}</td>
+						<td>${value['xfsd_Dep']}</td>
+						<td>${value['xfsd_Arr']}</td>
+						<td>${value['xfsd_Owner']}</td>
+						<td>${value['xfsd_Region']}</td>
+						<td>${new Date((value['gmtCreate'] -0)*1000).format("yyyy-MM-dd hh:mm:ss")}</td>
+				</tr>
+			`
+		}
+	}
+	html += "</div>";
+	return html;
+
+}
+
+
+
+function avhTpl(array, dom){ // (data, className, container)
+	// 暴露至全局
+	avh = array.result;
+
+	let html = "<table class='${dom} table table-hover table-bordered table-responsive'>";
+	for( var i in array ){ 
+			var avhCabin = eval('['+array[i].avh_Cabin+']')[0];
+						
+			html += "<tr>";
+			html += `
+				<td>${i}</td>
+				<td>${array[i].avh_Flight}</td>
+				<td>${array[i].avh_Dep}</td>
+				<td>${array[i].avh_Arr}</td>
+				<td>${array[i].avh_DepTime}-${array[i].avh_ArrTime}<!--${array[i].avh_FlightTime}--></td>
+				<td>
+			`
+			// 显示特定舱位
+			if(cabin[0] != '' && cabin.length > 0){
+				for(var s in cabin){
+					if( avhCabin[cabin[s]] ){ // 屏蔽掉无舱位数据
+						if( avhCabin[cabin[s]] -0 >3){
+							html += "<span style='color:red'>"+cabin[s]+'('+avhCabin[cabin[s]]+")</span>/";
+						}else{
+							html += cabin[s]+'('+avhCabin[cabin[s]]+")/";
+						}
+					}
+				}
+			}
+			// 未设置特定舱位
+			else{
+				for(var s in avhCabin){
+					if(avhCabin[s]-0 >3){
+						html += "<span style='color:red'>"+s+'('+avhCabin[s]+")</span>/";
+					}else{
+						html += s+'('+avhCabin[s]+")/";
+					}
+				}
+			}
+			html += "</td>";
+			html += `<td>${new Date((array[i].gmtModified -0)*1000).format("yyyy-MM-dd hh:mm:ss")}</td>`;
+			html += "</tr>";
+	}
+	html += '</table>';
+
+	$('#modal-content').html(html);
+	avhModal.show();
+}
+
+
+// --------------------  过期方法 ---------------------
 function xfsdTpl(array, dom, show){
 
 	// 暴露至全局
@@ -238,71 +360,6 @@ function xfsdTpl(array, dom, show){
 		xfsdModal.show();
 	}
 }
-
-function avhTpl(array, dom){ // (data, className, container)
-	// 暴露至全局
-	avh = array.result;
-
-	let html = "<table class='${dom} table table-hover table-bordered table-responsive'>";
-	for( var i in array ){ 
-			var avhCabin = eval('['+array[i].avh_Cabin+']')[0];
-						
-			html += "<tr>";
-			html += `
-				<td>${i}</td>
-				<td>${array[i].avh_Flight}</td>
-				<td>${array[i].avh_Dep}</td>
-				<td>${array[i].avh_Arr}</td>
-				<td>${array[i].avh_DepTime}-${array[i].avh_ArrTime}<!--${array[i].avh_FlightTime}--></td>
-				<td>
-			`
-			// 显示特定舱位
-			if(cabin[0] != '' && cabin.length > 0){
-				for(var s in cabin){
-					if( avhCabin[cabin[s]] ){ // 屏蔽掉无舱位数据
-						if( avhCabin[cabin[s]] -0 >3){
-							html += "<span style='color:red'>"+cabin[s]+'('+avhCabin[cabin[s]]+")</span>/";
-						}else{
-							html += cabin[s]+'('+avhCabin[cabin[s]]+")/";
-						}
-					}
-				}
-			}
-			// 未设置特定舱位
-			else{
-				for(var s in avhCabin){
-					if(avhCabin[s]-0 >3){
-						html += "<span style='color:red'>"+s+'('+avhCabin[s]+")</span>/";
-					}else{
-						html += s+'('+avhCabin[s]+")/";
-					}
-				}
-			}
-			html += "</td>";
-			html += `<td>${new Date((array[i].gmtModified -0)*1000).format("yyyy-MM-dd hh:mm:ss")}</td>`;
-			html += "</tr>";
-	}
-	html += '</table>';
-
-	$('#modal-content').html(html);
-	avhModal.show();
-}
-
-// 生成fsi
-function mkFsi(){
-        // XS FSI/UA
-        // S UA   1000K26SEP BJS0100 0200CHI0X    76W 
-        // S UA   2000K26SEP CHI0300 0400ABQ0S    76W 
-        // S UA   3000K29SEP ABQ0100 0200CHI0X    76W
-        // S UA   4000K29SEP CHI0300 0400BJS0S    76W 
-}
-
-
-$(function(){
-	// 导航
-	$('.nav>li').removeClass('active');
-	$('.nav>.hotcity').addClass('active');
-})
 
 })
 

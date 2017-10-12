@@ -1207,6 +1207,7 @@ var createCommand = function(recevier, tpl, set){
 		});	
 	}
 
+	// ----------------- 待启用代码 ----------------------
 	var searchXfsdResult = function(query){
 		rmTable(recevier.target);
 		console.log(query.sid)
@@ -1224,6 +1225,7 @@ var createCommand = function(recevier, tpl, set){
 			});	
 		}
 	}
+	// ----------------- 待启用代码 END ----------------------
 
 	var searchAvhResult = function(query){
 		rmTable(recevier.target);

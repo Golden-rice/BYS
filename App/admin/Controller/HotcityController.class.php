@@ -207,22 +207,41 @@ class HotcityController extends Controller {
       $sidWhere .= " `Sid` = {$sid} OR";
     }
     $xfsdArray     = $xfsd_model->where(rtrim($sidWhere, 'OR'))->select();
-    // 精简
+    
     if(!empty($xfsdArray)){
       // 初始化
       $tmpCabin = $xfsdArray[0]['xfsd_Cabin'];
-      $sid      = $xfsdArray[0]['Sid'];
       $tmpXfsd  = array($tmpCabin=>$xfsdArray[0]);
+      $sid      = $xfsdArray[0]['Sid'];
+      // 按照sid 分组
+      $in_group_result = array($sid=>array());
+      $in_group_smp_result = array($sid=>array($tmpCabin => $tmpXfsd));
+      foreach($xfsdArray as $xfsd){
+        if($sid != $xfsd['Sid']){
+          $sid  = $xfsd['Sid'];
+          $in_group_result[$sid] = array();
+
+        }
+
+        if($sid == $xfsd['Sid']){
+          array_push($in_group_result[$sid], $xfsd);
+
+        }
+      }
+
+      $tmpCabin = $xfsdArray[0]['xfsd_Cabin'];
+      $tmpXfsd  = array($tmpCabin=>$xfsdArray[0]);
+      $sid      = $xfsdArray[0]['Sid'];
+      
       // 按照命令请求划分
       $result   = array($sid=>$tmpXfsd);
       // 混在一起
       $mix_result = array();
       array_push($mix_result, $xfsdArray[0]);
-
+      // 精简
       foreach ($xfsdArray as $key => $xfsd) {
         if($xfsd['Sid'] != $sid){
           $sid      = $xfsd['Sid'];
-          $result[$sid] = $tmpXfsd;
           array_push($mix_result, $xfsd);
         }
         if($tmpCabin != $xfsd['xfsd_Cabin'] && !isset($tmpXfsd[$xfsd['xfsd_Cabin']]) ){
@@ -232,7 +251,11 @@ class HotcityController extends Controller {
         }
       }
 
-      echo json_encode(array('status'=>1, 'result'=>$mix_result, 'allResult'=>$xfsdArray));
+      echo json_encode(array('status'=>1, 
+        'inGroupResult'=>$in_group_result, // 分组非精简
+        'result'       =>$mix_result,            
+        'allResult'    =>$xfsdArray,       // 非分组非精简
+      ));
       return;
     }
     echo json_encode(array('status'=>0, 'msg'=>'发生错误'));
