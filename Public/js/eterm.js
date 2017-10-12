@@ -1275,6 +1275,7 @@ var createCommand = function(recevier, tpl, set){
 							var unique = uniqueXfsd(xfsdResultArray[i].result);
 							if(unique) xfsd_smp.push({'result': unique});
 						}
+						console.log(xfsd_smp)
 						xfsdTpl(xfsd_smp, 'xfsd-result-model', true);
 					}
 				}

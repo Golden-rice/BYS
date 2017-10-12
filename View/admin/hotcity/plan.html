@@ -70,6 +70,23 @@ var setCommand = function(command){
 
 	command.showHotCityPlan();
 
+	// 查询精简 xfsd
+	var searchXfsdResultByHotcity = new command.ReqCommand({
+		url: eterm.const.Controller + 'searchXfsdResultByHotcity',
+		clk: function(res){
+			if(res.msg)
+				alert(res.msg)
+
+			if(res.status){
+				console.log(res.result)
+				var mixModal  = new OtherModel("混舱", '');
+				xfsdTpl(res.result, 'xfsd-result-model')
+				mixModal.show();
+			}
+		}
+	}) 
+
+
 	// 查看 xfsd
 	$("#content").on("click", ".xfsd-result", function(){
 		xfsdModal = new OtherModel("运价结果", '');
@@ -85,28 +102,18 @@ var setCommand = function(command){
 	// 查看 简化结果
 	$("#content").on("click", ".simplify-xfsd", function(){
 		xfsdModal = new OtherModel("精简运价结果", '');
-		command.searchXfsdSmpResult({sid: $(this).data('sid')})
+		command.searchXfsdResultByHotcity({sid: $(this).data('sid')})
 	})
 
 	// 混舱 xfsd 
 	$("#content").on('click', '.mix-cabin', function(){
-		mixModal  = new OtherModel("混舱", '');
-		mkMixCabin()
+		searchXfsdResultByHotcity.execute({sid: $(this).data('xfsdsid')});
 	})
+
 }
 
 setCommand(eterm.createCommand(eterm.eterm,tpl));
 
-// 混舱
-function mkMixCabin(){
-	if(!xfsd_src || xfsd_src.length == 0) {
-		console.log('no xfsd');
-		return;
-	}
-
-	// 选择目标舱位
-	console.log(xfsd_src)
-}
 
 function mkTable(array, target, wrap, type){
 
@@ -225,6 +232,7 @@ function xfsdTpl(array, dom, show){
 		}
 	}
 	html += "</div>";
+
 	if(show){
 		$('#modal-content').html(html);
 		xfsdModal.show();

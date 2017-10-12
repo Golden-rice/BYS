@@ -38,7 +38,7 @@ class HotcityController extends Controller {
     $log =  fopen('log.txt', 'a');
 
   	// 所有日期未当日往后15天
-  	$startDate = '15OCT'; // strtoupper( date('dM',time() + 15*24*60*60) ) OR 当月15号
+  	$startDate = '15'.strtoupper(date('M', time())); // strtoupper( date('dM',time() + 15*24*60*60) ) OR 当月15号 ;
   	// xfsd计划
   	// 测试一条
     // 舱位
@@ -189,76 +189,62 @@ class HotcityController extends Controller {
   	return $update;
   }
 
+  public function searchXfsdResultByHotcity(){
+      $xfsd_model    = model('xfsd_result');
+    if(!isset($_POST['sid'])){
+      $start         = $_POST['start'];
+      $end           = $_POST['end'];
+      $aircompany    = $_POST['aircompany'];
+      $hotcity_model = model('hot_city');
+      $hotcity_result= $hotcity_model->where("`HC_Depart` = '{$start}' AND `HC_Arrive` = '{$end}' AND `HC_Aircompany` = '{$aircompany}'")->select();
+      $sidArray      = explode(',', $hotcity_result[0]['HC_XfsdResult_Sid']);
+    }else{
+      $sidArray      = explode(',', $_POST['sid']);
+    }
+      
+    $sidWhere      = '';
+    foreach ($sidArray as $sid) {
+      $sidWhere .= " `Sid` = {$sid} OR";
+    }
+    $xfsdArray     = $xfsd_model->where(rtrim($sidWhere, 'OR'))->select();
+    // 精简
+    if(!empty($xfsdArray)){
+      // 初始化
+      $tmpCabin = $xfsdArray[0]['xfsd_Cabin'];
+      $sid      = $xfsdArray[0]['Sid'];
+      $tmpXfsd  = array($tmpCabin=>$xfsdArray[0]);
+      // 按照命令请求划分
+      $result   = array($sid=>$tmpXfsd);
+      // 混在一起
+      $mix_result = array();
+      array_push($mix_result, $xfsdArray[0]);
 
-  // 查询出发至到达的运价
+      foreach ($xfsdArray as $key => $xfsd) {
+        if($xfsd['Sid'] != $sid){
+          $sid      = $xfsd['Sid'];
+          $result[$sid] = $tmpXfsd;
+          array_push($mix_result, $xfsd);
+        }
+        if($tmpCabin != $xfsd['xfsd_Cabin'] && !isset($tmpXfsd[$xfsd['xfsd_Cabin']]) ){
+          $tmpCabin = $xfsd['xfsd_Cabin'];
+          $tmpXfsd[$tmpCabin] = $xfsd;
+          array_push($mix_result, $xfsd);
+        }
+      }
+
+      echo json_encode(array('status'=>1, 'result'=>$mix_result, 'allResult'=>$xfsdArray));
+      return;
+    }
+    echo json_encode(array('status'=>0, 'msg'=>'发生错误'));
+  }
+
+  // 根据输入查询 price_source表
   public function searchPriceByInput(){
     $start         = $_POST['start'];
     $end           = $_POST['end'];
     $aircompany    = $_POST['aircompany'];
     $departureDate = $_POST['departureDate'];
-    // 利用精简后的数据 根据sid 获得 result
-    $xfsd_model    = model('xfsd_result');
-    // 根据舱位筛选运价结果
-    $hotcity_model = model('hot_city');
-    $hotcity_result= $hotcity_model->where("`HC_Depart` = '{$start}' AND `HC_Arrive` = '{$end}' AND `HC_Aircompany` = '{$aircompany}'")->select();
-
-    if(!empty($hotcity_result[0]['HC_Cabin'])){
-      $where_cabin_array = explode(',', $hotcity_result[0]['HC_Cabin']);
-      $where_cabin = '(';
-      foreach ($where_cabin_array as $cabin) {
-        $where_cabin .= "'{$cabin}',";
-      }
-      $where_cabin = rtrim($where_cabin, ',').')';
-    }
-
-    $where = '';
-    // 必填
-    if($start != '')
-      $where = "xfsd_Dep = '{$start}'";
-    
-    if($end != '')
-      $where .= " AND xfsd_Arr = '{$end}'";
-    
-    if($aircompany != '')
-      $where .= " AND xfsd_Owner = '{$aircompany}'";
-
-    // 去程日期
-    if($departureDate != '')
-      $where .= "AND xfsd_DateEnd > '{$departureDate}'";
-    else
-      $where .= "AND xfsd_DateEnd > '".date('Y-m-d',time())."'";
-    
-    if(isset($where_cabin))
-      $where .= " AND `xfsd_Cabin` IN {$where_cabin}";
-
-    $xfsd_model->prepare("SELECT
-        *, COUNT(DISTINCT A.FareBasis, A.xfsd_RoundFee, A.xfsd_indicator, A.xfsd_Cabin, A.xfsd_DateEnd) AS Count_duplicate # 去重
-      FROM
-        (
-          SELECT
-            *
-          FROM
-            e_cmd_xfsd_result
-          WHERE {$where} AND 
-            xfsd_SingleFee = 0
-          ORDER BY 
-            xfsd_RoundFee ASC # 显示最低价格
-        ) AS A
-      GROUP BY  # 精简
-        A.xfsd_Cabin,
-        A.xfsd_indicator,
-        A.xfsd_DateEnd 
-      ORDER BY 
-        A.xfsd_Cabin, A.xfsd_RoundFee ASC # 展示优化 " );
-    // var_dump($xfsd_model->testSql());
-    $xfsd_result = $xfsd_model->execute();
-
-    // 按照舱位及价格已精简
-    echo json_encode(array('result'=>$xfsd_result));
-    /* 销售日期
-    XS/FSDBJSCHI/15OCT/UA/#*GLE03MC8///#
-    xs/fsn1//15
-        */
+  
   }
 
   public function updatePriceSource(){
@@ -337,7 +323,7 @@ class HotcityController extends Controller {
         // 'AtPage'                  => '',
         // 'RouteFlag'               => '',
         'Command'                 => $value['Command'],
-        'Hid'                     => $hotcity_result[0]['Id'],
+        'Query'                   => json_encode($query),
         'Rule'                    => $value['xfsd_Rule'],
       );
     }
@@ -434,6 +420,77 @@ class HotcityController extends Controller {
 
     echo json_encode(array('result'=>$xfsd_result));
 
+  }
+
+  // ----------------------------- 原方法 ---------------------------
+  // 根据xfsd查询政策
+  public function searchPriceByXfsd(){
+    $start         = $_POST['start'];
+    $end           = $_POST['end'];
+    $aircompany    = $_POST['aircompany'];
+    $departureDate = $_POST['departureDate'];
+    // 利用精简后的数据 根据sid 获得 result
+    $xfsd_model    = model('xfsd_result');
+    // 根据舱位筛选运价结果
+    $hotcity_model = model('hot_city');
+    $hotcity_result= $hotcity_model->where("`HC_Depart` = '{$start}' AND `HC_Arrive` = '{$end}' AND `HC_Aircompany` = '{$aircompany}'")->select();
+
+    if(!empty($hotcity_result[0]['HC_Cabin'])){
+      $where_cabin_array = explode(',', $hotcity_result[0]['HC_Cabin']);
+      $where_cabin = '(';
+      foreach ($where_cabin_array as $cabin) {
+        $where_cabin .= "'{$cabin}',";
+      }
+      $where_cabin = rtrim($where_cabin, ',').')';
+    }
+
+    $where = '';
+    // 必填
+    if($start != '')
+      $where = "xfsd_Dep = '{$start}'";
+    
+    if($end != '')
+      $where .= " AND xfsd_Arr = '{$end}'";
+    
+    if($aircompany != '')
+      $where .= " AND xfsd_Owner = '{$aircompany}'";
+
+    // 去程日期
+    if($departureDate != '')
+      $where .= "AND xfsd_DateEnd > '{$departureDate}'";
+    else
+      $where .= "AND xfsd_DateEnd > '".date('Y-m-d',time())."'";
+    
+    if(isset($where_cabin))
+      $where .= " AND `xfsd_Cabin` IN {$where_cabin}";
+
+    $xfsd_model->prepare("SELECT
+        *, COUNT(DISTINCT A.FareBasis, A.xfsd_RoundFee, A.xfsd_indicator, A.xfsd_Cabin, A.xfsd_DateEnd, A.xfsd_Rule) AS Count_duplicate # 去重
+      FROM (
+          SELECT
+            *
+          FROM
+            e_cmd_xfsd_result
+          WHERE {$where} AND 
+            xfsd_SingleFee = 0
+          ORDER BY 
+            GmtModified DESC, xfsd_RoundFee ASC  # 显示最低价格 最新数据
+        ) AS A
+      GROUP BY  # 精简
+        A.xfsd_Cabin,
+        A.xfsd_indicator,
+        A.xfsd_DateEnd 
+      ORDER BY 
+        A.xfsd_Cabin, A.xfsd_RoundFee ASC # 展示优化 " );
+    // var_dump($xfsd_model->testSql());
+    $xfsd_result = $xfsd_model->execute();
+
+    // 按照舱位及价格已精简
+    echo json_encode(array('result'=>$xfsd_result));
+    /* 销售日期
+    XS/FSDBJSCHI/15OCT/UA/#*GLE03MC8///#
+    xs/fsn1//15
+        */
   }
 
 }

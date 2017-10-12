@@ -97,6 +97,8 @@ $a->build('xfsd', array(
 	'gmtCreate'      => 'int(13) NOT NULL',
 	// 修改时间
 	'gmtModified'    => 'int(13) DEFAULT NULL',
+	// 使用规则字段：销售日期
+	'SaleDate'       => 'varchar(200) DEFAULT NULL'
 ));
 
 // avh souce 及 result
