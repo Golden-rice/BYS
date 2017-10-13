@@ -1,0 +1,526 @@
+<{extends file='../layout.html'}>
+
+<{block name="title"}>舱位价格查询(from eterm)<{/block}>
+<{block name="content"}>
+
+<div class="row">
+	<div class="col-lg-12">
+		<!-- 输入框 -->
+		<div class="panel panel-default">
+		  <div class="panel-body">
+				<div class="form-inline">
+						<div class="input-group">
+
+							<!-- 区域  -->
+							<span class="input-group-addon" id="input-aircompany">航空公司</span>
+							<select class="form-control" id='aircompany' aria-describedby="input-aircompany">
+							  <option>——</option>
+							</select>
+							<!-- 区域 END -->
+
+							<!-- 出发  -->
+							<span class="input-group-addon" id="input-depart">出发</span>
+							<select class="form-control" id='depart' aria-describedby="input-depart">
+							  <option>——</option>
+							</select>
+							<!-- 出发 END -->
+
+							<!-- 到达  -->
+							<span class="input-group-addon" id="input-arrive">到达</span>
+							<select class="form-control" id='arrive' aria-describedby="input-arrive">
+							  <option>——</option>
+							</select>
+							<!-- 到达 END -->
+
+							<!-- 日期  -->
+							<span class="input-group-addon" id="input-departureDate">日期</span>
+							<input  class="form-control datetimepicker" id='departureDate' aria-describedby="input-departureDate" type="text">
+							<!-- 日期 END -->
+
+						</div>
+
+						<div class="input-group">
+							<input type="submit" name='dosubmit' id='dosubmit'  value='查询' class='btn btn-default'>
+						</div>
+
+						<div class="input-group">
+							<input type="submit" name='dosubmit2' id='dosubmit2'  value='开始生成' class='btn btn-primary'>
+						</div>
+
+				</div>
+			</div>
+		</div>
+		<!-- 输入框 END -->
+	</div>
+</div>
+
+<div id="content"></div>
+<div id="content-progress"></div>
+
+<!-- other modal -->
+<div class="modal fade" id="otherModal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" >
+  <div class="modal-dialog modal-lg" role="document" style='width:1600px'>
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="modalLabel"> </h4>
+      </div>
+      <!-- modal header -->
+
+      <div class="modal-body">
+        <div id="modal-content">
+            
+
+        </div>
+      </div>
+      <!-- modal body -->
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+      </div>
+      <!-- modal footer -->
+
+    </div>
+  </div>
+</div>
+<!-- other modal end -->
+
+<script>
+require(['eterm', "dt"], function(eterm, dt){
+
+// 弹出框   
+var OtherModel = function(title, content, footer){
+
+    $("#otherModal .modal-title").html(title);
+    $("#otherModal #modal-content").html(content);
+    $("#otherModal .modal-footer").html(footer ? footer:`<button type="button" class="btn btn-default"  data-dismiss="modal">关闭</button>`);
+
+    return {
+      hide: function(){
+          $("#otherModal").modal("hide");
+      },
+      show: function(){
+          $("#otherModal").modal();
+      }
+    }
+}
+
+// 日期控件
+$('.datetimepicker').datetimepicker({
+  language:  'fr',
+  format: 'yyyy-mm-dd',
+  weekStart: 1,
+  todayBtn:  1,
+  autoclose: 1,
+  todayHighlight: 1,
+  startView: 2,
+  minView: 2,
+  forceParse: 0
+});
+
+var tpl = {
+	mkSelect: mkSelect,
+	mkMainTable: mkMainTable,
+}
+
+function setQuery(){
+	return {
+		start: $('#depart').val(),
+		end: $('#arrive').val(),
+		departureDate: $('#departureDate').val(),
+		aircompany: $('#aircompany').val(),
+	}
+}
+
+function canSubmit(){
+	if($('#depart').val() === ''){
+		alert('出发未填')
+		return false;
+	}
+	if($('#arrive').val() === ''){
+		alert('到达未填')
+		return false;
+	}
+	if($('#aircompany').val() === ''){
+		alert('航空公司未填')
+		return false;
+	}
+
+	return true;
+}
+var setCommend = function(command){
+	command.searchPriceSelect();
+
+	var hid,     // 基础政策对应的hotcity的id
+			hotcity, // 存入数据的基础政策数据对应的hotcity
+			data;    // 存入数据库的基础政策数据
+
+	var setSaleDateModel,    // 设置销售日期的弹出框
+			updateSaleDateModel, // 更新销售日期的弹出框
+			mixCabinModel;       // 混舱弹出框
+
+	// 根据退票规则【设置】销售日期
+	var setPolicyStart = new command.ReqCommand({
+		url: eterm.const.Controller + 'setSaleDate',
+		clk: function(res){
+			setSaleDateModel = new OtherModel('回填销售日期', mkSaleDateInsertTable(res.result), `<button type="button" class="btn btn-primary" id='set-saleDate'>下一步</button><button type="button" class="btn btn-default"  data-dismiss="modal">关闭</button>`);
+			
+			setSaleDateModel.show();
+		}
+	})
+
+	// 根据退票规则【更新】销售日期则
+	var updatePolicyStart = new command.ReqCommand({
+		url: eterm.const.Controller + 'updateSaleDate',
+		clk: function(res){
+			if(res.status){
+				updateSaleDateModel = new OtherModel('回填销售日期', mkSaleDateInsertTable(res.result), `<button type="button" class="btn btn-primary" id='set-saleDate'>下一步</button><button type="button" class="btn btn-default"  data-dismiss="modal">关闭</button>`);
+				
+				updateSaleDateModel.show();
+			}
+
+			if(res.msg)
+				alert(res.msg);
+		}
+	})
+
+	// 保存政策的基础数据
+	var savePriceSource = new command.ReqCommand({
+		url: eterm.const.Controller + 'savePriceSource',
+		clk: function(res){
+			if(res.msg)
+				alert(res.msg)
+
+			// 设置销售日期
+			if(res.status === 1){
+				hid = res.hid;
+				setPolicyStart.execute(setQuery());
+			}
+
+			// 更新销售日期
+			if(res.status === 2){
+				hid = res.hid;
+				updatePolicyStart.execute({'hid': hid});
+			}
+
+			// 查询热门城市
+			if(hid)
+				reqHotCity.execute({'id': hid});
+		}
+	}) 
+
+	// 查询政策基础数据
+	var reqPriceSource = new command.ReqCommand({
+		url: eterm.const.Controller + 'searchPriceSource',
+		clk: function(res){
+
+			if(res.status){
+				// 混舱结果
+				mixCabinModel = new OtherModel('混舱', mkCabinTable(res.result, hotcity[0]), `<button type="button" class="btn btn-primary" id='set-saleDate'>下一步</button><button type="button" class="btn btn-default"  data-dismiss="modal">关闭</button>`);
+				// 混舱
+				setTimeout(function(){
+					mixCabinModel.show();
+				}, 500)
+			}
+				
+			if(res.msg)
+				alert(res.msg);
+		}
+	}) 
+
+	// 查询热门城市数据
+	var reqHotCity = new command.ReqCommand({
+		url: eterm.const.Controller + 'searchHotCityById',
+		clk: function(res){
+
+			if(res.status){
+				hotcity = res.result;
+			}
+				
+			if(res.msg)
+				alert(res.msg);
+		}
+	}) 
+
+	// 更新基础政策
+	var updatePriceSource = new command.ReqCommand({
+		url: eterm.const.Controller + 'updatePriceSource',
+		clk: function(res){
+			if(res.msg)
+				alert(res.msg)
+
+			if(res.status)
+				setSaleDateModel ? setSaleDateModel.hide() : updateSaleDateModel.hide();
+		}
+	}) 
+
+
+
+	$('#dosubmit').click(function(){
+		if(canSubmit())
+			command.searchPriceSource(setQuery());
+	})
+
+	$('#dosubmit2').click(function(){
+		if(canSubmit()){
+			// 查询的price source 数据
+			var data = eterm.eterm.data;
+			savePriceSource.execute({data: JSON.stringify(data), query: setQuery()});
+
+		}
+	})
+
+	// 销售日期的【下一步】
+	$('#otherModal').on('click', '#set-saleDate', function(){
+		var saleDateInput = {};
+		$('.saleDate').each(function(){
+			saleDateInput[$(this).data('rule')] = $(this).val();
+		})
+		// 更新
+		updatePriceSource.execute({'update': JSON.stringify(saleDateInput), 'hid': hid});
+		
+		reqPriceSource.execute({'hid': hid});
+
+	})
+
+	// 选择模板类型
+
+}
+
+setCommend(eterm.createCommand(eterm.eterm, tpl));
+
+function mkSelect(data){
+	'use strict';
+
+	let html = '';
+
+	function mkSelectByName(name){
+		if(data[name].length > 0){
+			html = '<option value="">请选择</option>';
+			for(var i in data[name]){
+				html += '<option value='+data[name][i]+'>'+data[name][i]+'</option>';
+			}
+			$('#'+name).html(html)
+		}
+	}
+
+	// 回填航空公司数据
+	mkSelectByName('aircompany');
+
+	// 回填出发地数据
+	mkSelectByName('depart');
+
+	// 回填出发地数据
+	mkSelectByName('arrive');
+}
+
+function mkSaleDateInsertTable(array){
+	let html = '', saleDate = '';
+	html += `<table class="table table-hover table-bordered table-responsive">
+		<thead>
+			<tr>
+				<th>FareBasis</th>
+				<th>命令</th>
+				<th>销售日期</th>
+			</tr>
+		</thead>
+	`;
+
+	for(var i in array){
+		saleDate = array[i].SaleDate ? array[i].SaleDate: '';
+		html += `
+			<tr>
+				<td>${array[i].FareBasis}</td>
+				<td>XS/FSD${array[i].xfsd_Dep}${array[i].xfsd_Arr}//${array[i].xfsd_Owner}/#*${array[i].FareBasis}/${array[i].xfsd_Rule.replace(' ', '')}//# -> XS FSN1//15（销售限制）, XS FSN1//4（航班限制）</td>
+				<td><input type='text' class='form-control saleDate' data-rule="${array[i].xfsd_Rule}" value="${saleDate}"></td>
+			</tr>
+		`
+	}
+
+	return html;
+}
+
+function mkMainTable(array, target){
+	let html = "";
+
+	html += `<table class="${target} table table-hover table-bordered table-responsive">
+	<thead>
+				<tr>
+					<th>序号</th>
+					<th>fare</th>
+					<th>命令</th>
+					<th>提前出票</th>
+					<th>单程价格</th>
+					<th>往返价格</th>
+					<th>舱位</th>
+					<th>最短停留</th>
+					<th>最长停留</th>
+					<th>适用截止日期</th>
+					<th>退票规则</th>
+					<th>可用星期</th>
+					<th>出发</th>
+					<th>到达</th>
+					<th>航空公司</th>
+					<th>方向</th>
+					<th>创建日期</th>
+				</tr></thead></table>`
+	
+	for(var j in array){
+		array[j]['index'] =	j;
+		array[j]['date']  =	array[j]['xfsd_DateStart']+">"+array[j]['xfsd_DateEnd'];
+		array[j]['time']  = new Date((array[j]['gmtCreate'] -0)*1000).format("yyyy-MM-dd hh:mm:ss");
+	}
+
+	$('#content').html(html);
+	$('.'+target).DataTable({
+      data: array,
+      columns: [
+          { data: "index" },
+          { data: "FareBasis" },
+          { data: "Command" },
+          { data: "xfsd_Advp" },
+          { data: "xfsd_SingleFee" },
+          { data: "xfsd_RoundFee" },
+          { data: "xfsd_Cabin" },
+          { data: "xfsd_MinStay" },
+          { data: "xfsd_MaxStay" },
+          { data: "date" },
+          { data: "xfsd_Rule" },
+          { data: "xfsd_Indicator" },
+          { data: "xfsd_Dep" },
+          { data: "xfsd_Arr" },
+          { data: "xfsd_Owner" },
+          { data: "xfsd_Region" },
+          { data: "time" },
+      ]
+  }); 
+}
+
+// 混舱模板
+function mkCabinTable(array, hotcity){
+	// console.log(array, hotcity);
+	if(JSON.stringify(array) === '{}') return;
+	// 内积 a^2
+	var result     = [],                        // 最终混舱结果
+			stayArray  = hotcity['HC_Routing'].split(','),       // 全部的中转城市
+			cabinMatch = hotcity['HC_Cabin'].split(','), // 热门城市舱位对照
+			date       = new Date();                  // 时间对象
+
+	function maxDate(date1, date2){
+		if(/\d/.exec(date1) && /\d/.exec(date2)){
+			return /\d/.exec(date1)[0]*(/D/.exec(date1)?1:30) > /\d/.exec(date2)[0]*(/D/.exec(date2)?1:30) ? date1 : date2;
+		}
+		else 
+			return '';
+	}
+
+	function makeArrayData(outboundData, inboundData, stay){
+		var result = {
+				'FareBasis'     : outboundData['FareBasis']+'/'+inboundData['FareBasis'],
+				'Advp'          : maxDate(outboundData['Advp'], inboundData['Advp']),
+				'SingleFare'    : outboundData['SingleFare']-0 == 0 ? 0:(outboundData['SingleFare']-0)/2+(inboundData['SingleFare']-0)/2,
+				'RoundFare'     : outboundData['RoundFare']-0 == 0 ? 0:(outboundData['RoundFare']-0)/2+(inboundData['RoundFare']-0)/2,
+				// 出境的舱位，和境外的舱位存在争议
+				'Cabin'         : outboundData['Cabin']+(stay !== ''? '-'+outboundData['Cabin']+'-'+inboundData['Cabin']:'')+'-'+inboundData['Cabin'],
+				'MinStop'       : maxDate(outboundData['MinStop'], inboundData['MinStop']),
+				'MaxStop'       : maxDate(outboundData['MaxStop'], inboundData['MaxStop']),
+				'ValidBegin'    : date.max(outboundData['ValidBegin'], inboundData['ValidBegin']),
+				'ValidEnd'      : date.max(outboundData['ValidEnd'], inboundData['ValidEnd']),
+				'OutboundWeek'  : outboundData['OutboundWeek'],
+				'InboundWeek'   : inboundData['OutboundWeek'],
+				'Rule'          : outboundData['Rule']+'/'+inboundData['Rule'],
+				'Dep'           : outboundData['Dep'],
+				'Arr'           : outboundData['Arr'],
+				// 新增字段：中转城市
+				'Stay'          : stay ? stay : '', 
+				'Airline'       : outboundData['Airline'],
+				// 新增字段：航路
+				'Rounting'      : {},
+				// 新增字段：fsi
+				// XS FSI/UA
+	      // S UA   1310\09SEP BJS0100 0200CHI0X    76W 
+	      // S UA   1310\09SEP CHI0300 0400NYC0S    76W 
+	      // S UA   981\09SEP BJS0100 0200CHI0X    76W
+	      // S UA   981\09SEP NYC0300 0400BJS0S    76W 
+				'Fsi'           : {}
+			}
+			var outboundDate   = outboundData['FareDate'],
+					outboundFlight = '0000',
+					inboundDate    = inboundData['FareDate'],
+					inboundFlight  = '0000';
+			if(stay){
+				result['Rounting'] = {
+					'allStay' : outboundData['Dep']+'-'+outboundData['Airline']+'-'+stay+'-'+outboundData['Airline']+'-'+outboundData['Arr']+'-'+inboundData['Airline']+'-'+stay+'-'+inboundData['Airline']+'-'+inboundData['Dep'],
+					'outboundStay' : outboundData['Dep']+'-'+outboundData['Airline']+'-'+stay+'-'+outboundData['Airline']+'-'+outboundData['Arr']+'-'+inboundData['Airline']+'-'+inboundData['Dep'],
+					'inboundStay' : outboundData['Dep']+'-'+outboundData['Airline']+'-'+outboundData['Arr']+'-'+inboundData['Airline']+'-'+stay+'-'+inboundData['Airline']+'-'+inboundData['Dep'],
+					'noStay': outboundData['Dep']+'-'+outboundData['Airline']+'-'+outboundData['Arr']+'-'+inboundData['Airline']+'-'+inboundData['Dep'],
+				}
+				result['Fsi'] = {
+					'allStay' :  "XS FSI/"+outboundData['Airline']+"\r"
+						+ "S "+outboundData['Airline']+"   "+outboundFlight+outboundData['Cabin']+outboundDate+" "+outboundData['Dep']+"0100 0200"+stay+"0X    76W \r" 
+						+ "S "+outboundData['Airline']+"   "+outboundFlight+outboundData['Cabin']+outboundDate+" "+stay+"0300 0400"+outboundData['Arr']+"0S    76W \r"
+						+ "S "+inboundData['Airline'] +"   "+inboundFlight +inboundData['Cabin'] +inboundDate +" "+inboundData['Arr']+"0500 0600"+stay+"0X    76W \r" 
+						+ "S "+inboundData['Airline'] +"   "+inboundFlight +inboundData['Cabin'] +inboundDate +" "+stay+"0700 0800"+inboundData['Dep']+"0S    76W \r",
+					'outboundStay' : "XS FSI/"+outboundData['Airline']+"\r"
+						+ "S "+outboundData['Airline']+"   "+outboundFlight+outboundData['Cabin']+outboundDate+" "+outboundData['Dep']+"0100 0200"+stay+"0X    76W \r" 
+						+ "S "+outboundData['Airline']+"   "+outboundFlight+outboundData['Cabin']+outboundDate+" "+stay+"0300 0400"+outboundData['Arr']+"0S    76W \r"
+						+ "S "+inboundData['Airline'] +"   "+inboundFlight +inboundData['Cabin'] +inboundDate +" "+inboundData['Arr']+"0700 0800"+inboundData['Dep']+"0S    76W \r",
+					'inboundStay'  : "XS FSI/"+outboundData['Airline']+"\r"
+						+ "S "+outboundData['Airline']+"   "+outboundFlight+outboundData['Cabin']+outboundDate+" "+outboundData['Dep']+"0300 0400"+outboundData['Arr']+"0S    76W \r"
+						+ "S "+inboundData['Airline'] +"   "+inboundFlight +inboundData['Cabin'] +inboundDate +" "+inboundData['Arr']+"0500 0600"+stay+"0X    76W \r" 
+						+ "S "+inboundData['Airline'] +"   "+inboundFlight +inboundData['Cabin'] +inboundDate +" "+stay+"0700 0800"+inboundData['Dep']+"0S    76W \r",
+					'noStay': "XS FSI/"+outboundData['Airline']+"\r"
+						+ "S "+outboundData['Airline']+"   "+outboundFlight+outboundData['Cabin']+outboundDate+" "+outboundData['Dep']+"0100 0200"+outboundData['Arr']+"0S    76W \r" 
+						+ "S "+inboundData['Airline'] +"   "+inboundFlight +inboundData['Cabin'] +inboundDate +" "+inboundData['Arr']+"0300 0400"+inboundData['Dep']+"0S    76W \r" 
+				}
+			}else{
+				result['Rounting'] = {
+					'noStay': outboundData['Dep']+'-'+outboundData['Airline']+'-'+outboundData['Arr']+'-'+inboundData['Airline']+'-'+inboundData['Dep']
+				}
+				result['Fsi'] = {
+					'noStay': "XS FSI/"+outboundData['Airline']+"\r"
+						+ "S "+outboundData['Airline']+"   "+outboundFlight+outboundData['Cabin']+outboundData['FareDate']+" "+outboundData['Dep']+"0100 0200"+outboundData['Arr']+"0S    76W \r" 
+						+ "S "+inboundData['Airline'] +"   "+inboundFlight +inboundData['Cabin'] +inboundData['FareDate'] +" "+inboundData['Arr']+"0300 0400"+inboundData['Dep']+"0S    76W \r" 
+				}
+			}
+			return result;
+	}
+
+	// 根据热门城市筛选舱位
+	if(cabinMatch.length > 1 && cabinMatch[0] != '')
+		for(var a in array){
+			for(var c in cabinMatch){
+				if(cabinMatch[c] === array[a].Cabin)
+					break;
+				if(c === cabinMatch.length-1)
+					array[a].splice(a, 1);
+			}
+		}
+
+
+	for(var i in array){   // 去程
+
+		for(var j in array){ // 回程
+
+      if(stayArray.length > 0 && stayArray[0] != ''){
+				for(var s in stayArray){
+					// 按照中转再次拆分
+					result.push(makeArrayData(array[i], array[j], stayArray[s]))
+				}
+      }else{
+      	result.push(makeArrayData(array[i], array[j]))
+      }
+
+		}
+	}
+	let html = `
+
+	`;
+	console.log(result)
+	return '';
+}
+
+})
+</script>
+<{/block}>

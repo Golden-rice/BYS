@@ -93,7 +93,7 @@ class HotcityController extends Controller {
     	$update = $this->savePlanResult($result_xfsd, $result_avh, $result_fsl, $result_xfsd_continue);
       $result_update = $hotcity->where("`Id` = {$col['Id']}")->update($update);
 
-      // 生成混舱数据
+      // 生成基础政策数据 price_source
       // $eterm->searchPriceSource();
 
       // 打印至 log 记录
@@ -216,44 +216,21 @@ class HotcityController extends Controller {
       // 按照sid 分组
       $in_group_result = array($sid=>array());
       $in_group_smp_result = array($sid=>array($tmpCabin => $tmpXfsd));
+
       foreach($xfsdArray as $xfsd){
         if($sid != $xfsd['Sid']){
           $sid  = $xfsd['Sid'];
-          $in_group_result[$sid] = array();
-
+          if(!isset($in_group_result[$sid])){
+            $in_group_result[$sid] = array();
+          }
         }
-
         if($sid == $xfsd['Sid']){
           array_push($in_group_result[$sid], $xfsd);
-
-        }
-      }
-
-      $tmpCabin = $xfsdArray[0]['xfsd_Cabin'];
-      $tmpXfsd  = array($tmpCabin=>$xfsdArray[0]);
-      $sid      = $xfsdArray[0]['Sid'];
-      
-      // 按照命令请求划分
-      $result   = array($sid=>$tmpXfsd);
-      // 混在一起
-      $mix_result = array();
-      array_push($mix_result, $xfsdArray[0]);
-      // 精简
-      foreach ($xfsdArray as $key => $xfsd) {
-        if($xfsd['Sid'] != $sid){
-          $sid      = $xfsd['Sid'];
-          array_push($mix_result, $xfsd);
-        }
-        if($tmpCabin != $xfsd['xfsd_Cabin'] && !isset($tmpXfsd[$xfsd['xfsd_Cabin']]) ){
-          $tmpCabin = $xfsd['xfsd_Cabin'];
-          $tmpXfsd[$tmpCabin] = $xfsd;
-          array_push($mix_result, $xfsd);
         }
       }
 
       echo json_encode(array('status'=>1, 
-        'inGroupResult'=>$in_group_result, // 分组非精简
-        'result'       =>$mix_result,            
+        'inGroupResult'=>$in_group_result, // 分组非精简        
         'allResult'    =>$xfsdArray,       // 非分组非精简
       ));
       return;

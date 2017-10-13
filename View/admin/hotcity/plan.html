@@ -49,6 +49,11 @@ var OtherModel = function(title, content, footer){
         },
         show: function(){
             $("#otherModal").modal();
+        },
+        set: function(title, contetn, footer){
+			    $("#otherModal .modal-title").html(title);
+			    $("#otherModal #modal-content").html(content);
+			    $("#otherModal .modal-footer").html(footer);
         }
     }
 }
@@ -62,14 +67,62 @@ var tpl = {
 // 弹出层 暴露至全局
 var xfsdModal, avhModal, mixModal;
 
-var cabin = [], // 全局变量：目标舱位
-		xfsd_src,   // 全局变量：xfsd 原始数据
-		avh;        // 全局变量：avh
+var cabin = []; // 全局变量：目标舱位
+		// xfsd_src,   // 全局变量：xfsd 原始数据
+		// avh;        // 全局变量：avh
+
+function uniqueXfsd(result){
+	if(!result || result.length == 0) {
+		return;
+	}
+	// 过滤重复舱位，保存最便宜的
+	var tmpCabin = result[0].xfsd_Cabin,      // 临时舱位
+			tmpXfsd = {},                         // 临时xfsd
+			array = [];                           // 最后返回结果
+
+	tmpXfsd[result[0].xfsd_Cabin] = result[0];  // 初始化
+
+	// 去重
+	for (var i in result){
+		if(tmpCabin !== result[i].xfsd_Cabin && tmpXfsd[result[i].xfsd_Cabin] == undefined ){
+			tmpXfsd[result[i].xfsd_Cabin] = result[i]
+			tmpCabin = result[i].xfsd_Cabin;
+		}
+	}
+
+	for (var j in tmpXfsd){
+		array.push(tmpXfsd[j])
+	}
+	return array;
+}
+
+function uniqueRule(result){
+	if(!result || result.length == 0) {
+		return;
+	}
+	// 过滤重复舱位，保存最便宜的
+	var tmpRule = result[0].xfsd_Rule,      // 临时舱位
+			tmpXfsd = {},                         // 临时xfsd
+			array = [];                           // 最后返回结果
+
+	tmpXfsd[result[0].xfsd_Rule] = result[0];  // 初始化
+
+	// 去重
+	for (var i in result){
+		if(tmpRule !== result[i].xfsd_Rule && tmpRule[result[i].xfsd_Rule] == undefined ){
+			tmpXfsd[result[i].xfsd_Rule] = result[i]
+			tmpRule = result[i].xfsd_Rule;
+		}
+	}
+
+	return tmpXfsd;
+}
 
 var setCommand = function(command){
 
 	command.showHotCityPlan();
-
+	// 全局变量
+	var xfsdInGroup // xfsd 分组的全部数据
 
 	// 查询全部且分组的 xfsd
 	var searchXfsdResultByHotcity = new command.ReqCommand({
@@ -79,12 +132,13 @@ var setCommand = function(command){
 				alert(res.msg)
 
 			if(res.status){
-				console.log(res)
-				mixModal  = new OtherModel("运价结果", xfsdTable(res.inGroupResult, 'xfsd-result-model'));
+				xfsdInGroup = res.inGroupResult
+				mixModal  = new OtherModel("运价结果", xfsdTable(xfsdInGroup, 'xfsd-result-model'));
 				mixModal.show();
 			}
 		}
 	}) 
+
 
 	// 查询精简且分组的 xfsd
 	var searchSmpXfsdResultByHotcity = new command.ReqCommand({
@@ -94,10 +148,46 @@ var setCommand = function(command){
 				alert(res.msg)
 
 			if(res.status){
-				console.log(res)
-				mixModal  = new OtherModel("精简运价结果", xfsdTable(res.inGroupResult, 'xfsd-result-model'));
+				var inGroupSmpResult = [];
+				xfsdInGroup = res.inGroupResult
+				for(var i in res.inGroupResult){
+					inGroupSmpResult.push(uniqueXfsd(res.inGroupResult[i]))
+				}
+				mixModal  = new OtherModel("精简运价结果", xfsdTable(inGroupSmpResult, 'xfsd-result-model'));
 				mixModal.show();
 			}
+		}
+	}) 
+
+	// 查询全部未分组的 xfsd
+	var searchXfsdAllResultByHotcity = new command.ReqCommand({
+		url: eterm.const.Controller + 'searchXfsdResultByHotcity',
+		clk: function(res){
+			if(res.msg)
+				alert(res.msg)
+
+			if(res.status){
+				var allSmpResult = [], allSmpRule = []; // 未分组精简结果
+				xfsdInGroup = res.inGroupResult
+				for(var i in res.inGroupResult){
+					allSmpResult = allSmpResult.concat(uniqueXfsd(res.inGroupResult[i]))
+				}
+
+				mixModal  = new OtherModel("回填销售日期", mkSaleDateInsertTable(uniqueRule(allSmpResult)), `<button type="button" class="btn btn-primary" id='set-saleDate'>下一步</button><button type="button" class="btn btn-default"  data-dismiss="modal">关闭</button>`);
+				mixModal.show();
+			}
+		}
+	}) 
+
+	// 更新基础政策：销售日期
+	var updatePriceSource = new command.ReqCommand({
+		url: eterm.const.Controller + 'updatePriceSource',
+		clk: function(res){
+			if(res.msg)
+				alert(res.msg)
+			console.log(res)
+			// if(res.status)
+				// setSaleDateModel ? setSaleDateModel.hide() : updateSaleDateModel.hide();
 		}
 	}) 
 
@@ -105,7 +195,12 @@ var setCommand = function(command){
 	$("#content").on("click", ".xfsd-result", function(){
 		// xfsdModal = new OtherModel("运价结果", '');
 		// command.searchXfsdResult({sid: $(this).data('sid')});
-		searchXfsdResultByHotcity.execute({sid: $(this).data('sid')});
+		if(xfsdInGroup){
+			mixModal  = new OtherModel("运价结果", xfsdTable(xfsdInGroup, 'xfsd-result-model'));
+			mixModal.show();
+		}else{
+			searchXfsdResultByHotcity.execute({sid: $(this).data('sid')});
+		}
 	})
 
 	// 查看 avh
@@ -118,18 +213,43 @@ var setCommand = function(command){
 	$("#content").on("click", ".simplify-xfsd", function(){
 		// xfsdModal = new OtherModel("精简运价结果", '');
 		// command.searchXfsdResultByHotcity({sid: $(this).data('sid')})
-		searchSmpXfsdResultByHotcity.execute({sid: $(this).data('sid')});
+		
+		if(xfsdInGroup){
+			var inGroupSmpResult = [];
+			for(var i in xfsdInGroup){
+				inGroupSmpResult.push(uniqueXfsd(xfsdInGroup[i]))
+			}
+			mixModal  = new OtherModel("精简运价结果", xfsdTable(inGroupSmpResult, 'xfsd-result-model'));
+			mixModal.show();
+		}else{
+			searchSmpXfsdResultByHotcity.execute({sid: $(this).data('sid')});
+		}
+
 	})
 
 	// 混舱 xfsd 
 	$("#content").on('click', '.mix-cabin', function(){
-		searchXfsdResultByHotcity.execute({sid: $(this).data('xfsdsid')});
+		searchXfsdAllResultByHotcity.execute({sid: $(this).data('xfsdsid')});
+	})
+
+	// 销售日期的【下一步】
+	$('#otherModal').on('click', '#set-saleDate', function(){
+		var saleDateInput = {};
+		$('.saleDate').each(function(){
+			saleDateInput[$(this).data('rule')] = $(this).val();
+		})
+		// 更新
+		updatePriceSource.execute({'update': JSON.stringify(saleDateInput), 'hid': hid});
+		
+		reqPriceSource.execute({'hid': hid});
+
 	})
 
 }
 
 setCommand(eterm.createCommand(eterm.eterm,tpl));
 
+// 所有的计划任务
 function mkTable(array, target, wrap, type){
 
 	'use strict';
@@ -193,8 +313,9 @@ function mkTable(array, target, wrap, type){
 	appendType === 'a'? $(context).append(html): $(context).html(html);
 }
 
+// xfsd 运价模板
 function xfsdTable(array, dom){
-	let html = "<div class='${dom}'>";
+	let html = `<div class='${dom}'>`;
 	for(var j in array){
 		html += `<table class="table table-hover table-bordered table-responsive">
 					<tr>
@@ -244,11 +365,9 @@ function xfsdTable(array, dom){
 	}
 	html += "</div>";
 	return html;
-
 }
 
-
-
+// avh 舱位模板
 function avhTpl(array, dom){ // (data, className, container)
 	// 暴露至全局
 	avh = array.result;
@@ -298,6 +417,32 @@ function avhTpl(array, dom){ // (data, className, container)
 	avhModal.show();
 }
 
+// 混舱1：回填销售日期
+function mkSaleDateInsertTable(array){
+	let html = '', saleDate = '';
+	html += `<table class="table table-hover table-bordered table-responsive">
+		<thead>
+			<tr>
+				<th>FareBasis</th>
+				<th>命令</th>
+				<th>销售日期</th>
+			</tr>
+		</thead>
+	`;
+
+	for(var i in array){
+		saleDate = array[i].SaleDate ? array[i].SaleDate: '';
+		html += `
+			<tr>
+				<td>${array[i].FareBasis}</td>
+				<td>XS/FSD${array[i].xfsd_Dep}${array[i].xfsd_Arr}//${array[i].xfsd_Owner}/#*${array[i].FareBasis}/${array[i].xfsd_Rule.replace(' ', '')}//# -> XS FSN1//15（销售限制）, XS FSN1//4（航班限制）</td>
+				<td><input type='text' class='form-control saleDate' data-rule="${array[i].xfsd_Rule}" value="${saleDate}"></td>
+			</tr>
+		`
+	}
+
+	return html;
+}
 
 // --------------------  过期方法 ---------------------
 function xfsdTpl(array, dom, show){
