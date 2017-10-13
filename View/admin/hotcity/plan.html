@@ -96,34 +96,12 @@ function uniqueXfsd(result){
 	return array;
 }
 
-function uniqueRule(result){
-	if(!result || result.length == 0) {
-		return;
-	}
-	// 过滤重复舱位，保存最便宜的
-	var tmpRule = result[0].xfsd_Rule,      // 临时舱位
-			tmpXfsd = {},                         // 临时xfsd
-			array = [];                           // 最后返回结果
-
-	tmpXfsd[result[0].xfsd_Rule] = result[0];  // 初始化
-
-	// 去重
-	for (var i in result){
-		if(tmpRule !== result[i].xfsd_Rule && tmpRule[result[i].xfsd_Rule] == undefined ){
-			tmpXfsd[result[i].xfsd_Rule] = result[i]
-			tmpRule = result[i].xfsd_Rule;
-		}
-	}
-
-	return tmpXfsd;
-}
-
 var setCommand = function(command){
 
 	command.showHotCityPlan();
 	// 全局变量
-	var xfsdInGroup // xfsd 分组的全部数据
-
+	var xfsdInGroup; // xfsd 分组的全部数据
+	var	hid;         // 当前混舱的hotcity id 
 	// 查询全部且分组的 xfsd
 	var searchXfsdResultByHotcity = new command.ReqCommand({
 		url: eterm.const.Controller + 'searchXfsdResultByHotcity',
@@ -159,23 +137,20 @@ var setCommand = function(command){
 		}
 	}) 
 
-	// 查询全部未分组的 xfsd
-	var searchXfsdAllResultByHotcity = new command.ReqCommand({
-		url: eterm.const.Controller + 'searchXfsdResultByHotcity',
+
+	// 查询政策基础数据
+	var reqPriceSource = new command.ReqCommand({
+		url: eterm.const.Controller + 'searchPriceSource',
 		clk: function(res){
-			if(res.msg)
-				alert(res.msg)
 
 			if(res.status){
-				var allSmpResult = [], allSmpRule = []; // 未分组精简结果
-				xfsdInGroup = res.inGroupResult
-				for(var i in res.inGroupResult){
-					allSmpResult = allSmpResult.concat(uniqueXfsd(res.inGroupResult[i]))
-				}
-
-				mixModal  = new OtherModel("回填销售日期", mkSaleDateInsertTable(uniqueRule(allSmpResult)), `<button type="button" class="btn btn-primary" id='set-saleDate'>下一步</button><button type="button" class="btn btn-default"  data-dismiss="modal">关闭</button>`);
+				console.log(res)
+				mixModal  = new OtherModel("回填销售日期", mkSaleDateInsertTableFromPrice(res.result), `<button type="button" class="btn btn-primary" id='set-saleDate'>下一步</button><button type="button" class="btn btn-default"  data-dismiss="modal">关闭</button>`);
 				mixModal.show();
 			}
+				
+			if(res.msg)
+				alert(res.msg);
 		}
 	}) 
 
@@ -229,19 +204,25 @@ var setCommand = function(command){
 
 	// 混舱 xfsd 
 	$("#content").on('click', '.mix-cabin', function(){
-		searchXfsdAllResultByHotcity.execute({sid: $(this).data('xfsdsid')});
+		// 暴露全局变量，用于销售日期更新
+		hid = $(this).data('id');
+		reqPriceSource.execute({'hid': hid});
 	})
 
 	// 销售日期的【下一步】
 	$('#otherModal').on('click', '#set-saleDate', function(){
-		var saleDateInput = {};
-		$('.saleDate').each(function(){
-			saleDateInput[$(this).data('rule')] = $(this).val();
-		})
+
 		// 更新
-		updatePriceSource.execute({'update': JSON.stringify(saleDateInput), 'hid': hid});
-		
-		reqPriceSource.execute({'hid': hid});
+		if(hid != undefined){
+			var saleDateInput = {};
+			$('.saleDate').each(function(){
+				saleDateInput[$(this).data('rule')] = $(this).val();
+			})
+			updatePriceSource.execute({'update': JSON.stringify(saleDateInput), 'hid': hid});
+			// reqPriceSource.execute({'hid': hid});
+		}else{
+			console.log('查询hotcity id 错误');
+		}
 
 	})
 
@@ -303,7 +284,7 @@ function mkTable(array, target, wrap, type){
 					<td>${array[i].HC_Status == 2? '完成': '等待'}</td>
 					<td>${new Date((array[i].GmtCreate -0)*1000).format("yyyy-MM-dd hh:mm:ss")}</td>
 					<td>${new Date((array[i].GmtModified -0)*1000).format("yyyy-MM-dd hh:mm:ss")}</td>
-					<td><a href='javascript:void(0)' class='mix-cabin' data-xfsdsid="${array[i].HC_XfsdResult_Sid}" data-avhsid="${array[i].HC_AvhResult_Sid}">混舱</a></td>
+					<td><a href='javascript:void(0)' class='mix-cabin' data-id="${array[i].Id}" data-xfsdsid="${array[i].HC_XfsdResult_Sid}" data-avhsid="${array[i].HC_AvhResult_Sid}">混舱</a></td>
 				</tr>
 		`
 	}
@@ -417,8 +398,9 @@ function avhTpl(array, dom){ // (data, className, container)
 	avhModal.show();
 }
 
+
 // 混舱1：回填销售日期
-function mkSaleDateInsertTable(array){
+function mkSaleDateInsertTableFromPrice(array){
 	let html = '', saleDate = '';
 	html += `<table class="table table-hover table-bordered table-responsive">
 		<thead>
@@ -435,14 +417,15 @@ function mkSaleDateInsertTable(array){
 		html += `
 			<tr>
 				<td>${array[i].FareBasis}</td>
-				<td>XS/FSD${array[i].xfsd_Dep}${array[i].xfsd_Arr}//${array[i].xfsd_Owner}/#*${array[i].FareBasis}/${array[i].xfsd_Rule.replace(' ', '')}//# -> XS FSN1//15（销售限制）, XS FSN1//4（航班限制）</td>
-				<td><input type='text' class='form-control saleDate' data-rule="${array[i].xfsd_Rule}" value="${saleDate}"></td>
+				<td>XS/FSD${array[i].Dep}${array[i].Arr}//${array[i].Airline}/#*${array[i].FareBasis}/${array[i].Rule.replace(' ', '')}//# -> XS FSN1//15（销售限制）, XS FSN1//4（航班限制）</td>
+				<td><input type='text' class='form-control saleDate' data-rule="${array[i].Rule}" value="${saleDate}"></td>
 			</tr>
 		`
 	}
 
 	return html;
 }
+
 
 // --------------------  过期方法 ---------------------
 function xfsdTpl(array, dom, show){
@@ -505,6 +488,7 @@ function xfsdTpl(array, dom, show){
 		xfsdModal.show();
 	}
 }
+
 
 })
 

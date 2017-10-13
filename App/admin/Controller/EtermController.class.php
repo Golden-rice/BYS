@@ -189,6 +189,8 @@ class EtermController extends Controller {
 		$this->$saveActionName($array, $id, $command); 
 	}
 
+
+
 	// 测试数据
 	private function saveTestResult($array, $id, $command){
 		echo 'test save name';
@@ -345,14 +347,17 @@ class EtermController extends Controller {
   				// 第一页数据相同，读取数据库
 	  			else{
 	  				$xfsd->wtTmp($result['Detail']);
+	  				$id          = $result['Id'];
 	  				$resultArr   = $ab_flag ? $xfsd->analysis(array(2,3,4)) : $xfsd->analysis(array(2,3));
 						$array[$end] = $resultArr;
+						// 更新 source GmtModified
+						$this->updateCmdSource(array('GmtModified' => time(), 'command' => $command), 'xfsd');
 	  			}
 	  		}else{
 	  			echo '第一页的数据检查出错';
 	  			return;
 	  		}
-
+	  		
 			}
 			// 有，但是储存时间不大于一天，读取数据库数据
 			elseif( isset($result['GmtModified']) && $result['GmtModified'] + 24*60*60 >= time()){
@@ -360,7 +365,6 @@ class EtermController extends Controller {
 				$xfsd->wtTmp($result['Detail']);
 				$resultArr   = $ab_flag ? $xfsd->analysis(array(2,3,4)) : $xfsd->analysis(array(2,3));
 				$array[$end] = $resultArr;
-
 			}
 			// 无，从新查询，并临时保存 source 及 result 
 			else{
@@ -390,6 +394,10 @@ class EtermController extends Controller {
 		}else{
 			echo json_encode(array('array'=>$array, 'time'=>'更新时间：'.date('Y-m-d H:i:s', $xfsd->fileTime)) );
 		}
+  }
+
+  public function saveXfsdSource(){
+
   }
 
   // 储存xfsd 解析结果，用是否含id来区分是否保存
@@ -543,6 +551,8 @@ class EtermController extends Controller {
 					$id = $result['Id'];
 					$avh->wtTmp($result['Detail']);
 					$array[$value] = array_merge($array[$value], $avh->analysis(array(1,2,6)));
+					// 更新 source GmtModified
+					$this->updateCmdSource(array('GmtModified' => time(), 'command' => $command), 'avh');
 				}
 				else{
 					// 没有，新增

@@ -32,7 +32,7 @@ class HotcityController extends Controller {
     }
 
   	$hotcity = model('hot_city');
-  	$result  = $hotcity->where("`HC_Status` = 0 OR `GmtModified` < ".(time()-24*60*60))->limit('3')->select();
+  	$result  = $hotcity->limit('3')->select(); // ->where("`HC_Status` = 0 OR `GmtModified` < ".(time()-24*60*60))
   	$eterm   = reflect('eterm');
 
     $log =  fopen('log.txt', 'a');
@@ -94,7 +94,7 @@ class HotcityController extends Controller {
       $result_update = $hotcity->where("`Id` = {$col['Id']}")->update($update);
 
       // 生成基础政策数据 price_source
-      // $eterm->searchPriceSource();
+      $this->savePriceSource(array_merge($col, $update));
 
       // 打印至 log 记录
       \BYS\Report::p($col);
@@ -143,7 +143,7 @@ class HotcityController extends Controller {
     return false;
   }
 
-
+  // 根据跑完的及其后日期的xfsd，avh，返回更新 hot_city 表的数据
   private function savePlanResult($xfsd , $avh, $fsl, $xfsd_continue = array()){
   	$hotcity = model('hot_city');
 
@@ -189,8 +189,9 @@ class HotcityController extends Controller {
   	return $update;
   }
 
-  public function searchXfsdResultByHotcity(){
-      $xfsd_model    = model('xfsd_result');
+  // 如果利用post 传入 xfsd sid 则，直接返回xfsd，否则根据post 传递查询hotcity后，获得sid，再查询 xfsd
+  public function searchXfsdResultByHotcity($return = false){
+    $xfsd_model    = model('xfsd_result');
     if(!isset($_POST['sid'])){
       $start         = $_POST['start'];
       $end           = $_POST['end'];
@@ -207,7 +208,10 @@ class HotcityController extends Controller {
       $sidWhere .= " `Sid` = {$sid} OR";
     }
     $xfsdArray     = $xfsd_model->where(rtrim($sidWhere, 'OR'))->select();
-    
+    // 此处再增加对xfsd筛选 利用SQL
+
+    // 此处再增加对xfsd筛选 END
+
     if(!empty($xfsdArray)){
       // 初始化
       $tmpCabin = $xfsdArray[0]['xfsd_Cabin'];
@@ -229,10 +233,17 @@ class HotcityController extends Controller {
         }
       }
 
-      echo json_encode(array('status'=>1, 
-        'inGroupResult'=>$in_group_result, // 分组非精简        
-        'allResult'    =>$xfsdArray,       // 非分组非精简
-      ));
+      if($return){
+        return array('status'=>1, 
+          'inGroupResult'=>$in_group_result, // 分组非精简        
+          'allResult'    =>$xfsdArray        // 非分组非精简
+        );
+      }else{
+        echo json_encode(array('status'=>1, 
+          'inGroupResult'=>$in_group_result, // 分组非精简        
+          'allResult'    =>$xfsdArray,       // 非分组非精简
+        ));
+      }
       return;
     }
     echo json_encode(array('status'=>0, 'msg'=>'发生错误'));
@@ -247,6 +258,7 @@ class HotcityController extends Controller {
   
   }
 
+  // 更新 price_source 的销售日期
   public function updatePriceSource(){
     $update_src     = json_decode($_POST['update'], true);
     $hid            = $_POST['hid'];
@@ -266,25 +278,40 @@ class HotcityController extends Controller {
     echo json_encode(array('msg'=>'更新失败', 'status'=>0));
   }
 
-  public function savePriceSource(){
-    $m_price_source = model('price_source');
-    $m_hotcity      = model('hot_city');
-    $array          = json_decode($_POST['data'], true);
-    $query          = $_POST['query'];
-    $where          = "`HC_Depart` = '{$query['start']}' ";
-    if(!empty($query['end'])) $where .= " AND `HC_Arrive` = '{$query['end']}'";
-    if(!empty($query['aircompany'])) $where .= " AND `HC_Aircompany` = '{$query['aircompany']}'";
-    $hotcity_result = $m_hotcity->where($where)->select();
+  // 跑完plan，生成相应的精简且不分组的price数据，保存
 
-    if($m_price_source->where("`Hid`= {$hotcity_result[0]['Id']}")->select()){
-      echo json_encode(array('msg'=>'已存在', 'status'=>2, 'hid'=>$hotcity_result[0]['Id']));
+  public function savePriceSource($hotcity){
+    $m_price_source = model('price_source');
+
+    if($m_price_source->where("`Hid`= {$hotcity['Id']}")->select()){
+      echo json_encode(array('msg'=>'已存在', 'status'=>2, 'hid'=>$hotcity['Id']));
       return;
     }
-    if(empty($array)) {
-      echo json_encode(array('msg'=>'无数据'));
-      return ;
+
+    if(!isset($hotcity['HC_XfsdResult_Sid'])) return;
+    $_POST['sid']    = $hotcity['HC_XfsdResult_Sid'];
+    $arrayXfsdResult = $this->searchXfsdResultByHotcity(true);
+    $array           = array();  // 待添加的xfsd数据
+    $addAll          = array();  // 合成后待添加的数据
+
+    // 该处仅已价格最低作为筛选，实际应更复杂，要以作用点，时间期限等均考虑
+    // 按不同舱位，精简xfsd且不分组
+    if(!$arrayXfsdResult) return;
+    $curCabin = '';
+    foreach ($arrayXfsdResult['inGroupResult'] as $key => $xfsdInGroup) {
+      // 默认取第一个为最便宜的
+      // array_push($array, $xfsd[0]); 
+      $cabinInput = array();
+      foreach ($xfsdInGroup as $key => $xfsd) {
+        if($xfsd['xfsd_Cabin'] != $curCabin && !in_array($xfsd['xfsd_Cabin'], $cabinInput)) {
+          $curCabin = $xfsd['xfsd_Cabin'];
+          array_push($array, $xfsd);
+          array_push($cabinInput, $curCabin);
+        }
+      }
     }
-    $addAll         = array();
+
+    // 生成准备保存的数据
     foreach ($array as $num => $value) {
       preg_match("/\/(\d{2}\w{3})\//", $value['Command'], $fareDateMatch);
       // from XFareEtermPriceDetailDTO
@@ -294,7 +321,7 @@ class HotcityController extends Controller {
         // 运价的时间，格式是 YYYYMM 201510，查询时间
         'FareDate'                => isset($fareDateMatch[1])?$fareDateMatch[1]: '',
         // 目标舱位
-        'FareCabin'               => $hotcity_result[0]['HC_Cabin'],
+        'FareCabin'               => $hotcity['HC_Cabin'],
         'Dep'                     => $value['xfsd_Dep'],
         'Arr'                     => $value['xfsd_Arr'],
         'Airline'                 => $value['xfsd_Owner'],
@@ -310,8 +337,8 @@ class HotcityController extends Controller {
         'MaxStop'                 => $value['xfsd_MaxStay'],
         'ValidBegin'              => $value['xfsd_DateStart'],
         'ValidEnd'                => $value['xfsd_DateEnd'],
-        'DepType'                 => $hotcity_result[0]['HC_Depart'],
-        'ArrType'                 => $hotcity_result[0]['HC_Arrive'],
+        'DepType'                 => $hotcity['HC_Depart'],
+        'ArrType'                 => $hotcity['HC_Arrive'],
         'Direction'               => $value['xfsd_Region'],
         // 'Tpm'                     => '',
         // 'Mpm'                     => '',
@@ -323,12 +350,12 @@ class HotcityController extends Controller {
         // 'AtPage'                  => '',
         // 'RouteFlag'               => '',
         'Command'                 => $value['Command'],
-        'Query'                   => json_encode($query),
+        'Hid'                     => $hotcity['Id'],
         'Rule'                    => $value['xfsd_Rule'],
       );
     }
     $m_price_source->addAll($addAll);
-    echo json_encode(array('msg'=>'保存成功', 'status'=>1, 'hid'=>$hotcity_result[0]['Id']));
+    echo json_encode(array('msg'=>'保存成功', 'status'=>1, 'hid'=>$hotcity['Id']));
   }
 
   public function updateSaleDate(){
@@ -491,6 +518,71 @@ class HotcityController extends Controller {
     XS/FSDBJSCHI/15OCT/UA/#*GLE03MC8///#
     xs/fsn1//15
         */
+  }
+
+  public function savePriceSourceFromXfsd(){
+    $m_price_source = model('price_source');
+    $m_hotcity      = model('hot_city');
+    $array          = json_decode($_POST['data'], true);
+    $query          = $_POST['query'];
+    $where          = "`HC_Depart` = '{$query['start']}' ";
+    if(!empty($query['end'])) $where .= " AND `HC_Arrive` = '{$query['end']}'";
+    if(!empty($query['aircompany'])) $where .= " AND `HC_Aircompany` = '{$query['aircompany']}'";
+    $hotcity_result = $m_hotcity->where($where)->select();
+
+    if($m_price_source->where("`Hid`= {$hotcity_result[0]['Id']}")->select()){
+      echo json_encode(array('msg'=>'已存在', 'status'=>2, 'hid'=>$hotcity_result[0]['Id']));
+      return;
+    }
+    if(empty($array)) {
+      echo json_encode(array('msg'=>'无数据'));
+      return ;
+    }
+    $addAll         = array();
+    foreach ($array as $num => $value) {
+      preg_match("/\/(\d{2}\w{3})\//", $value['Command'], $fareDateMatch);
+      // from XFareEtermPriceDetailDTO
+      $addAll[] = array(
+        //  fareKey 关键字：dep_city/arr_city/airline/pax_type/source/source_office/source_agreement/other(其他字段)/fare_date
+        'FareKey'                 => $value['FareKey'], 
+        // 运价的时间，格式是 YYYYMM 201510，查询时间
+        'FareDate'                => isset($fareDateMatch[1])?$fareDateMatch[1]: '',
+        // 目标舱位
+        'FareCabin'               => $hotcity_result[0]['HC_Cabin'],
+        'Dep'                     => $value['xfsd_Dep'],
+        'Arr'                     => $value['xfsd_Arr'],
+        'Airline'                 => $value['xfsd_Owner'],
+        'FareBasis'               => $value['FareBasis'],
+        'Cabin'                   => $value['xfsd_Cabin'],
+        'PassengerType'           => 'ADT', // default 
+        'SingleFare'              => $value['xfsd_SingleFee'],
+        'RoundFare'               => $value['xfsd_RoundFee'],
+        'Currency'                => 'CNY',
+        // 'CabinFlag'               => '',
+        // 'FareFlag'                => '',
+        'MinStop'                 => $value['xfsd_MinStay'],
+        'MaxStop'                 => $value['xfsd_MaxStay'],
+        'ValidBegin'              => $value['xfsd_DateStart'],
+        'ValidEnd'                => $value['xfsd_DateEnd'],
+        'DepType'                 => $hotcity_result[0]['HC_Depart'],
+        'ArrType'                 => $hotcity_result[0]['HC_Arrive'],
+        'Direction'               => $value['xfsd_Region'],
+        // 'Tpm'                     => '',
+        // 'Mpm'                     => '',
+        'OutboundWeek'            => $value['xfsd_Indicator'],
+        'Advp'                    => $value['xfsd_Advp'],
+        // 10.00  货币进位取舍(6)
+        'RoundValue'              => 10.00,
+        // 'NucRate'                 => '',
+        // 'AtPage'                  => '',
+        // 'RouteFlag'               => '',
+        'Command'                 => $value['Command'],
+        'Query'                   => json_encode($query),
+        'Rule'                    => $value['xfsd_Rule'],
+      );
+    }
+    $m_price_source->addAll($addAll);
+    echo json_encode(array('msg'=>'保存成功', 'status'=>1, 'hid'=>$hotcity_result[0]['Id']));
   }
 
 }

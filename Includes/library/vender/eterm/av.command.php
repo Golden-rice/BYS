@@ -68,7 +68,7 @@ class Av extends Eterm{
 			return;
 		} 
 
-		$cabin_src = parent::fromToArray($this->tmp, 2, 2);
+		$cabin_src = parent::fromToArray($this->tmp, 0, 1);
 		foreach ($cabin_src as $src_key => $src_val) {
 			if($fkey < 0 && preg_match($pattern, $src_val)){
 				$fkey = $src_key;
@@ -77,7 +77,7 @@ class Av extends Eterm{
 		}
 		if($fkey <0 && $hasPn){
 			parent::getAllPage($this->tmp, 'xs/fspn', 'w');
-			$cabin_src = parent::fromToArray($this->tmp, 2, 2);
+			$cabin_src = parent::fromToArray($this->tmp, 0, 1);
 			foreach ($cabin_src as $src_key => $src_val) {
 				if($fkey < 0 && preg_match($pattern, $src_val)){
 					$fkey = $src_key;
@@ -91,7 +91,11 @@ class Av extends Eterm{
 			return;
 		}
 
-		$cabin  = preg_replace('/\s{2,}/', ' ', $cabin_src[$fkey].$cabin_src[$fkey+1]);
+		if(!isset($cabin_src[$fkey+1]))
+			$cabin  = preg_replace('/\s{2,}/', ' ', $cabin_src[$fkey]);
+		else
+			$cabin  = preg_replace('/\s{2,}/', ' ', $cabin_src[$fkey].$cabin_src[$fkey+1]);
+
 		$depart = substr($cabin, 0, 3);
 		$arrive = substr($cabin, 3, 3);
 		preg_match_all('/(?P<cabin>\w)(?P<num>\d)/', $cabin, $cabin_array);

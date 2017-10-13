@@ -145,10 +145,12 @@ class BasisController extends Controller {
     // 生成热门城市
     public function setHotCity(){
         if(!isset($_POST['selected'])) return;
-        $hot_city_model = model('hot_city');
+        $hot_city_model     = model('hot_city');
+        $price_source_model = model('price_source');
 
         // 清空表 
-        $hot_city_model -> deleteAll();
+        $hot_city_model->deleteAll();
+        $price_source_model->deleteAll();
         // $hot_city_model -> deleteAllAction();
 
         $hotCityArray   = json_decode($_POST['selected']['data'], true);
@@ -165,8 +167,8 @@ class BasisController extends Controller {
                 'HC_Status'            => 0,
             );
         }
-
         $result = $hot_city_model->addAll($addAll);
+
     }
 
     // 查询热门城市
