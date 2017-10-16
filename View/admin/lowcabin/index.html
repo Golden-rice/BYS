@@ -204,13 +204,13 @@ var setCommand = function(command){
 				if(alertSwitch){
 					var lowCabinModel = new OtherModel("降舱", html ,`<button type="button" class="btn btn-default"  data-dismiss="modal" >关闭</button>`
 					);
-
+					alert('找到舱位');
 					audio.play();
 					lowCabinModel.show();
 					clearInterval(timer);
 				}
 			})
-		}, 10*1000); // 30*60*1000 1*5*60*1000 note_length*4*60*1000
+		}, 60*1000); // 30*60*1000 1*5*60*1000 note_length*4*60*1000
 
 	})
 

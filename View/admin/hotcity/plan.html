@@ -67,7 +67,7 @@ var tpl = {
 // 弹出层 暴露至全局
 var xfsdModal, avhModal, mixModal;
 
-var cabin = []; // 全局变量：目标舱位
+var cabin = [];    // 全局变量：目标舱位
 		// xfsd_src,   // 全局变量：xfsd 原始数据
 		// avh;        // 全局变量：avh
 
@@ -100,8 +100,9 @@ var setCommand = function(command){
 
 	command.showHotCityPlan();
 	// 全局变量
-	var xfsdInGroup; // xfsd 分组的全部数据
-	var	hid;         // 当前混舱的hotcity id 
+	var xfsdInGroup;    // xfsd 分组的全部数据
+	var xfsdSmpInGroup; // xfsd 分组的全部数据
+	var	hid;            // 当前混舱的hotcity id 
 	// 查询全部且分组的 xfsd
 	var searchXfsdResultByHotcity = new command.ReqCommand({
 		url: eterm.const.Controller + 'searchXfsdResultByHotcity',
@@ -126,12 +127,13 @@ var setCommand = function(command){
 				alert(res.msg)
 
 			if(res.status){
-				var inGroupSmpResult = [];
-				xfsdInGroup = res.inGroupResult
-				for(var i in res.inGroupResult){
-					inGroupSmpResult.push(uniqueXfsd(res.inGroupResult[i]))
-				}
-				mixModal  = new OtherModel("精简运价结果", xfsdTable(inGroupSmpResult, 'xfsd-result-model'));
+				xfsdSmpInGroup = res.inGroupSmpResult
+				// var inGroupSmpResult = [];
+				// xfsdInGroup = res.inGroupResult
+				// for(var i in res.inGroupResult){
+				// 	inGroupSmpResult.push(uniqueXfsd(res.inGroupResult[i]))
+				// }
+				mixModal  = new OtherModel("精简运价结果", xfsdTable(xfsdSmpInGroup, 'xfsd-result-model'));
 				mixModal.show();
 			}
 		}
@@ -190,11 +192,7 @@ var setCommand = function(command){
 		// command.searchXfsdResultByHotcity({sid: $(this).data('sid')})
 		
 		if(xfsdInGroup){
-			var inGroupSmpResult = [];
-			for(var i in xfsdInGroup){
-				inGroupSmpResult.push(uniqueXfsd(xfsdInGroup[i]))
-			}
-			mixModal  = new OtherModel("精简运价结果", xfsdTable(inGroupSmpResult, 'xfsd-result-model'));
+			mixModal  = new OtherModel("精简运价结果", xfsdTable(xfsdSmpInGroup, 'xfsd-result-model'));
 			mixModal.show();
 		}else{
 			searchSmpXfsdResultByHotcity.execute({sid: $(this).data('sid')});

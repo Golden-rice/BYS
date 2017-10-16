@@ -204,23 +204,24 @@ class HotcityController extends Controller {
     }
       
     $sidWhere      = '';
+    $xfsdSmpArray  = array();
+
+    // 根据 sid 统一查询数据库
     foreach ($sidArray as $sid) {
       $sidWhere .= " `Sid` = {$sid} OR";
+      array_push($xfsdSmpArray, $xfsd_model->reset()->where("`Sid` = {$sid}")->group('xfsd_Cabin, xfsd_indicator, xfsd_DateEnd ')->order('xfsd_RoundFee')->select("*, COUNT(DISTINCT FareBasis, xfsd_RoundFee, xfsd_indicator, xfsd_Cabin, xfsd_DateEnd, xfsd_Rule) AS Count_duplicate "));
     }
-    $xfsdArray     = $xfsd_model->where(rtrim($sidWhere, 'OR'))->select();
-    // 此处再增加对xfsd筛选 利用SQL
-
-    // 此处再增加对xfsd筛选 END
+    $xfsdArray = $xfsd_model->reset()->where(rtrim($sidWhere, 'OR'))->select();
 
     if(!empty($xfsdArray)){
       // 初始化
       $tmpCabin = $xfsdArray[0]['xfsd_Cabin'];
       $tmpXfsd  = array($tmpCabin=>$xfsdArray[0]);
       $sid      = $xfsdArray[0]['Sid'];
-      // 按照sid 分组
+
+      // 利用PHP，按照sid分组
       $in_group_result = array($sid=>array());
       $in_group_smp_result = array($sid=>array($tmpCabin => $tmpXfsd));
-
       foreach($xfsdArray as $xfsd){
         if($sid != $xfsd['Sid']){
           $sid  = $xfsd['Sid'];
@@ -235,18 +236,18 @@ class HotcityController extends Controller {
 
       if($return){
         return array('status'=>1, 
-          'inGroupResult'=>$in_group_result, // 分组非精简        
-          'allResult'    =>$xfsdArray        // 非分组非精简
+          'inGroupResult'=>$in_group_result,   // 分组非精简        
+          'inGroupSmpResult' => $xfsdSmpArray, // 分组精简
         );
       }else{
         echo json_encode(array('status'=>1, 
-          'inGroupResult'=>$in_group_result, // 分组非精简        
-          'allResult'    =>$xfsdArray,       // 非分组非精简
+          'inGroupResult'=>$in_group_result,   // 分组非精简  
+          'inGroupSmpResult' => $xfsdSmpArray, // 分组精简      
         ));
       }
       return;
     }
-    echo json_encode(array('status'=>0, 'msg'=>'发生错误'));
+    echo json_encode(array('status'=>0, 'msg'=>'无可用数据'));
   }
 
   // 根据输入查询 price_source表
@@ -294,19 +295,11 @@ class HotcityController extends Controller {
     $array           = array();  // 待添加的xfsd数据
     $addAll          = array();  // 合成后待添加的数据
 
-    // 该处仅已价格最低作为筛选，实际应更复杂，要以作用点，时间期限等均考虑
-    // 按不同舱位，精简xfsd且不分组
+
     if(!$arrayXfsdResult) return;
-    $curCabin = '';
-    foreach ($arrayXfsdResult['inGroupResult'] as $key => $xfsdInGroup) {
-      // 默认取第一个为最便宜的
-      // array_push($array, $xfsd[0]); 
-      $cabinInput = array();
+    foreach ($arrayXfsdResult['inGroupSmpResult'] as $key => $xfsdInGroup) {
       foreach ($xfsdInGroup as $key => $xfsd) {
-        if($xfsd['xfsd_Cabin'] != $curCabin && !in_array($xfsd['xfsd_Cabin'], $cabinInput)) {
-          $curCabin = $xfsd['xfsd_Cabin'];
           array_push($array, $xfsd);
-          array_push($cabinInput, $curCabin);
         }
       }
     }

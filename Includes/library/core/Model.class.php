@@ -21,6 +21,8 @@
 		protected $order            = '';
 		// 限制
 		protected $limit            = '';
+		// 分组
+		protected $group            = '';
 
 	 	function __construct($className = ""){
 		 	// 声明全局变量
@@ -53,6 +55,25 @@
 	 		// Report::p($str);
 	 		$this->prepare($str);
 	 		$this->execute();
+	 	}
+
+	 	// 清空所有的属性
+	 	public function reset(){
+		 	// WHERE
+		 	$this->where            = '';
+		 	// JOIN
+		 	$this->join             = '';
+		 	// 当发生失败时，返回 sql 语句
+		 	$this->sql              = '';
+		 	// 去重语句
+			$this->distinct         = '';
+			// 排序语句
+			$this->order            = '';
+			// 限制
+			$this->limit            = '';
+			// 分组
+			$this->group            = '';
+			return $this;
 	 	}
 
 	 	/**
@@ -173,6 +194,16 @@
 	 		return $this;
 	 	}
 
+	 	/**
+		 * 分组查询
+		 * @param  string $group 分组
+		 */	
+	 	public function group($group){
+	 		if(!is_string($group)) return $this;
+	 		$this->group = ' GROUP BY '.$group;
+	 		return $this;
+	 	}
+
 	  /**
 		 * 当返回失败时，查看sql语句
 		 * @return string
@@ -230,7 +261,7 @@
 		 	if( $this->distinct != '')
 		 		$sql = "SELECT {$this->distinct} ";
 
-		 	$sql .= " FROM ".$this->tableName.$this->join.$this->where.$this->order.$this->limit;
+		 	$sql .= " FROM ".$this->tableName.$this->join.$this->where.$this->group.$this->order.$this->limit;
 
  			$this->sql = $sql;
 	 		$this->prepare($this->sql);
