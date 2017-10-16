@@ -286,39 +286,33 @@ class LowcabinController extends Controller {
   // 临时计划任务
   public function tmpRun(){
 		import('vender/eterm/app.php');
+		$eterm    = reflect('eterm');
 		$m_source = model('low_cabin_source');
 		$m_result = model('low_cabin_result');
 
 		// 未跑数据
-  	$result_source = $m_source -> where('Status = 0')->limit('3')->select();
+  	// $result_source = $m_source -> where('Status = 0')->select(); // ->limit('3')
+  	$result_source = $m_source -> where('Id = 80')->select(); // ->limit('3')
   	if(!$result_source) return;
-  	
+  	$avh          = new \Avh('av66', 'av66av66', 'BJS248');
   	$av           = new \Av('av66', 'av66av66', 'BJS248');
   	$source_array = array();
   	foreach ($result_source as $source) {
   		$result_result = $m_result->where("`Sid` = {$source['Id']}")->select();
-	 		// 组合出routing，然后在跑avh，区分去程和回程跑舱位
-  		// $depart = array();
-  		// $arrive = array();
-  		// 去程
-  		// foreach ($result_result as $result_key => $result_val) {
-  		// 	if($result_val['Routing_Type'] == 'S'){
-  		// 		array_push($depart, $result_val);
-  		// 		break;
-  		// 	}else{
-  		// 		array_push($depart, $result_val);
-  		// 	}
-  		// }
-  		// 回程，可能是单程
-  		// if(count($depart) < count($result_result)){
-	  	// 	foreach ($result_result as $result_key => $result_val) {
-	  	// 		if($result_key > count($depart)-1){
-	  	// 			array_push($arrive, $result_val);
-	  	// 		}
-	  	// 	}
-  		// }
   		//AV:UA850/06OCT
   		// 每个航段均跑舱位
+  		// foreach($result_result as $rKey => $rVal){
+  		// 	if($rVal['LC_Cabin_List'] == '') continue; 
+  		// 	$_POST['start']     = $rVal['Depart']; 
+				// $_POST['end']       = $rVal['Arrive'];
+				// $_POST['startDate'] = $rVal['Date'];        
+				// $_POST['endDate']   = $rVal['Date']; 
+				// $_POST['aircompany']= substr($rVal['Flight'],0,2);   
+				// $_POST['other']     = 'D'; 
+  		// 	$avh_result = $eterm -> searchAvhByInput(true);
+	  	// 	var_dump($avh_result);
+		  // }
+
   		foreach($result_result as $rKey => $rVal){
   			if($rVal['LC_Cabin_List'] == '') continue; 
 
@@ -329,7 +323,8 @@ class LowcabinController extends Controller {
   				if(empty($target_cabin)) continue;
   				$result_result[$rKey]['LC_Log'] = $av_result;
   				foreach ($target_cabin as $tv) {
-  					if(isset($av_result['cabin'][$tv]) && $av_result['cabin'][$tv] >=1){
+  					// 当匹配到数据或A时
+  					if(isset($av_result['cabin'][$tv]) && ($av_result['cabin'][$tv] >=1 || $av_result['cabin'][$tv] === 'A')){
   						$result_result[$rKey]['LC_Has_Low'] = 1;
   						$result_result[$rKey]['LC_Cabin'] .= $tv."({$av_result['cabin'][$tv]})".',';
   					}
@@ -374,6 +369,8 @@ class LowcabinController extends Controller {
 
   	}
   	echo json_encode($source_array);
+
+
   }
 
   // 计划任务

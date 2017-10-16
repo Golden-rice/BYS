@@ -98,7 +98,7 @@ class Av extends Eterm{
 
 		$depart = substr($cabin, 0, 3);
 		$arrive = substr($cabin, 3, 3);
-		preg_match_all('/(?P<cabin>\w)(?P<num>\d)/', $cabin, $cabin_array);
+		preg_match_all('/(?P<cabin>\w)(?P<num>\d|A)/', $cabin, $cabin_array);
 		$cabin_result = array();
 		if(isset($cabin_array['cabin'])){
 			foreach ($cabin_array['cabin'] as $k => $c) {

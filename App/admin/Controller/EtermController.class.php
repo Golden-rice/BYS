@@ -493,6 +493,7 @@ class EtermController extends Controller {
 	}
 
 	// 通过输入框查询avh 
+	// $return 是打印数据还是 返回数据
 	public function searchAvhByInput($return = false){
 		import('vender/eterm/app.php');
 		$avh = new \Avh($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
@@ -505,6 +506,11 @@ class EtermController extends Controller {
 		$aircompany = $_POST['aircompany'];   
 		$other      = $_POST['other'];    
 
+
+	 	// 航空公司前缀处理
+	 	if(!preg_match("/^(\/|\*)\w{2}$/", $aircompany, $prefix))
+	 		$aircompany = '/'.$aircompany;
+	 	
 		// 多目的地
 		if(preg_match("/,/", $end))
 			$endArr   = explode(",", $end);
@@ -536,7 +542,7 @@ class EtermController extends Controller {
 				$m       = strtoupper(date('M',$days));
 				$d       = strtoupper(date('d',$days));
 				$date    = $d.$m;
-				$command = $repeat['pos'] == 'start' ? 'AVH/'.$value.$end.$date.$other.'/'.$aircompany : 'AVH/'.$start.$value.$date.$other.'/'.$aircompany;
+				$command = $repeat['pos'] == 'start' ? 'AVH/'.$value.$end.$date.$other.$aircompany : 'AVH/'.$start.$value.$date.$other.$aircompany;
 				$result  = $this->hasCmdSource($command, 'avh');
 				if ( isset($result['GmtModified']) && $result['GmtModified'] + 24*60*60 < time() ){ 
 					// 有且存储时间大于一天，更新
