@@ -24,7 +24,7 @@
       <!-- modal body -->
 
       <div class="modal-footer">
-        <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+        <button type="button" class="btn btn-default hidden" data-dismiss="modal">关闭</button>
       </div>
       <!-- modal footer -->
 
@@ -41,11 +41,14 @@ var OtherModel = function(title, content, footer){
 
     $("#otherModal .modal-title").html(title);
     $("#otherModal #modal-content").html(content);
-    $("#otherModal .modal-footer").html(footer ? footer:`<button type="button" class="btn btn-default"  data-dismiss="modal">关闭</button>`);
+    $("#otherModal .modal-footer").html(footer ? footer:`<button type="button" class="btn btn-default hidden"  data-dismiss="modal">关闭</button>`);
 
     return {
         hide: function(){
-            $("#otherModal").modal("hide");
+        	$("#otherModal").html("hide");
+        	// $("#example").modal({backdrop:false});
+          // $("#otherModal").html("hide");
+          // $('#otherModal .modal-footer>.hidden')
         },
         show: function(){
             $("#otherModal").modal();
@@ -103,6 +106,10 @@ var setCommand = function(command){
 	var xfsdInGroup;    // xfsd 分组的全部数据
 	var xfsdSmpInGroup; // xfsd 分组的全部数据
 	var	hid;            // 当前混舱的hotcity id 
+	var hotcity;        // 热门城市数据
+
+
+
 	// 查询全部且分组的 xfsd
 	var searchXfsdResultByHotcity = new command.ReqCommand({
 		url: eterm.const.Controller + 'searchXfsdResultByHotcity',
@@ -111,9 +118,12 @@ var setCommand = function(command){
 				alert(res.msg)
 
 			if(res.status){
-				xfsdInGroup = res.inGroupResult
-				mixModal  = new OtherModel("运价结果", xfsdTable(xfsdInGroup, 'xfsd-result-model'));
-				mixModal.show();
+				xfsdInGroup    = res.inGroupResult
+				xfsdSmpInGroup = res.inGroupSmpResult
+				
+				var	allFareModal     = new OtherModel("运价结果", xfsdTable(xfsdInGroup, 'xfsd-result-model'));
+					allFareModal.show();
+				
 			}
 		}
 	}) 
@@ -127,27 +137,28 @@ var setCommand = function(command){
 				alert(res.msg)
 
 			if(res.status){
-				xfsdSmpInGroup = res.inGroupSmpResult
 				// var inGroupSmpResult = [];
 				// xfsdInGroup = res.inGroupResult
 				// for(var i in res.inGroupResult){
 				// 	inGroupSmpResult.push(uniqueXfsd(res.inGroupResult[i]))
 				// }
-				mixModal  = new OtherModel("精简运价结果", xfsdTable(xfsdSmpInGroup, 'xfsd-result-model'));
-				mixModal.show();
+				xfsdSmpInGroup = res.inGroupSmpResult
+				xfsdInGroup    = res.inGroupResult
+				
+				var	smpModal   = new OtherModel("精简运价结果", xfsdTable(xfsdSmpInGroup, 'xfsd-result-model'));
+					smpModal.show();
+				
 			}
 		}
 	}) 
 
 
-	// 查询政策基础数据
-	var reqPriceSource = new command.ReqCommand({
-		url: eterm.const.Controller + 'searchPriceSource',
+	// 查询政策基础数据规则
+	var reqPriceSourceRule = new command.ReqCommand({
+		url: eterm.const.Controller + 'searchPriceSourceRule',
 		clk: function(res){
-
 			if(res.status){
-				console.log(res)
-				mixModal  = new OtherModel("回填销售日期", mkSaleDateInsertTableFromPrice(res.result), `<button type="button" class="btn btn-primary" id='set-saleDate'>下一步</button><button type="button" class="btn btn-default"  data-dismiss="modal">关闭</button>`);
+				mixModal = new OtherModel("回填销售日期", mkSaleDateInsertTableFromPrice(res.result), `<button type="button" class="btn btn-primary" data-dismiss="modal" id='set-saleDate'>下一步</button><button type="button" class="btn btn-default hidden"  data-dismiss="modal">关闭</button>`);
 				mixModal.show();
 			}
 				
@@ -162,54 +173,101 @@ var setCommand = function(command){
 		clk: function(res){
 			if(res.msg)
 				alert(res.msg)
-			console.log(res)
-			// if(res.status)
-				// setSaleDateModel ? setSaleDateModel.hide() : updateSaleDateModel.hide();
+
+			if(res.status){
+				// mixModal.hide();
+				searchPriceSource.execute({'hid': hid})
+			}
 		}
 	}) 
+
+	// 查询price source
+	var searchPriceSource = new command.ReqCommand({
+		url: eterm.const.Controller + 'searchPriceSource',
+		clk: function(res){
+			if(res.msg)
+				alert(res.msg)
+
+			if(res.status){
+				var testValidResult = mixCabin(res.result, hotcity, true)
+				// var ValidResult = mixCabin(res.result, hotcity)
+				console.log(testValidResult)
+
+				var testMixCabinModal  = new OtherModel("混舱测试数据", mkMixCabinTable(testValidResult), `<button type="button" class="btn btn-primary" id='set-saleDate'>下一步</button><button type="button" class="btn btn-default"  data-dismiss="modal">关闭</button>`);
+				testMixCabinModal.show();
+
+			}
+		}
+	}) 
+
 
 	// 查看 xfsd
 	$("#content").on("click", ".xfsd-result", function(){
 		// xfsdModal = new OtherModel("运价结果", '');
 		// command.searchXfsdResult({sid: $(this).data('sid')});
-		if(xfsdInGroup){
-			mixModal  = new OtherModel("运价结果", xfsdTable(xfsdInGroup, 'xfsd-result-model'));
-			mixModal.show();
+		var sid = $(this).data('sid'), sidArray = sid.split(','), has = false;
+		if(xfsdInGroup){ 
+			for(var i in sidArray){
+				if(xfsdInGroup[sidArray[i]]) {
+					has = true;
+					break;
+				}
+			}
+			if(has){
+				mixModal  = new OtherModel("运价结果", xfsdTable(xfsdInGroup, 'xfsd-result-model'));
+				mixModal.show();
+			}else{
+				searchSmpXfsdResultByHotcity.execute({'sid': sid});
+			}
 		}else{
-			searchXfsdResultByHotcity.execute({sid: $(this).data('sid')});
+			searchXfsdResultByHotcity.execute({'sid': sid});
 		}
 	})
 
 	// 查看 avh
 	$("#content").on("click", ".avh-result", function(){
 		avhModal  = new OtherModel("舱位结果", '');
-		command.searchAvhResult({sid: $(this).data('sid')});
+		command.searchAvhResult({'sid': $(this).data('sid')});
 	})
 
 	// 查看 简化结果
 	$("#content").on("click", ".simplify-xfsd", function(){
 		// xfsdModal = new OtherModel("精简运价结果", '');
 		// command.searchXfsdResultByHotcity({sid: $(this).data('sid')})
-		
-		if(xfsdInGroup){
-			mixModal  = new OtherModel("精简运价结果", xfsdTable(xfsdSmpInGroup, 'xfsd-result-model'));
-			mixModal.show();
-		}else{
-			searchSmpXfsdResultByHotcity.execute({sid: $(this).data('sid')});
-		}
+		var sid = $(this).data('sid'), sidArray = sid.split(','), has = false;
 
+		if(xfsdSmpInGroup){ 
+			for(var i in sidArray){
+				if(xfsdSmpInGroup[sidArray[i]]) {
+					has = true;
+					break;
+				}
+			}
+			if(has){
+				mixModal  = new OtherModel("精简运价结果", xfsdTable(xfsdSmpInGroup, 'xfsd-result-model'));
+				mixModal.show();
+			}else{
+				searchSmpXfsdResultByHotcity.execute({'sid': sid});
+			}
+		}else{
+			searchSmpXfsdResultByHotcity.execute({'sid': sid});
+		}
 	})
 
 	// 混舱 xfsd 
 	$("#content").on('click', '.mix-cabin', function(){
-		// 暴露全局变量，用于销售日期更新
-		hid = $(this).data('id');
-		reqPriceSource.execute({'hid': hid});
+		// 暴露全局变量
+		// 销售日期更新
+		hid     = $(this).data('id');
+		// 获得hotcity数据
+		hotcity = $(this).data('hotcity');
+
+		reqPriceSourceRule.execute({'hid': hid});
+
 	})
 
 	// 销售日期的【下一步】
 	$('#otherModal').on('click', '#set-saleDate', function(){
-
 		// 更新
 		if(hid != undefined){
 			var saleDateInput = {};
@@ -217,11 +275,10 @@ var setCommand = function(command){
 				saleDateInput[$(this).data('rule')] = $(this).val();
 			})
 			updatePriceSource.execute({'update': JSON.stringify(saleDateInput), 'hid': hid});
-			// reqPriceSource.execute({'hid': hid});
+
 		}else{
 			console.log('查询hotcity id 错误');
 		}
-
 	})
 
 }
@@ -282,7 +339,7 @@ function mkTable(array, target, wrap, type){
 					<td>${array[i].HC_Status == 2? '完成': '等待'}</td>
 					<td>${new Date((array[i].GmtCreate -0)*1000).format("yyyy-MM-dd hh:mm:ss")}</td>
 					<td>${new Date((array[i].GmtModified -0)*1000).format("yyyy-MM-dd hh:mm:ss")}</td>
-					<td><a href='javascript:void(0)' class='mix-cabin' data-id="${array[i].Id}" data-xfsdsid="${array[i].HC_XfsdResult_Sid}" data-avhsid="${array[i].HC_AvhResult_Sid}">混舱</a></td>
+					<td><a href='javascript:void(0)' class='mix-cabin' data-id="${array[i].Id}" data-xfsdsid="${array[i].HC_XfsdResult_Sid}" data-avhsid="${array[i].HC_AvhResult_Sid}" data-hotcity='${JSON.stringify(array[i])}'>混舱</a></td>
 				</tr>
 		`
 	}
@@ -424,7 +481,240 @@ function mkSaleDateInsertTableFromPrice(array){
 	return html;
 }
 
+// 混舱1.2：测试farebasis可用 isTest = true
+// 混舱1.3：回填使政策可用的信息
+// 混舱2：混舱
+function mixCabin(data, hotcity, isTest){
+	if(JSON.stringify(data) === '{}') return;
+	// 将分组的统一为非分组的
+	var array = [];
+	for(var a in data){
+		array = array.concat(data[a])
+	}
 
+	// 内积 a^2
+	var result     = [],                        // 最终混舱结果
+			stayArray  = hotcity['HC_Routing'].split(','),       // 全部的中转城市
+			cabinMatch = hotcity['HC_Cabin'].split(','), // 热门城市舱位对照
+			date       = new Date();                  // 时间对象
+
+	function maxDate(date1, date2){
+		if(/\d/.exec(date1) && /\d/.exec(date2)){
+			return /\d/.exec(date1)[0]*(/D/.exec(date1)?1:30) > /\d/.exec(date2)[0]*(/D/.exec(date2)?1:30) ? date1 : date2;
+		}
+		else 
+			return '';
+	}
+
+	function makeArrayData(outboundData, inboundData, stay){
+		// 过滤不合法的混舱数据
+		// 适用日期不合理
+		var outboundDataBegin = new Date(outboundData['ValidBegin']), 
+				outboundDataEnd   = new Date(outboundData['ValidEnd']),
+				inboundDataBegin  = new Date(inboundData['ValidBegin']),
+				inboundDataEnd    = new Date(inboundData['ValidEnd']); 
+
+		if(outboundDataEnd < inboundDataBegin || outboundDataBegin > inboundDataEnd ) return;
+
+		var result = {
+				'FareBasis'     : outboundData['FareBasis']+'/'+inboundData['FareBasis'],
+				'Advp'          : maxDate(outboundData['Advp'], inboundData['Advp']),
+				'SingleFare'    : outboundData['SingleFare']-0 == 0 ? 0:(outboundData['SingleFare']-0)/2+(inboundData['SingleFare']-0)/2,
+				'RoundFare'     : outboundData['RoundFare']-0 == 0 ? 0:(outboundData['RoundFare']-0)/2+(inboundData['RoundFare']-0)/2,
+				// 出境的舱位，和境外的舱位存在争议
+				'Cabin'         : outboundData['Cabin']+(stay !== ''? '-'+outboundData['Cabin']+'-'+inboundData['Cabin']:'')+'-'+inboundData['Cabin'],
+				'MinStop'       : maxDate(outboundData['MinStop'], inboundData['MinStop']),
+				'MaxStop'       : maxDate(outboundData['MaxStop'], inboundData['MaxStop']),
+				'ValidBegin'    : date.max(outboundData['ValidBegin'], inboundData['ValidBegin']),
+				'ValidEnd'      : date.max(outboundData['ValidEnd'], inboundData['ValidEnd']),
+				'OutboundWeek'  : outboundData['OutboundWeek'],
+				'InboundWeek'   : inboundData['OutboundWeek'],
+				'Rule'          : outboundData['Rule']+'/'+inboundData['Rule'],
+				'Dep'           : outboundData['Dep'],
+				'Arr'           : outboundData['Arr'],
+				// 新增字段：中转城市
+				'Stay'          : stay ? stay : '', 
+				'Airline'       : outboundData['Airline'],
+				// 新增字段：航路
+				'Routing'      : {},
+				// 新增字段：fsi
+				// XS FSI/UA
+	      // S UA   1310\09SEP BJS0100 0200CHI0X    76W 
+	      // S UA   1310\09SEP CHI0300 0400NYC0S    76W 
+	      // S UA   981\09SEP BJS0100 0200CHI0X    76W
+	      // S UA   981\09SEP NYC0300 0400BJS0S    76W 
+				'Fsi'           : {}
+			}
+			var outboundDate   = outboundData['FareDate'],
+					outboundFlight = '0000',
+					inboundDate    = inboundData['FareDate'],
+					inboundFlight  = '0000';
+			if(stay){
+				result['Routing'] = {
+					'allStay' : outboundData['Dep']+'-'+outboundData['Airline']+'-'+stay+'-'+outboundData['Airline']+'-'+outboundData['Arr']+'-'+inboundData['Airline']+'-'+stay+'-'+inboundData['Airline']+'-'+inboundData['Dep'],
+					'outboundStay' : outboundData['Dep']+'-'+outboundData['Airline']+'-'+stay+'-'+outboundData['Airline']+'-'+outboundData['Arr']+'-'+inboundData['Airline']+'-'+inboundData['Dep'],
+					'inboundStay' : outboundData['Dep']+'-'+outboundData['Airline']+'-'+outboundData['Arr']+'-'+inboundData['Airline']+'-'+stay+'-'+inboundData['Airline']+'-'+inboundData['Dep'],
+					'noStay': outboundData['Dep']+'-'+outboundData['Airline']+'-'+outboundData['Arr']+'-'+inboundData['Airline']+'-'+inboundData['Dep'],
+				}
+				result['Fsi'] = {
+					'allStay' :  "XS FSI/"+outboundData['Airline']+"\r"
+						+ "S "+outboundData['Airline']+"   "+outboundFlight+outboundData['Cabin']+outboundDate+" "+outboundData['Dep']+"0100 0200"+stay+"0X    76W \r" 
+						+ "S "+outboundData['Airline']+"   "+outboundFlight+outboundData['Cabin']+outboundDate+" "+stay+"0300 0400"+outboundData['Arr']+"0S    76W \r"
+						+ "S "+inboundData['Airline'] +"   "+inboundFlight +inboundData['Cabin'] +inboundDate +" "+inboundData['Arr']+"0500 0600"+stay+"0X    76W \r" 
+						+ "S "+inboundData['Airline'] +"   "+inboundFlight +inboundData['Cabin'] +inboundDate +" "+stay+"0700 0800"+inboundData['Dep']+"0S    76W \r",
+					'outboundStay' : "XS FSI/"+outboundData['Airline']+"\r"
+						+ "S "+outboundData['Airline']+"   "+outboundFlight+outboundData['Cabin']+outboundDate+" "+outboundData['Dep']+"0100 0200"+stay+"0X    76W \r" 
+						+ "S "+outboundData['Airline']+"   "+outboundFlight+outboundData['Cabin']+outboundDate+" "+stay+"0300 0400"+outboundData['Arr']+"0S    76W \r"
+						+ "S "+inboundData['Airline'] +"   "+inboundFlight +inboundData['Cabin'] +inboundDate +" "+inboundData['Arr']+"0700 0800"+inboundData['Dep']+"0S    76W \r",
+					'inboundStay'  : "XS FSI/"+outboundData['Airline']+"\r"
+						+ "S "+outboundData['Airline']+"   "+outboundFlight+outboundData['Cabin']+outboundDate+" "+outboundData['Dep']+"0300 0400"+outboundData['Arr']+"0S    76W \r"
+						+ "S "+inboundData['Airline'] +"   "+inboundFlight +inboundData['Cabin'] +inboundDate +" "+inboundData['Arr']+"0500 0600"+stay+"0X    76W \r" 
+						+ "S "+inboundData['Airline'] +"   "+inboundFlight +inboundData['Cabin'] +inboundDate +" "+stay+"0700 0800"+inboundData['Dep']+"0S    76W \r",
+					'noStay': "XS FSI/"+outboundData['Airline']+"\r"
+						+ "S "+outboundData['Airline']+"   "+outboundFlight+outboundData['Cabin']+outboundDate+" "+outboundData['Dep']+"0100 0200"+outboundData['Arr']+"0S    76W \r" 
+						+ "S "+inboundData['Airline'] +"   "+inboundFlight +inboundData['Cabin'] +inboundDate +" "+inboundData['Arr']+"0300 0400"+inboundData['Dep']+"0S    76W \r" 
+				}
+			}else{
+				result['Routing'] = {
+					'noStay': outboundData['Dep']+'-'+outboundData['Airline']+'-'+outboundData['Arr']+'-'+inboundData['Airline']+'-'+inboundData['Dep']
+				}
+				result['Fsi'] = {
+					'noStay': "XS FSI/"+outboundData['Airline']+"\r"
+						+ "S "+outboundData['Airline']+"   "+outboundFlight+outboundData['Cabin']+outboundData['FareDate']+" "+outboundData['Dep']+"0100 0200"+outboundData['Arr']+"0S    76W \r" 
+						+ "S "+inboundData['Airline'] +"   "+inboundFlight +inboundData['Cabin'] +inboundData['FareDate'] +" "+inboundData['Arr']+"0300 0400"+inboundData['Dep']+"0S    76W \r" 
+				}
+			}
+			return result;
+	}
+
+	// 根据热门城市筛选舱位
+	if(cabinMatch.length > 1 && cabinMatch[0] != '')
+		for(var a in array){
+			for(var c in cabinMatch){
+				if(cabinMatch[c] === array[a].Cabin)
+					break;
+				if(c === cabinMatch.length-1)
+					array[a].splice(a, 1);
+			}
+		}
+	var makeArrayDataResult;
+
+	if(isTest){
+		for(var o in array){
+      if(stayArray.length > 0 && stayArray[0] != ''){
+				for(var s in stayArray){ // 中转点
+					// 按照中转再次拆分
+					makeArrayDataResult = makeArrayData(array[o], array[o], stayArray[s])
+					if(makeArrayDataResult){
+						result.push(makeArrayDataResult)
+					}
+				}
+      }else{
+      		makeArrayDataResult = makeArrayData(array[o], array[o])
+					if(makeArrayDataResult){
+						result.push(makeArrayDataResult)
+					}
+      }
+		}
+		return result
+	}
+
+	for(var i in array){   // 去程
+		for(var j in array){ // 回程
+      if(stayArray.length > 0 && stayArray[0] != ''){
+				for(var s in stayArray){ // 中转点
+					// 按照中转再次拆分
+					makeArrayDataResult = makeArrayData(array[i], array[j], stayArray[s])
+					if(makeArrayDataResult){
+						result.push(makeArrayDataResult)
+					}
+				}
+      }else{
+      		makeArrayDataResult = makeArrayData(array[i], array[j])
+					if(makeArrayDataResult){
+						result.push(makeArrayDataResult)
+					}
+      }
+		}
+	}
+
+	return result;
+}
+
+function mkMixCabinTable(data){
+
+	if(data.length === 0 ) return;
+	// 处理数据
+	for(var i in data){
+		data[i].index     = i-0+1;
+ 		data[i].ValidDate = data[i].ValidBegin+'>'+data[i].ValidEnd;
+	}
+	// 生成列
+	var columns = [];
+	var title = {
+		'index'        : '序号',
+		'FareBasis'    : 'FareBasis',
+		'Advp'         : '提前出票',
+		'RoundFare'    : '往返价格',
+		'Cabin'        : '舱位',
+		'MinStop'      : '最小停留',
+		'MaxStop'      : '最长停留',
+		'ValidDate'    : '适用日期',
+		'Rule'         : '规则',
+		'Dep'          : '出发',
+		'Arr'          : '到达',
+		'OutboundWeek' : '可用星期',
+		'Airline'      : '航空公司',
+		// 'Fsi'          : 'Fsi', 
+		// 'Routing'     : '航路',
+	}
+
+	for(var c in title){
+		columns.push({
+      "data" : c,  
+      "title" : title[c],  
+		})
+	}
+	// Fsi
+	columns.push({
+		data: null,
+		title: 'Fsi'
+	})
+	// Routing
+	// columns.push({
+	// 	data: null,
+	// 	title: '航路'
+	// })
+
+	$('#otherModal #modal-content').html('<table id="mixCabinTable" class="table table-hover table-bordered table-responsive"></table>')
+	$('#mixCabinTable').DataTable({
+    responsive: true,
+    data: data,
+    columns : columns,
+	  columnDefs: [{
+        targets: 13, // Fsi
+        render: function(data, type, row, meta) {
+        	var html = "<textarea rows='4' cols='50' >"
+        	for(var i in data.Fsi){
+        		html += data.Fsi[i]+"\r------------------------------\r"
+        	}
+        	html += '</textarea>'
+          return html
+        }
+    },
+    // {
+    //     targets: 14, // Routing
+    //     render: function(data, type, row, meta) {
+    //     	var html = ''
+    //     	for(var i in data.Routing){
+    //     		html += ""+data.Routing[i]+"<br>------------------------------<br>"
+    //     	}
+    //       return html
+    //     }
+    // }
+    ]      
+	})
+}
 // --------------------  过期方法 ---------------------
 function xfsdTpl(array, dom, show){
 

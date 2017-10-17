@@ -137,3 +137,41 @@
 
 [2017-10-13 17:45:14]: status:success; BJS-CHI-UA; progress-xfsd:success;progress-avhsuccess
 
+[2017-10-16 16:35:26]: status:success; BJS-CHI-UA; progress-xfsd:failed;progress-avhfailed
+
+[2017-10-16 16:36:38]: status:success; BJS-LAS-UA; progress-xfsd:failed;progress-avhfailed
+
+[2017-10-17 09:20:06]: status:success; BJS-CHI-UA; progress-xfsd:success;progress-avhsuccess
+
+[2017-10-17 09:20:07]: status:success; BJS-LAS-UA; progress-xfsd:success;progress-avhsuccess
+
+[2017-10-17 09:36:20]: status:success; BJS-CHI-UA; progress-xfsd:success;progress-avhsuccess
+
+[2017-10-17 09:36:21]: status:success; BJS-LAS-UA; progress-xfsd:success;progress-avhsuccess
+
+[2017-10-17 09:37:31]: status:success; BJS-CHI-UA; progress-xfsd:success;progress-avhsuccess
+
+[2017-10-17 09:37:32]: status:success; BJS-LAS-UA; progress-xfsd:success;progress-avhsuccess
+
+[2017-10-17 09:37:57]: status:success; BJS-CHI-UA; progress-xfsd:success;progress-avhsuccess
+
+[2017-10-17 09:37:59]: status:success; BJS-LAS-UA; progress-xfsd:success;progress-avhsuccess
+
+[2017-10-17 09:40:08]: status:success; BJS-CHI-UA; progress-xfsd:success;progress-avhsuccess
+
+[2017-10-17 09:40:11]: status:success; BJS-LAS-UA; progress-xfsd:success;progress-avhsuccess
+
+[2017-10-17 09:44:03]: status:success; BJS-CHI-UA; progress-xfsd:success;progress-avhsuccess
+
+[2017-10-17 09:44:03]: status:success; BJS-LAS-UA; progress-xfsd:success;progress-avhsuccess
+
+[2017-10-17 09:44:25]: status:success; BJS-CHI-UA; progress-xfsd:success;progress-avhsuccess
+
+[2017-10-17 09:44:26]: status:success; BJS-LAS-UA; progress-xfsd:success;progress-avhsuccess
+
+[2017-10-17 09:47:11]: status:success; BJS-CHI-UA; progress-xfsd:failed;progress-avhfailed
+
+[2017-10-17 09:47:12]: status:success; BJS-LAS-UA; progress-xfsd:failed;progress-avhfailed
+
+[2017-10-17 09:47:32]: No plan for run!
+

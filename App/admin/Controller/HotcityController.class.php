@@ -32,7 +32,7 @@ class HotcityController extends Controller {
     }
 
   	$hotcity = model('hot_city');
-  	$result  = $hotcity->limit('3')->select(); // ->where("`HC_Status` = 0 OR `GmtModified` < ".(time()-24*60*60))
+  	$result  = $hotcity->where("`HC_Status` = 0 OR `GmtModified` < ".(time()-24*60*60))->limit('3')->select(); // 
   	$eterm   = reflect('eterm');
 
     $log =  fopen('log.txt', 'a');
@@ -50,10 +50,6 @@ class HotcityController extends Controller {
       return;
     }
 
-    if($result[0] && $col = $result[0]){
-    	$cabin = empty($col['HC_Cabin'])? '':'*'.preg_replace('/,/', '*', $col['HC_Cabin']);
-    }
-
     foreach($result as $col){
     	$_POST['start']      = $col['HC_Depart'];
   		$_POST['end']        = $col['HC_Arrive'];
@@ -61,7 +57,7 @@ class HotcityController extends Controller {
   		$_POST['aircompany'] = $col['HC_Aircompany'];
   		$_POST['private']    = ''; // 扩展
   		$_POST['tripType']   = '*RT';
-  		$_POST['other']      = $cabin;
+  		$_POST['other']      = empty($col['HC_Cabin'])? '':'*'.preg_replace('/,/', '*', $col['HC_Cabin']);
     	$result_xfsd         = $eterm->searchXfsdByInput(true);
 
       // 判断 xfsd 追加一次数据
@@ -209,7 +205,7 @@ class HotcityController extends Controller {
     // 根据 sid 统一查询数据库
     foreach ($sidArray as $sid) {
       $sidWhere .= " `Sid` = {$sid} OR";
-      array_push($xfsdSmpArray, $xfsd_model->reset()->where("`Sid` = {$sid}")->group('xfsd_Cabin, xfsd_indicator, xfsd_DateEnd ')->order('xfsd_RoundFee')->select("*, COUNT(DISTINCT FareBasis, xfsd_RoundFee, xfsd_indicator, xfsd_Cabin, xfsd_DateEnd, xfsd_Rule) AS Count_duplicate "));
+      $xfsdSmpArray[$sid] = $xfsd_model->reset()->where("`Sid` = {$sid}")->group('xfsd_Cabin, xfsd_indicator, xfsd_DateEnd ')->order('xfsd_RoundFee')->select("*, COUNT(DISTINCT FareBasis, xfsd_RoundFee, xfsd_indicator, xfsd_Cabin, xfsd_DateEnd, xfsd_Rule) AS Count_duplicate ");
     }
     $xfsdArray = $xfsd_model->reset()->where(rtrim($sidWhere, 'OR'))->select();
 
@@ -269,18 +265,17 @@ class HotcityController extends Controller {
       $whereArray   = array(); 
       $updateArray  = array();
       foreach ($update_src as $rule => $saleDate) {
-        array_push($whereArray, "`Rule` = '{$rule}'");
+        array_push($whereArray, "`Rule` = '{$rule}' AND `Hid` = {$hid}");
         array_push($updateArray, array('SaleDate'=>$saleDate));
       }
       $m->updateAll($whereArray, $updateArray);
       echo json_encode(array('msg'=>'更新成功', 'status'=>1));
       return;
     }
-    echo json_encode(array('msg'=>'更新失败', 'status'=>0));
+    echo json_encode(array('msg'=>'更新失败，未查到该条数据', 'status'=>0));
   }
 
   // 跑完plan，生成相应的精简且不分组的price数据，保存
-
   public function savePriceSource($hotcity){
     $m_price_source = model('price_source');
 
@@ -295,15 +290,12 @@ class HotcityController extends Controller {
     $array           = array();  // 待添加的xfsd数据
     $addAll          = array();  // 合成后待添加的数据
 
-
     if(!$arrayXfsdResult) return;
     foreach ($arrayXfsdResult['inGroupSmpResult'] as $key => $xfsdInGroup) {
       foreach ($xfsdInGroup as $key => $xfsd) {
-          array_push($array, $xfsd);
-        }
+        array_push($array, $xfsd);
       }
     }
-
     // 生成准备保存的数据
     foreach ($array as $num => $value) {
       preg_match("/\/(\d{2}\w{3})\//", $value['Command'], $fareDateMatch);
@@ -364,13 +356,23 @@ class HotcityController extends Controller {
   }
 
   // 查询source
+  public function searchPriceSourceRule(){
+    $hid    = $_POST['hid'];
+    $m      = model('price_source');
+    $result = $m->where("`Hid`={$hid}")->group('Rule')->select('*, COUNT(FareBasis)');
+    if($result)
+      echo json_encode(array('result'=>$result, 'status'=>1));
+    else
+      echo json_encode(array('msg'=>'出现错误', 'status'=>0));
+  }
+
+  // 查询source
   public function searchPriceSource(){
     $hid    = $_POST['hid'];
     $m      = model('price_source');
     $result = $m->where("`Hid`={$hid}")->select();
-    if($result){
+    if($result)
       echo json_encode(array('result'=>$result, 'status'=>1));
-    }
     else
       echo json_encode(array('msg'=>'出现错误', 'status'=>0));
   }
@@ -380,13 +382,14 @@ class HotcityController extends Controller {
     $id     = $_POST['id'];
     $m      = model('hot_city');
     $result = $m->where("`Id`={$id}")->select();
-    if($result){
+    if($result)
       echo json_encode(array('result'=>$result, 'status'=>1));
-    }
     else
       echo json_encode(array('msg'=>'出现错误', 'status'=>0));
   }
 
+  // ----------------------------- 原方法 ---------------------------
+  
   public function setSaleDate(){
     $start         = $_POST['start'];
     $end           = $_POST['end'];
@@ -442,7 +445,7 @@ class HotcityController extends Controller {
 
   }
 
-  // ----------------------------- 原方法 ---------------------------
+
   // 根据xfsd查询政策
   public function searchPriceByXfsd(){
     $start         = $_POST['start'];
