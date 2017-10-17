@@ -254,7 +254,7 @@ var setCommand = function(command){
 		}
 	})
 
-	// 混舱 xfsd 
+	// 混舱 xfsd 临时
 	$("#content").on('click', '.mix-cabin', function(){
 		// 暴露全局变量
 		// 销售日期更新
@@ -262,9 +262,22 @@ var setCommand = function(command){
 		// 获得hotcity数据
 		hotcity = $(this).data('hotcity');
 
-		reqPriceSourceRule.execute({'hid': hid});
+		searchPriceSource.execute({'hid': hid})
 
 	})
+	
+
+	// 混舱 xfsd 
+	// $("#content").on('click', '.mix-cabin', function(){
+	// 	// 暴露全局变量
+	// 	// 销售日期更新
+	// 	hid     = $(this).data('id');
+	// 	// 获得hotcity数据
+	// 	hotcity = $(this).data('hotcity');
+
+	// 	reqPriceSourceRule.execute({'hid': hid});
+
+	// })
 
 	// 销售日期的【下一步】
 	$('#otherModal').on('click', '#set-saleDate', function(){

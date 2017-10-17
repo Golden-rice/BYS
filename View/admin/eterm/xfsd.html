@@ -147,7 +147,7 @@
 <script>
 
 
-require(['eterm', "xlsx"], function(eterm, xlsx){
+require(['eterm', "xlsx", 'dt'], function(eterm, xlsx, dt){
 
 $('#myModalLabel').modal('show')
 
@@ -398,77 +398,165 @@ function mkTable(array, dom, wrap, type){
 
 		"use strict";
 		// ES6 
-
 		let html = '',
 				appendType = type !== ""? type : 'w',
 			  context = wrap !== "" ? wrap : document;
 
-		for(let arr in array){
-			html += `<table class="${dom} table-hover table-bordered table-responsive">
-				<tr>
-					<th>序号</th>
-					<th><input type="checkbox" id='cAll${arr}'></th>
-					<th>fare</th>
-					<th>特殊规则</th>
-					<th>提前出票</th>
-					<th>单程价格</th>
-					<th>往返价格</th>
-					<th>舱位</th>
-					<th>最短停留</th>
-					<th>最长停留</th>
-					<th>适用截止日期</th>
-					<th>退票规则</th>
-					<th>可用星期</th>
-					<th>出发</th>
-					<th>到达</th>
-					<th>航空公司</th>
-					<th>来源</th>
-					<th>方向</th>
-					<th>查询日期</th>
-					<th>操作</th>
-				</tr>`
-				
-			for(let line =0; line< array[arr]['length']; line++){
-				html += `
-				<tr class='line'>
-					<td class='index'>${line}</td>
-					<!--${array[arr][line]['index']}-->
-					<td><input type="checkbox" id="c${arr}${line}" class="cSelect cSelect${arr}" value="${array[arr][line]['fare']}"></td>
-					<td class='fare'>${array[arr][line]['fare']}</td>
-					<td class='special'>${array[arr][line]['special']}</td>
-					<td class='ADVPDay'>${array[arr][line]['ADVPDay']}</td>
-					<td class='singleLineFee'>${array[arr][line]['singleLineFee']}</td>
-					<td class='backLineFee'>${array[arr][line]['backLineFee']}</td>
-					<td class='seat'>${array[arr][line]['seat']}</td>
-					<td class='minStay'>${array[arr][line]['minStay']}</td>
-					<td class='maxStay'>${array[arr][line]['maxStay']}</td>
-					<td class='allowDate'>${array[arr][line]['allowDateStart']} - ${array[arr][line]['allowDateEnd']}</td>
-					<td class='reTicket'>${array[arr][line]['reTicket']}</td>
-					<td class='allowWeek'>${array[arr][line]['allowWeek']}</td>
-					<td class='start'>${array[arr][line]['start']}</td>
-					<td class='end'>${array[arr][line]['end']}</td>
-					<td class='aircompany'>${array[arr]['aircompany']}</td>`
-					if(array[arr]['from'] == ''){
-						html += `<td class='from'>公布运价</td>`
-					}else{
-						html += `<td class='from'>${array[arr]['from']}</td>`
-					}
-					html += `<td class='direction'> ${array[arr][line]['direction']}</td>
-					<td class='setDate'>${array[arr]['startDate']}</td>
-					<td class=''><a href="__URL__admin/eterm/fare?fare=${array[arr][line]['fare']}&start=${array[arr][line]['start']}&end=${array[arr][line]['end']}&startDate=${array[arr]['startDate']}&aircompany=${array[arr]['aircompany']}&from=${array[arr]['from']}"> 使用规则</a>
-					</td>
-				</tr>
-				`
-			}
-			html += `</table>`
+		var columns = [];
+		var title = {
+			'i'            : '序号',
+			'checkbox'     : "checkbox", // <input type='checkbox' id='cAll' class='c-all-checkbox'>
+			'fare'         : 'FareBasis', 
+			'special'			 : '特殊规则',
+			'ADVPDay'      : '提前出票',
+			'singleLineFee': '单程价格',
+			'backLineFee'  : '往返价格',
+			'seat'         : '舱位',
+			'minStay'      : '最小停留',
+			'maxStay'      : '最长停留',
+			'allowDate'    : '适用日期', // 10
+			'reTicket'     : '规则',
+			'allowWeek'    : '可用星期',
+			'start'        : '出发',
+			'end'          : '到达',
+			'airCompany'   : '航空公司',
+			'from'         : '来源',
+			'direction'    : '方向',
+			'startDate'    : '查询日期',
+			'action'       : '操作',
+		}	  
+
+	var breakWord = ['i', 'action', 'allowDate', 'from', 'checkbox'];
+	for(var c in title){
+		if(breakWord[c]){
+			columns.push({
+	      "data" : null,  
+	      "title" : title[c],  
+			})
+		}else{
+			columns.push({
+	      "data" : c,  
+	      "title" : title[c], 
+			})
 		}
 
+	}
+// 18
 		if(appendType === 'w'){
-			$(context).html(html);
+			$(context).html('<table class="'+dom+' table table-hover table-bordered table-responsive"></table>');
 		}
 		else if(appendType === 'a'){
-			$(context).append(html);
+			for(var i in array){
+				// 找到checkbox 更换
+				for(var q in columns){
+					if( columns[q].title === 'checkbox' ){
+						columns[q].title = "<input type='checkbox' id='cAll"+i+"' class='c-all-checkbox'>"
+					}
+				}
+
+				$(context).append('<table class="'+dom+'-'+i+' table table-hover table-bordered table-responsive"></table>');
+				$('.'+dom+'-'+i).DataTable({
+			    responsive: true,
+			    data: array[i],
+			    columns : columns,
+				  columnDefs: [{
+			        targets: 0, // 序号
+			        render: function(data, type, row, meta) {
+			          return meta.row+1;
+			        }
+			    },{
+			        targets: 1, // 复选框
+			        render: function(data, type, row, meta) {
+			          return '<input type="checkbox" id="c'+i+meta.row+'" class="cSelect cSelect'+i+'" value="'+row.fare+'">';
+			        }
+			    },{
+			        targets: 10, // 可用日期
+			        render: function(data, type, row, meta) {
+			          return row.allowDateStart+ '-' + row.allowDateEnd;
+			        }
+			    },{
+			        targets: 15, // 来源
+			        render: function(data, type, row, meta) {
+			        	// console.log(data, type, row, meta)
+			          return row.from === "" ? '公布运价' : row.from;
+			        }
+			    },{
+			        targets: 19, // 操作
+			        render: function(data, type, row, meta) {
+			          return '<a href="__URL__admin/eterm/fare?fare='+row.fare+'&start='+row.start+'&end='+row.end+'&startDate='+row.startDate+'&aircompany='+row.aircompany+'&from='+row.from+'"> 使用规则</a>'
+			        }
+			    },
+			    ]      
+				})
+			}
 		}
+
+		// for(let arr in array){
+		// 	html += `<table class="${dom} table-hover table-bordered table-responsive">
+		// 		<tr>
+		// 			<th>序号</th>
+		// 			<th><input type="checkbox" id='cAll${arr}'></th>
+		// 			<th>fare</th>
+		// 			<th>特殊规则</th>
+		// 			<th>提前出票</th>
+		// 			<th>单程价格</th>
+		// 			<th>往返价格</th>
+		// 			<th>舱位</th>
+		// 			<th>最短停留</th>
+		// 			<th>最长停留</th>
+		// 			<th>适用截止日期</th>
+		// 			<th>退票规则</th>
+		// 			<th>可用星期</th>
+		// 			<th>出发</th>
+		// 			<th>到达</th>
+		// 			<th>航空公司</th>
+		// 			<th>来源</th>
+		// 			<th>方向</th>
+		// 			<th>查询日期</th>
+		// 			<th>操作</th>
+		// 		</tr>`
+				
+		// 	for(let line =0; line< array[arr]['length']; line++){
+		// 		html += `
+		// 		<tr class='line'>
+		// 			<td class='index'>${line}</td>
+		// 			<!--${array[arr][line]['index']}-->
+		// 			<td><input type="checkbox" id="c${arr}${line}" class="cSelect cSelect${arr}" value="${array[arr][line]['fare']}"></td>
+		// 			<td class='fare'>${array[arr][line]['fare']}</td>
+		// 			<td class='special'>${array[arr][line]['special']}</td>
+		// 			<td class='ADVPDay'>${array[arr][line]['ADVPDay']}</td>
+		// 			<td class='singleLineFee'>${array[arr][line]['singleLineFee']}</td>
+		// 			<td class='backLineFee'>${array[arr][line]['backLineFee']}</td>
+		// 			<td class='seat'>${array[arr][line]['seat']}</td>
+		// 			<td class='minStay'>${array[arr][line]['minStay']}</td>
+		// 			<td class='maxStay'>${array[arr][line]['maxStay']}</td>
+		// 			<td class='allowDate'>${array[arr][line]['allowDateStart']} - ${array[arr][line]['allowDateEnd']}</td>
+		// 			<td class='reTicket'>${array[arr][line]['reTicket']}</td>
+		// 			<td class='allowWeek'>${array[arr][line]['allowWeek']}</td>
+		// 			<td class='start'>${array[arr][line]['start']}</td>
+		// 			<td class='end'>${array[arr][line]['end']}</td>
+		// 			<td class='aircompany'>${array[arr]['aircompany']}</td>`
+		// 			if(array[arr]['from'] == ''){
+		// 				html += `<td class='from'>公布运价</td>`
+		// 			}else{
+		// 				html += `<td class='from'>${array[arr]['from']}</td>`
+		// 			}
+		// 			html += `<td class='direction'> ${array[arr][line]['direction']}</td>
+		// 			<td class='setDate'>${array[arr]['startDate']}</td>
+		// 			<td class=''><a href="__URL__admin/eterm/fare?fare=${array[arr][line]['fare']}&start=${array[arr][line]['start']}&end=${array[arr][line]['end']}&startDate=${array[arr]['startDate']}&aircompany=${array[arr]['aircompany']}&from=${array[arr]['from']}"> 使用规则</a>
+		// 			</td>
+		// 		</tr>
+		// 		`
+		// 	}
+		// 	html += `</table>`
+		// }
+
+		// if(appendType === 'w'){
+		// 	$(context).html(html);
+		// }
+		// else if(appendType === 'a'){
+		// 	$(context).append(html);
+		// }
 }
 
 // 获取正则匹配后的数据
