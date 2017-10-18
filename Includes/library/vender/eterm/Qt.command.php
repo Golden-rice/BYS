@@ -31,8 +31,23 @@ class Qt extends Eterm{
 			// var_dump('TMP:', $this->tmp);
 			$log   = $this->tmp;               // 原始数据
 			$price = $this->parsePrice($note); // 获得价格
-			$this->arr = array_merge(array('log'=>$log, 'aircompany'=>$aircompany), $price);
-			// var_dump('PRICE:',$price);
+
+			$this->arr = array(
+				'log'        => $log, 
+				'aircompany' => $aircompany,
+				'fareFee'    => $price['fareFee'],
+				'totalFee'   => $price['totalFee'],
+				'routing'    => $price['routing'],
+				'currency'   => $price['currency'],
+				'note'       => $price['note'],
+			);
+
+			if($price['fareFee'] === null){
+				var_dump('NOTE', $note);
+				var_dump('LOG', $log);
+				var_dump('PRICE:', $price);
+			}
+
 			sleep(1);
 			parent::command('IG');
 			return $this->arr;
