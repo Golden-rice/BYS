@@ -459,6 +459,7 @@ function mkTable(array, dom, wrap, type){
 			    responsive: true,
 			    data: array[i],
 			    columns : columns,
+			    iDisplayLength: 100,
 				  columnDefs: [{
 			        targets: 0, // 序号
 			        render: function(data, type, row, meta) {

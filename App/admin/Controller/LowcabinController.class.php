@@ -291,8 +291,8 @@ class LowcabinController extends Controller {
 		$m_result = model('low_cabin_result');
 
 		// 未跑数据
-  	// $result_source = $m_source -> where('Status = 0')->select(); // ->limit('3')
-  	$result_source = $m_source -> where('Id = 80')->select(); // ->limit('3')
+  	$result_source = $m_source -> where('Status = 0')->select(); // ->limit('3')
+  	// $result_source = $m_source -> where('Id = 80')->select(); // ->limit('3')
   	if(!$result_source) return;
   	$avh          = new \Avh('av66', 'av66av66', 'BJS248');
   	$av           = new \Av('av66', 'av66av66', 'BJS248');
