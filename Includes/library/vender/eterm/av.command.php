@@ -5,7 +5,7 @@ class Av extends Eterm{
 	public function analysis($switch){
 		// 解析文件，并返回解析后的结果
   	if(empty($switch)){
-    	$switch = array(1); // 解析参数：1.格式化 
+    	$switch = array(1,2); // 解析参数：1.格式化 
   	}
   	foreach ($switch as $flags) {
   		switch ($flags) {

@@ -10,36 +10,6 @@
 		  <div class="panel-body">
 				<div class="form-inline">
 						<div class="input-group">
-
-							<!-- 区域  
-							<span class="input-group-addon" id="input-aircompany">航空公司</span>
-							<select class="form-control" id='aircompany' aria-describedby="input-aircompany">
-							  <option>——</option>
-							</select>
-							 区域 END -->
-
-							<!-- 出发  
-							<span class="input-group-addon" id="input-depart">出发</span>
-							<select class="form-control" id='depart' aria-describedby="input-depart">
-							  <option>——</option>
-							</select>
-							出发 END -->
-
-							<!-- 到达  
-							<span class="input-group-addon" id="input-arrive">到达</span>
-							<select class="form-control" id='arrive' aria-describedby="input-arrive">
-							  <option>——</option>
-							</select>
-							到达 END -->
-
-							<!-- 日期 
-							<span class="input-group-addon" id="input-departureDate">日期</span>
-							<input  class="form-control datetimepicker" id='departureDate' aria-describedby="input-departureDate" type="text">
-							 日期 END -->
-
-						</div>
-
-						<div class="input-group">
 							<input type="submit" id='add-new'  value='新增记录' class='btn btn-default'>
 						</div>
 						<div class="input-group">
@@ -51,7 +21,6 @@
 		</div>
 		<!-- 输入框 END -->
 	</div>
-
 </div>
 
 <div id="content"></div>
@@ -67,10 +36,7 @@
       <!-- modal header -->
 
       <div class="modal-body">
-        <div id="modal-content">
-            
-
-        </div>
+        <div id="modal-content"></div>
       </div>
       <!-- modal body -->
 
@@ -164,13 +130,15 @@ var setCommand = function(command){
 		audio.appendChild(source);
 
 		var timer = setInterval(function(){
-			eterm.eterm.link(eterm.const.Controller + 'tmpRun', {}, function(msg){
-				$('#lowcabin-label').text('更新时间：'+(new Date()).format('yyyy-MM-dd hh:mm:ss'))
-
+			// eterm.eterm.link(eterm.const.Controller + 'tmpRun', {}, function(msg){
+			eterm.eterm.link(eterm.const.Controller + 'tmpRunByPrice', {}, function(msg){
+				console.log(msg)
+				var log = '更新时间：'+(new Date()).format('yyyy-MM-dd hh:mm:ss')+' | ';
 				var html = '', alertSwitch = false;
 				for(var i in msg){
-						console.log(msg)
-					if(msg[i].msg != ''){
+					log += 'PNR：'+msg[i].qtb.pnr+ '，当前价格（含税）：'+msg[i].qtb.totalFee+'，当前票面：'+msg[i].qtb.fareFee+' | '
+					
+					if(msg[i].msg && msg[i].msg != ''){
 						alert(msg[i].msg);
 					}
 					if(msg[i].status){
@@ -209,8 +177,11 @@ var setCommand = function(command){
 					lowCabinModel.show();
 					clearInterval(timer);
 				}
+
+				// 打印结果
+				$('#lowcabin-label').text(log)
 			})
-		}, 5*1000); // 30*60*1000 1*5*60*1000 note_length*4*60*1000
+		}, 30*1000); // 30*60*1000 1*5*60*1000 note_length*4*60*1000
 
 	})
 

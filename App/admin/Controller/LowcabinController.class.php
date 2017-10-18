@@ -37,6 +37,8 @@ class LowcabinController extends Controller {
 
 	}
 
+	// 保存记录
+	// 通过3个方法，hasSource/saveSource/saveResult/saveGroup
 	public function saveNote(){
 		$note     = $_POST['note'];
 		$source   = $_POST['source'];
@@ -44,18 +46,17 @@ class LowcabinController extends Controller {
 
 		// 判断source中是否有，KeyWord, 去除空格的20个字符
 		$keyWord = substr(preg_replace("/\s|\n|\r|\t/", '', $source), 0, 50);
-		$result = $this->hasSource($keyWord);
+		$result  = $this->hasSource($keyWord);
 		if(!$result){
-			$sid = $this->saveSource($source, $keyWord);
+			$sid = $this->saveSource($source, json_encode($note), $keyWord);
 		}
-
 		if(isset($sid)){
 			if($this->saveResult($note, $sid)){
 				echo json_encode(array('status'=>1));
 				return; 
 			}
 		}
-		echo json_encode(array('status'=>0, 'msg'=> '添加失败'));
+		echo json_encode(array('status'=>0, 'msg'=> '添加失败，已存在'));
 	}
 
   // source 是否存在
@@ -73,12 +74,13 @@ class LowcabinController extends Controller {
   }
 
   // 保存 source
-  private function saveSource($source = '', $keyWord = ''){
+  private function saveSource($source = '',$note = '', $keyWord = ''){
   	$m = model('low_cabin_source');
   	$add = array(
   		'KeyWord' => $keyWord,
   		'Status'  => 0, // 用于检测是否需要降舱处理
-  		'Source'  => $source
+  		'Source'  => $source,
+  		'Note'    => $note,
   	);
   	return $m->add($add);
   }
@@ -96,6 +98,7 @@ class LowcabinController extends Controller {
   	// 初始化 基础数据
   	$aircompany = substr($array['note'][0]['flight'], 0, 2);
   	$cabin      = $array['note'][0]['cabin'];
+  	$note       = $array['note'];
   	$routingLen = count($array['note']);
   	$addAll     = array();  // 添加数据库的字段
  		$cabin_list = array();  // 待追位的舱位
@@ -103,75 +106,13 @@ class LowcabinController extends Controller {
 
  		// 根据QTE获得价格等fare等信息
  		import('vender/eterm/app.php');
- 		$lowcabin   = new \LowCabin('av66', 'av66av66', 'BJS248');
- 		$lowcabin->mixCommand(array("RT{$array['pnr']}", "QTE:/{$aircompany}"), 'a');
- 		$log        = $lowcabin->rtTmp();
- 		if(!empty($log)){
-
-	 		// $log      = $lowcabin->rtTmp();
-	 		$m_source->where("`Id` = {$id}")->update(array('Log'=>$log));
-	 		$logList  = $lowcabin->initFile($log);
-	 		$totalFee = 0;
-	 		$fareFee  = 0;
- 			$fsiKey   = -1; // 匹配log中能组合到fsi的最新位置
-	 		foreach ($logList as $key => $line) {
-
-	 			// 匹配行程，增加note行程的中转直达标记，找到第一个段的位置
-	 			if($fsiKey < 0){
-	 				foreach ($array['note'] as $noteKey => $noteValue) {
-	 					if(isset($logList[$key+$noteKey])){
-		 					$fsiPattern = "/S\s{$aircompany}\s{3}.*{$noteValue['cabin']}{$noteValue['date']}\s{$noteValue['depart']}{$noteValue['departTime']}[\s|>]".substr($noteValue['arriveTime'], 0, 4)."{$noteValue['arrive']}0(S|X)/";
-				 			preg_match($fsiPattern, $logList[$key+$noteKey], $fsiArr);
-				 			if(isset($fsiArr[1])){
-				 				$fsiKey  = $key;
-			 					$array['note'][$noteKey]['routingType'] = $fsiArr[1];
-				 			}else{
-				 				$array['note'][$noteKey]['routingType'] = '';
-				 			}
-	 					}
-	 				}
-	 			}
-
-	 			if($fareFee == 0){
-		 			// 有使用运价
-	 				// fare价格
-		 			preg_match('/FARE\s*CNY\s*(\d+)/i', $line, $curFareFeeArr);
-		 			if(isset($curFareFeeArr[1]) && $curFareFee = $curFareFeeArr[1]) {
-		 				if( $fareFee == 0 || $curFareFee < $fareFee){
-				 			$fareFee = $curFareFee;
-				 		}
-
-			 			preg_match('/TOTAL\s*CNY\s*(\d+)/i', $logList[$key+2] , $curTotalFeeArr);
-			 			if(isset($curTotalFeeArr[1]) && $curTotalFee = $curTotalFeeArr[1]) {
-				 			// total价格
-			 				if( $totalFee == 0 || $curTotalFee < $totalFee){
-				 				$totalFee = $curTotalFee;
-			 				}
-			 			}
-
-		 				// 匹配到fare往上$routingLen即为fare规则
-		 				$routing = array();
-		 				for ($i=0; $i < $routingLen; $i++) { 
-		 					$routingDetailString = $logList[$key-$routingLen+$i];
-		 					$routing[] = array( substr($routingDetailString, 1, 3) => rtrim(substr($routingDetailString, 5, 10)));
-		 				}
-			 			break;
-		 			}
-		 		
-		 			// 无适用运价，往下即为farebasis
-		 			preg_match('/\*无适用运价/', $line, $curNoPriceArr);
-		 			if(isset($curNoPriceArr[1])){
-		 				break;
-		 			}
-	 			}
-
-	 		}
-
- 		}else{
- 			var_dump(	$log );
- 		}
-
-		foreach($array['note'] as $key => $value) {
+ 		$qt        = new \Qt('av66', 'av66av66', 'BJS248');
+ 		$qteResult = $qt->qte($array['pnr'], $array['note']);
+ 		$note      = $qteResult['note'];  // 更新ss中转类型
+ 		if(!empty($qteResult['log'])) $m_source->where("`Id` = {$id}")->update(array('Log'=>$qteResult['log']));
+ 		// var_dump($qteResult);
+ 		// return;
+		foreach($note as $key => $value) {
 			$cur_aircompany = substr($value['flight'], 0, 2);
 			$cur_cabin      = $value['cabin'];
 
@@ -199,10 +140,9 @@ class LowcabinController extends Controller {
 			 		foreach ($cabin_list_result as $cabinDate) {
 						$fsi = "XS FSI/{$aircompany}\n";
 						// 区分 group 
-						foreach ($array['note'] as $index => $line) {
+						foreach ($note as $index => $line) {
 							$fsi .= "S {$cur_aircompany}   ".substr($line['flight'], 2).($cur_cabin == $line['cabin'] ? $cabinDate['Cabin'] : $line['cabin'])."{$line['date']} {$line['depart']}{$line['departTime']}".( substr($line['arriveTime'],4,2) == '+1'? ">".substr($line['arriveTime'],0,4):" {$line['arriveTime']}")."{$line['arrive']}0{$line['routingType']}    76W\n";
 						}
-					
 			 			$group_add[$value['group']][] = array(
 				 			'Sid'          => $id,
 				 			'GroupId'      => $value['group'],
@@ -216,13 +156,15 @@ class LowcabinController extends Controller {
 			}
 
 			if(empty($cabin_list)) $status = -1; 
-
 			$addAll[] = array(
 				'Client'        => $array['client'],
 				'PNR'           => $array['pnr'],
-				'Price'         => isset($fareFee)? $fareFee : NULL,
-				'Total_Price'   => isset($totalFee)? $totalFee : NULL,
-				'FareBasis'     => isset($routing) ? json_encode($routing) : NULL,
+				// 'Price'         => isset($fareFee)? $fareFee : NULL,
+				// 'Total_Price'   => isset($totalFee)? $totalFee : NULL,
+				// 'FareBasis'     => isset($routing) ? json_encode($routing) : NULL,
+				'Price'         => isset($qteResult['fareFee'])? $qteResult['fareFee'] : NULL,
+				'Total_Price'   => isset($qteResult['totalFee'])? $qteResult['totalFee'] : NULL,
+				'FareBasis'     => isset($qteResult['routing']) ? json_encode($qteResult['routing']) : NULL,
 				'Flight'        => $value['flight'],
 				'Cabin'         => $value['cabin'],
 				'Depart'        => $value['depart'],
@@ -249,6 +191,7 @@ class LowcabinController extends Controller {
 		return false;
   }
 
+  // 保存 group
   private function saveGroup($array = array()){
   	if(empty($array)) return;
   	// 回填 组舱位
@@ -283,6 +226,46 @@ class LowcabinController extends Controller {
   	return array('value' => $min, 'key'=>$minKey);
   }
 
+  public function tmpRunByPrice(){
+		import('vender/eterm/app.php');
+		$etermLib = reflect('eterm');
+		$m_source = model('low_cabin_source');
+		$m_result = model('low_cabin_result');
+
+		// 未跑数据
+  	$result_source = $m_source -> where('Status = 0')->select(); // ->limit('3')
+  	if(!$result_source) return;
+
+  	$qt           = new \Qt('av66', 'av66av66', 'BJS248');
+  	$source_array = array(); // 最终返回结果
+  	$alert        = false;   // 是否开启报警
+  	foreach ($result_source as $source) {
+  		$result_result = $m_result->where("`Sid` = {$source['Id']}")->select();
+  		// 直接查询 QTB:/航空公司与当前价格对比
+  		$source_parse  = json_decode($source['Note'],true);
+  		$pnr           = $result_result[0]['PNR'];
+  		$qtbResult     = $qt->qtb($pnr, $source_parse['note']);
+  		// var_dump($qtbResult);
+
+  		if($qtbResult['totalFee'] != 0 && ($qtbResult['fareFee'] < $result_result[0]['Price'] || $qtbResult['totalFee'] < $result_result[0]['Total_Price'])){
+  			$alert = true;
+  			$source_array[$source['Id']] = array('status'=> $alert, 'source'=>$source['Source'], 'result'=> $result_result,'msg'=>\BYS\Report::printLog());
+  		}
+  		$source_array[$source['Id']]['qtb'] = array(
+					'fareFee' => $qtbResult['fareFee'],
+					'totalFee'=> $qtbResult['totalFee'],
+					'routing' => $qtbResult['routing'],
+					'currency'=> $qtbResult['currency'],
+					'pnr'     => $pnr
+				);
+  		ob_flush();
+  		flush();
+  		// sleep(3);
+  	}
+
+  	echo json_encode($source_array);
+  }
+
   // 临时计划任务
   public function tmpRun(){
 		import('vender/eterm/app.php');
@@ -292,26 +275,12 @@ class LowcabinController extends Controller {
 
 		// 未跑数据
   	$result_source = $m_source -> where('Status = 0')->select(); // ->limit('3')
-  	// $result_source = $m_source -> where('Id = 80')->select(); // ->limit('3')
   	if(!$result_source) return;
   	$avh          = new \Avh('av66', 'av66av66', 'BJS248');
   	$av           = new \Av('av66', 'av66av66', 'BJS248');
   	$source_array = array();
   	foreach ($result_source as $source) {
   		$result_result = $m_result->where("`Sid` = {$source['Id']}")->select();
-  		//AV:UA850/06OCT
-  		// 每个航段均跑舱位
-  		// foreach($result_result as $rKey => $rVal){
-  		// 	if($rVal['LC_Cabin_List'] == '') continue; 
-  		// 	$_POST['start']     = $rVal['Depart']; 
-				// $_POST['end']       = $rVal['Arrive'];
-				// $_POST['startDate'] = $rVal['Date'];        
-				// $_POST['endDate']   = $rVal['Date']; 
-				// $_POST['aircompany']= substr($rVal['Flight'],0,2);   
-				// $_POST['other']     = 'D'; 
-  		// 	$avh_result = $eterm -> searchAvhByInput(true);
-	  	// 	var_dump($avh_result);
-		  // }
 
   		foreach($result_result as $rKey => $rVal){
   			if($rVal['LC_Cabin_List'] == '') continue; 
@@ -383,7 +352,7 @@ class LowcabinController extends Controller {
   	$result_source = $m_source -> where('Status = 0')->limit('3')->select();
   	if(!$result_source) return;
   	
-  	$lowcabin   = new \LowCabin('dongmin', '12341234', 'BJS248');
+  	$qt   = new \qt('dongmin', '12341234', 'BJS248');
  		$fsi_Result = array();
 
 
@@ -405,10 +374,10 @@ class LowcabinController extends Controller {
   			// 批量查询 fsi
   			foreach ($group_list as $key => $group_value) {
 		  		$cur_fsi_result = array();
-		  		$lowcabin->command($group_value['Fsi']);
-		  		preg_match_all('/\d\s(\w+\+?\*?)\s+(\d+)\sCNY/', $lowcabin->rtTmp(), $priceArr);
+		  		$qt->command($group_value['Fsi']);
+		  		preg_match_all('/\d\s(\w+\+?\*?)\s+(\d+)\sCNY/', $qt->rtTmp(), $priceArr);
 		  		// var_dump($group_value);
-		  		var_dump( $lowcabin->rtTmp() );
+		  		var_dump( $qt->rtTmp() );
 		  		// var_dump($priceArr);
 		  		// 存在价格，若有多个值取最小的
 		  		if(isset($priceArr[2])){
