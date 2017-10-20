@@ -47,11 +47,11 @@ class EtermController extends Controller {
 		$startDate  = $_POST['startDate'];
 		$aircompany = $_POST['aircompany'];
 		$from       = $_POST['from'];
-		$identity   = '';
+		$identity   = $_POST['index'];
 
 		// 扩展命令
-	 	if(isset($_POST['identity'])){
-	 		$identity = '<'.$_POST['identity'];
+	 	if(isset($_POST['index'])){
+	 		$identity = '<'.$identity;
 	 	}
 
 		$date = array( 
@@ -64,9 +64,10 @@ class EtermController extends Controller {
 		);
 
 		$command = 'XS/FSD'.$start.$end.'/'.$startDate .'/'.$aircompany.'/'.'#*'.$fare.$identity.($from != '公布运价' ? '///#'.$from : '');
-		$array  = empty($_POST['index']) ? $fsd->fare(array(0,1,2), $date, $command) : $fsd->fare(array(0=>$_POST['index'],1,2), $date, $command); 	
-		
-		echo json_encode(array('command'=> $command,'aircompany'=> $aircompany, 'fare'=> $fare, 'array'=>$this->assignItem($array), 'data'=>$array) ); 
+		$array  = $_POST['index'] === '' ? $fsd->fare(array(0,1,2), $date, $command) : $fsd->fare(array(0=>$_POST['index'],1,2), $date, $command); 	
+		$log = $fsd->rtTmp();
+
+		echo json_encode(array('command'=> $command,'aircompany'=> $aircompany, 'fare'=> $fare, 'array'=>$this->assignItem($array), 'data'=>$array, 'log'=>$log) ); 
   }
 
   public function returnEnd(){

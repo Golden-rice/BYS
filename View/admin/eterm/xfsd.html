@@ -404,6 +404,7 @@ function mkTable(array, dom, wrap, type){
 
 		var length = Object.keys(array).length; // 对象长度
 		if(length === 1){
+			$(context).html('');
 			var columns = [];
 			var title = {
 				'i'            : '序号',

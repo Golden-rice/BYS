@@ -37,11 +37,12 @@ class HotcityController extends Controller {
 
     $log =  fopen('log.txt', 'a');
 
-  	// 所有日期未当日往后15天
-  	$startDate = '15'.strtoupper(date('M', time())); // strtoupper( date('dM',time() + 15*24*60*60) ) OR 当月15号 ;
-  	// xfsd计划
-  	// 测试一条
-    // 舱位
+  	// 查询日期为当月的15日，如果当天大于15号，则查询日期下个月的1号
+    if(intval(date('d', time())) > 15 )
+      $startDate = '01'.strtoupper(date('M', time()+15*24*60*60));
+    else
+    	$startDate = '15'.strtoupper(date('M', time())); // strtoupper( date('dM',time() + 15*24*60*60) ) OR 当月15号 ;
+
     if(empty($result)) {
       echo '无查询数据';
       $logContent = '['.date('Y-m-d H:i:s',time())."]: No plan for run!\r\n\x0a";
@@ -298,7 +299,7 @@ class HotcityController extends Controller {
     }
     // 生成准备保存的数据
     foreach ($array as $num => $value) {
-      preg_match("/\/(\d{2}\w{3})\//", $value['Command'], $fareDateMatch);
+      preg_match("/\/(\d{1,2}\w{3})\//", $value['Command'], $fareDateMatch);
       // from XFareEtermPriceDetailDTO
       $addAll[] = array(
         //  fareKey 关键字：dep_city/arr_city/airline/pax_type/source/source_office/source_agreement/other(其他字段)/fare_date

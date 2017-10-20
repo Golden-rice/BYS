@@ -624,6 +624,7 @@ var createCommand = function(recevier, tpl, set){
 				recevier.progress.complete();
 
 				return (function(data){
+					console.log(data)
 					// 回填数据
 					recevier.mkTable(data.array, recevier.target, recevier.context, 'w');
 					recevier.lab.command.html(data.command);
