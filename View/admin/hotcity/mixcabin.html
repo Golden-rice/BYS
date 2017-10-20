@@ -1,0 +1,240 @@
+<{extends file='../layout.html'}>
+
+<{block name="title"}>混舱<{/block}>
+<{block name="content"}>
+
+<div class="panel panel-default">
+	<div class="panel-body">
+	
+		<div class="form-inline">
+
+			<div class="input-group">
+				<span class="input-group-addon" id="input-otaTpl">OTA模板</span>
+				<select class="form-control" id='otaTpl' aria-describedby="input-depart">
+				  <option>——</option>
+				</select>
+			</div>
+
+			<div class="input-group">
+				<input type="submit" value="选择" name='dosubmit' id='dosubmit' class="btn btn-primary">
+			</div>
+
+		</div>
+		<!-- form-inline -->
+	</div>
+	<!-- "panel-body -->
+</div>
+<!-- panel -->
+<div id="content"></div>
+
+<!-- other modal -->
+<div class="modal fade" id="otherModal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" >
+  <div class="modal-dialog modal-lg" role="document" style='width:1600px'>
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="modalLabel"> </h4>
+      </div>
+      <!-- modal header -->
+
+      <div class="modal-body">
+        <div id="modal-content"></div>
+      </div>
+      <!-- modal body -->
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default hidden" data-dismiss="modal">关闭</button>
+      </div>
+      <!-- modal footer -->
+
+    </div>
+  </div>
+</div>
+<!-- other modal end -->
+
+<script>
+require(['eterm', 'dt'], function (eterm, dt){
+// 弹出框   
+var OtherModel = function(title, content, footer){
+
+    $("#otherModal .modal-title").html(title);
+    $("#otherModal #modal-content").html(content);
+    $("#otherModal .modal-footer").html(footer ? footer:`<button type="button" class="btn btn-default hidden"  data-dismiss="modal">关闭</button>`);
+
+    return {
+        hide: function(){
+        	$("#example").modal('hide');
+        },
+        show: function(){
+            $("#otherModal").modal();
+        },
+        set: function(title, contetn, footer){
+			    $("#otherModal .modal-title").html(title);
+			    $("#otherModal #modal-content").html(content);
+			    $("#otherModal .modal-footer").html(footer);
+        }
+    }
+}
+var tpl = {
+	mkSelect: mkSelect
+}
+var setCommend = function(command){
+	// 全局变量
+	var otaTpl = {};
+	var selectOtaTpl = {};
+	var price = [];
+
+	// 获得 price 数据
+	var get = eterm.extend.parseURL(window.location.href).params;
+	var searchPriceSource = new command.ReqCommand({
+		url: eterm.const.Controller + 'searchPriceSource',
+		query: {hid: get.hid-0},
+		clk: function(res){
+			if(res.msg)
+				alert(res.msg)
+
+			if(res.status){
+				console.log(res)
+				price = res.result;
+			}
+		}
+	}) 
+
+	// 获得模板
+	var searchOtaTpl = new command.ReqCommand({
+		url: eterm.const.Controller + 'selectMixCabinTpl',
+		query: {},
+		clk: function(res){
+			if(res.msg)
+				alert(res.msg)
+
+			else{
+				mkSelect({'otaTpl': res.result})
+				otaTpl = res.result;
+			}
+			
+		}
+	}) 
+
+	searchOtaTpl.execute();
+	searchPriceSource.execute();
+
+	// 选择模板
+	$('#dosubmit').click(function(){
+		var otaId = $('#otaTpl').val();
+		if(JSON.stringify(otaTpl) == '{}') return;
+
+		for(var i in otaTpl){
+			if(otaTpl[i].Id === otaId){
+				selectOtaTpl = otaTpl[i]					
+				break;
+			}
+		}
+
+		if(JSON.stringify(selectOtaTpl) == '{}') return;
+
+		// 回填必要的信息
+		var appendTplModel = new OtherModel("回填OTA模板", renderTpl(JSON.parse(selectOtaTpl.TplMatch), JSON.parse(selectOtaTpl.Tpl)), `<button type="button" class="btn btn-primary" data-dismiss="modal" id='set-tpl'>确定</button><button type="button" class="btn btn-default hidden"  data-dismiss="modal">关闭</button>`);
+		appendTplModel.show();
+
+	})
+
+	// 保存回填OTA的 模板，并生成相应的表单
+	$('#otherModal').on('click', '#set-tpl', function(){
+		for (var name in selectOtaTpl){
+			if($('#'+name).html())
+			selectOtaTpl[name] = $('#'+name).val();
+		}
+
+		if(price.length > 0){
+			mkMixCabinByTpl(JSON.parse(selectOtaTpl.TplMatch), price)
+		}else{
+			alert('未获得政策数据')
+		}
+
+	})
+
+
+}
+setCommend(eterm.createCommand(eterm.eterm,tpl));
+
+// 模板选择框
+function mkSelect(data){
+	'use strict';
+
+	let html = '';
+
+	function mkSelectByName(name){
+		if(data[name].length > 0){
+			html = '<option value="">请选择</option>';
+			for(var i in data[name]){
+				html += '<option value='+data[name][i]['Id']+'>'+data[name][i]['Ota_CN']+'</option>';
+			}
+			$('#'+name).html(html)
+		}
+	}
+
+	// 回填航空公司数据
+	mkSelectByName('otaTpl');
+}
+
+// 回填OTA模板
+function renderTpl(translate, tpl){
+
+	'use strict';
+
+	if(translate == undefined || tpl == undefined ){ return ; }
+
+	let html = "";
+	html += `<table class="table table-hover table-bordered table-responsive">`;
+
+	// for(var name in translate){
+	// 	html += `
+	// 		<tr>
+	// 			<td>${translate[name]}</td>
+	// 			<td><input type='text' id="${name}" class="form-control" value="${tpl[name]}"></td>
+	// 		</tr>
+	// 	`
+	// }
+
+	html += `
+			<tr>
+				<td>是否特殊运价</td>
+				<td><input type='text' id="IsOther" class="form-control" value="${tpl.IsOther}"></td>
+			</tr>
+	`
+
+	html += `</table>`;
+	return html
+}
+
+// 按照模板混舱结果
+function mkMixCabinByTpl(translate, data){
+
+	if(translate == undefined || data == undefined ) return; 
+
+	var html = "";
+	html += '<table class="table table-hover table-bordered table-responsive" style="width:11000px">'
+	
+	html += '<tr>'
+	for(var name in translate){
+		html += '<th>'+translate[name]+'</th>'
+	}
+	html += '</tr>'
+
+	for(var i in data){
+		html += '<tr>'
+		for (var name in data[i]){
+			html += '<td>'+data[i][name]+'</td>'
+		}
+		html += '</tr>'
+	}
+	html += '</table>'
+
+	$('#content').html(html)
+}
+})
+
+</script>
+<{/block}>

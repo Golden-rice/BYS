@@ -1397,6 +1397,8 @@ var createCommand = function(recevier, tpl, set){
 }
 
 
+
+
 	return {
 		xfsd: xfsd,                                       // 获得xfsd数据，并用table回填到页面中
 		selected: selected,                               // 选择
@@ -1771,7 +1773,8 @@ return {
 	},
 	'rmTable': rmTable,
 	'createCommand': createCommand,
-	'eterm': eterm
+	'eterm': eterm,
+	'extend': extend
 }
 
 })

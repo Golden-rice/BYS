@@ -11,8 +11,9 @@ class HotcityController extends Controller {
     $this->display();
   }
 
-  public function sleep(){
-    sleep(3600);
+  // price 混舱
+  public function mixcabin(){
+    $this->display();
   }
 
   // 展示计划执行状况
@@ -253,23 +254,39 @@ class HotcityController extends Controller {
     $end           = $_POST['end'];
     $aircompany    = $_POST['aircompany'];
     $departureDate = $_POST['departureDate'];
-  
   }
 
   // 更新 price_source 的销售日期
+  // where 与 update 的数组的索引必须一一对应，且 where 与 update 仅只能有一条
   public function updatePriceSource(){
-    $update_src     = json_decode($_POST['update'], true);
-    $hid            = $_POST['hid'];
+    $update         = $_POST['update'];
+    $where          = $_POST['where'];
+    $updateAttrs    = array_keys($update); 
+    $whereAttrs     = array_keys($where); 
+    if(count($updateAttrs) > 1 || count($whereAttrs) >1){
+      var_dump('超过允许更新的长度');
+    }
+    $hid            = $_POST['Hid'];
     $m              = model('price_source');
     $result         = $m->where("`Hid` = {$hid}")->select();
     if($result){
       $whereArray   = array(); 
       $updateArray  = array();
-      foreach ($update_src as $rule => $saleDate) {
-        array_push($whereArray, "`Rule` = '{$rule}' AND `Hid` = {$hid}");
-        array_push($updateArray, array('SaleDate'=>$saleDate));
+      $whereAttr    = $whereAttrs[0];
+      $updateAttr   = $updateAttrs[0];
+      foreach(json_decode($where[$whereAttr],true) as $whereVal){
+        array_push($whereArray, (is_string($whereVal) ? "`{$whereAttr}` =  '$whereVal'" : "`{$whereAttr}` =  $whereVal")." AND `Hid` = {$hid}" );
       }
-      $m->updateAll($whereArray, $updateArray);
+      foreach(json_decode($update[$updateAttr],true) as $updateVal) { 
+        array_push($updateArray, array($updateAttr => $updateVal));
+      }
+
+      // foreach ($update_src as $rule => $saleDate) { 
+      //   array_push($whereArray, "`Rule` = '{$rule}' AND `Hid` = {$hid}");
+      //   array_push($updateArray, array('SaleDate'=>$saleDate));
+      // }
+      $update_result = $m->updateAll($whereArray, $updateArray);
+
       echo json_encode(array('msg'=>'更新成功', 'status'=>1));
       return;
     }
@@ -383,6 +400,16 @@ class HotcityController extends Controller {
     $id     = $_POST['id'];
     $m      = model('hot_city');
     $result = $m->where("`Id`={$id}")->select();
+    if($result)
+      echo json_encode(array('result'=>$result, 'status'=>1));
+    else
+      echo json_encode(array('msg'=>'出现错误', 'status'=>0));
+  }
+
+  // 查询 混舱模板
+  public function selectMixCabinTpl(){
+    $m      = model('ota_tpl');
+    $result = $m->select();
     if($result)
       echo json_encode(array('result'=>$result, 'status'=>1));
     else
