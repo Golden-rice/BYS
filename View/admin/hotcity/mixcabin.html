@@ -84,6 +84,7 @@ var setCommend = function(command){
 	var otaTpl = {};
 	var selectOtaTpl = {};
 	var price = [];
+	var hotcity = [];
 
 	// 获得 price 数据
 	var get = eterm.extend.parseURL(window.location.href).params;
@@ -97,6 +98,21 @@ var setCommend = function(command){
 			if(res.status){
 				console.log(res)
 				price = res.result;
+			}
+		}
+	}) 
+
+	// 获得hotcity 数据
+	var searchHotCityById = new command.ReqCommand({
+		url: eterm.const.Controller + 'searchHotCityById',
+		query: {id: get.hid-0},
+		clk: function(res){
+			if(res.msg)
+				alert(res.msg)
+
+			if(res.status){
+				console.log(res)
+				hotcity = res.result[0];
 			}
 		}
 	}) 
@@ -119,6 +135,7 @@ var setCommend = function(command){
 
 	searchOtaTpl.execute();
 	searchPriceSource.execute();
+	searchHotCityById.execute();
 
 	// 选择模板
 	$('#dosubmit').click(function(){
@@ -148,13 +165,55 @@ var setCommend = function(command){
 		}
 
 		if(price.length > 0){
-			mkMixCabinByTpl(JSON.parse(selectOtaTpl.TplMatch), price)
+			
+			mkMixCabinByTpl(JSON.parse(selectOtaTpl.TplMatch), toCtrip(price), JSON.parse(selectOtaTpl.Tpl))
+
 		}else{
 			alert('未获得政策数据')
 		}
-
 	})
 
+	// 转换成ctrip格式
+	function toCtrip(data){
+		if(!data.length > 0) return;
+		var tableDate = command.mixCabinFromHotcity(data, hotcity);
+		var tplData = [];
+		for(var i in tableDate){
+			tplData[i] = {};
+			// 出发
+			tplData[i].DepartCity          = tableDate[i].Dep;
+			// 到达
+			tplData[i].ArriveCity          = tableDate[i].Arr;
+			// 舱位
+			tplData[i].RoutingClass        = tableDate[i].Cabin;
+			// Farebasis
+			tplData[i].FareBasis           = tableDate[i].FareBasis;
+			// 去程班期
+			tplData[i].OutboundDayTime     = tableDate[i].OutboundWeek;
+			// 回程班期
+			tplData[i].InboundDayTime      = tableDate[i].InboundWeek;
+			// 票面
+			tplData[i].SalesPrice          = tableDate[i].RoundFare;
+			// 销售日期 
+			tplData[i].SalesDate           = tableDate[i].SaleDate;
+			// 航班限制
+			tplData[i].Flight              = tableDate[i].Flight;
+			// 最短停留
+			tplData[i].MinStay             = tableDate[i].MinStop;
+			// 最长停留
+			tplData[i].MaxStay             = tableDate[i].MaxStop;
+			// 航路：仅去往返均中转
+			tplData[i].Routing             = tableDate[i].Routing.allStay;
+			// 去程旅行日期
+			tplData[i].FcOutboundTravelDate= tableDate[i].ValidBegin+'>'+tableDate[i].ValidEnd;
+			// 回程旅行日期
+			tplData[i].FcInboundTravelDate = tableDate[i].ValidBegin+'>'+tableDate[i].ValidEnd;
+			// 航空公司
+			tplData[i].Owner               = tableDate[i].Airline;
+		}
+
+		return tplData;
+	}
 
 }
 setCommend(eterm.createCommand(eterm.eterm,tpl));
@@ -210,10 +269,10 @@ function renderTpl(translate, tpl){
 }
 
 // 按照模板混舱结果
-function mkMixCabinByTpl(translate, data){
+function mkMixCabinByTpl(translate, data, defaultDate){
 
 	if(translate == undefined || data == undefined ) return; 
-
+	console.log(translate, data)
 	var html = "";
 	html += '<table class="table table-hover table-bordered table-responsive" style="width:11000px">'
 	
@@ -225,15 +284,19 @@ function mkMixCabinByTpl(translate, data){
 
 	for(var i in data){
 		html += '<tr>'
-		for (var name in data[i]){
-			html += '<td>'+data[i][name]+'</td>'
+		for (var name in translate){
+			html += '<td>'+( data[i][name] !== undefined ? data[i][name] : defaultDate[name] ) +'</td>'
 		}
+		html += '<td>'+i+'</td>'
 		html += '</tr>'
 	}
 	html += '</table>'
 
 	$('#content').html(html)
 }
+
+
+
 })
 
 </script>

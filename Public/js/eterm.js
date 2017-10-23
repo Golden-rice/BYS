@@ -1356,47 +1356,223 @@ var createCommand = function(recevier, tpl, set){
 	// 2017.10.09 更新至粒度更小的命令，原函数仍然保留，等有时间再重构
 	// 请求命令
 	var ReqCommand = function(config){
-	var _self = this;
+		var _self = this;
 
-	// 回调函数
-	if(config.clk && recevier.isFunction(config.clk)){
-		this.clk = config.clk;
+		// 回调函数
+		if(config.clk && recevier.isFunction(config.clk)){
+			this.clk = config.clk;
+		}
+
+		// 配置请求方法
+		this.req = eterm.getData;
+
+		// 配置req的url
+		this.url = config.url;
+
+		// 配置req的query
+		this.query = config.query || "";
+
+		return {
+			// 执行
+			execute: function(query){
+				// execute 可更新 _self.query
+
+				_self.query = query || _self.query;
+				_self.query = _self.query || query;
+
+				if( !_self.query ){
+					console.log("未设置正确的查询语句:"+_self.query);
+					return;
+				}
+
+				_self.req(_self.url, _self.query, _self.clk);
+				// _self.req(_self.url, _self.query).done(function(result){
+				// 	if( config.clk && recevier.isFunction(config.clk) ){
+				// 		return _self.clk(result);
+				// 	}
+				// })
+
+			},
+		}
 	}
 
-	// 配置请求方法
-	this.req = eterm.getData;
+	// 混舱
+	var mixCabinFromHotcity = function(data, hotcity, isTest){
+		if(JSON.stringify(data) === '{}') return;
+		// 将分组的统一为非分组的
+		var array = [];
+		for(var a in data){
+			array = array.concat(data[a])
+		}
 
-	// 配置req的url
-	this.url = config.url;
+		// 内积 a^2
+		var result     = [],                        // 最终混舱结果
+				stayArray  = hotcity['HC_Routing'].split(','),       // 全部的中转城市
+				cabinMatch = hotcity['HC_Cabin'].split(','), // 热门城市舱位对照
+				date       = new Date();                  // 时间对象
 
-	// 配置req的query
-	this.query = config.query || "";
+		function maxDate(date1, date2){
+			if(/\d/.exec(date1) && /\d/.exec(date2)){
+				return /\d/.exec(date1)[0]*(/D/.exec(date1)?1:30) > /\d/.exec(date2)[0]*(/D/.exec(date2)?1:30) ? date1 : date2;
+			}
+			else 
+				return '';
+		}
 
-	return {
-		// 执行
-		execute: function(query){
-			// execute 可更新 _self.query
+		function makeArrayData(outboundData, inboundData, stay){
+			// 过滤不合法的混舱数据
+			// 适用日期不合理
+			var outboundDataBegin = new Date(outboundData['ValidBegin']), 
+					outboundDataEnd   = new Date(outboundData['ValidEnd']),
+					inboundDataBegin  = new Date(inboundData['ValidBegin']),
+					inboundDataEnd    = new Date(inboundData['ValidEnd']); 
 
-			_self.query = query || _self.query;
-			_self.query = _self.query || query;
+			if(outboundDataEnd < inboundDataBegin || outboundDataBegin > inboundDataEnd ) return;
 
-			if( !_self.query ){
-				console.log("未设置正确的查询语句:"+_self.query);
-				return;
+			if(outboundData.SaleDate || inboundData.SaleDate){
+				// 多个销售日期
+				// 销售日期不合理过滤
+				var outboundSaleDateBegin = outboundData['SaleDate'].split('>')[0],
+						outboundSaleDateEnd   = outboundData['SaleDate'].split('>')[1],
+						inboundSaleDateBegin  = inboundData['SaleDate'].split('>')[0],
+						inboundSaleDateEnd    = inboundData['SaleDate'].split('>')[1];
+
+				if(outboundSaleDateEnd < inboundSaleDateBegin || outboundSaleDateBegin > inboundSaleDateEnd ) return;
+				var SaleDateBegin = date.max(outboundSaleDateBegin, inboundSaleDateBegin),
+						SaleDateEnd   = date.max(outboundSaleDateEnd, inboundSaleDateEnd);
 			}
 
-			_self.req(_self.url, _self.query, _self.clk);
-			// _self.req(_self.url, _self.query).done(function(result){
-			// 	if( config.clk && recevier.isFunction(config.clk) ){
-			// 		return _self.clk(result);
-			// 	}
-			// })
+			var flight = '';
+			if(outboundData['Flight'] != '' && inboundData['Flight'] != '') {
+				if(outboundData['Flight'] !== inboundData['Flight']){
+					flight = outboundData['Flight']+','+inboundData['Flight'];
+				}else{
+					flight = outboundData['Flight']
+				}
+			}else if(outboundData['Flight'] != ''){
+				flight = outboundData['Flight']
+			}else if(inboundData['Flight'] != ''){
+				flight = inboundData['Flight']
+			}
 
-		},
+
+			var result = {
+					'FareBasis'     : outboundData['FareBasis']+'/'+inboundData['FareBasis'],
+					'Advp'          : maxDate(outboundData['Advp'], inboundData['Advp']),
+					'SingleFare'    : outboundData['SingleFare']-0 == 0 ? 0:(outboundData['SingleFare']-0)/2+(inboundData['SingleFare']-0)/2,
+					'RoundFare'     : outboundData['RoundFare']-0 == 0 ? 0:(outboundData['RoundFare']-0)/2+(inboundData['RoundFare']-0)/2,
+					'SaleDate'      : SaleDateBegin ? SaleDateBegin+'>'+SaleDateEnd:'',
+					'Flight'        : flight,
+					// 出境的舱位，和境外的舱位存在争议
+					'Cabin'         : outboundData['Cabin']+(stay ? '-'+outboundData['Cabin']+'-'+inboundData['Cabin']:'')+'-'+inboundData['Cabin'],
+					'MinStop'       : maxDate(outboundData['MinStop'], inboundData['MinStop']),
+					'MaxStop'       : maxDate(outboundData['MaxStop'], inboundData['MaxStop']),
+					'ValidBegin'    : date.max(outboundData['ValidBegin'], inboundData['ValidBegin']),
+					'ValidEnd'      : date.max(outboundData['ValidEnd'], inboundData['ValidEnd']),
+					'OutboundWeek'  : outboundData['OutboundWeek'],
+					'InboundWeek'   : inboundData['OutboundWeek'],
+					'Rule'          : outboundData['Rule']+'/'+inboundData['Rule'],
+					'Dep'           : outboundData['Dep'],
+					'Arr'           : outboundData['Arr'],
+					// 新增字段：中转城市
+					'Stay'          : stay ? stay : '', 
+					'Airline'       : outboundData['Airline'],
+					// 新增字段：航路
+					'Routing'      : {},
+					// 新增字段：fsi
+					// XS FSI/UA
+		      // S UA   1310\09SEP BJS0100 0200CHI0X    76W 
+		      // S UA   1310\09SEP CHI0300 0400NYC0S    76W 
+		      // S UA   981\09SEP BJS0100 0200CHI0X    76W
+		      // S UA   981\09SEP NYC0300 0400BJS0S    76W 
+					'Fsi'           : {}
+				}
+				var outboundDate   = outboundData['FareDate'],
+						outboundFlight = '0000',
+						inboundDate    = inboundData['FareDate'],
+						inboundFlight  = '0000';
+				if(stay){
+					result['Routing'] = {
+						'allStay' : outboundData['Dep']+'-'+outboundData['Airline']+'-'+stay+'-'+outboundData['Airline']+'-'+outboundData['Arr']+'-'+inboundData['Airline']+'-'+stay+'-'+inboundData['Airline']+'-'+inboundData['Dep'],
+						'outboundStay' : outboundData['Dep']+'-'+outboundData['Airline']+'-'+stay+'-'+outboundData['Airline']+'-'+outboundData['Arr']+'-'+inboundData['Airline']+'-'+inboundData['Dep'],
+						'inboundStay' : outboundData['Dep']+'-'+outboundData['Airline']+'-'+outboundData['Arr']+'-'+inboundData['Airline']+'-'+stay+'-'+inboundData['Airline']+'-'+inboundData['Dep'],
+						'noStay': outboundData['Dep']+'-'+outboundData['Airline']+'-'+outboundData['Arr']+'-'+inboundData['Airline']+'-'+inboundData['Dep'],
+					}
+					result['Fsi'] = {
+						'allStay' :  "XS FSI/"+outboundData['Airline']+"\r"
+							+ "S "+outboundData['Airline']+"   "+outboundFlight+outboundData['Cabin']+outboundDate+" "+outboundData['Dep']+"0100 0200"+stay+"0X    76W \r" 
+							+ "S "+outboundData['Airline']+"   "+outboundFlight+outboundData['Cabin']+outboundDate+" "+stay+"0300 0400"+outboundData['Arr']+"0S    76W \r"
+							+ "S "+inboundData['Airline'] +"   "+inboundFlight +inboundData['Cabin'] +inboundDate +" "+inboundData['Arr']+"0500 0600"+stay+"0X    76W \r" 
+							+ "S "+inboundData['Airline'] +"   "+inboundFlight +inboundData['Cabin'] +inboundDate +" "+stay+"0700 0800"+inboundData['Dep']+"0S    76W \r",
+						'outboundStay' : "XS FSI/"+outboundData['Airline']+"\r"
+							+ "S "+outboundData['Airline']+"   "+outboundFlight+outboundData['Cabin']+outboundDate+" "+outboundData['Dep']+"0100 0200"+stay+"0X    76W \r" 
+							+ "S "+outboundData['Airline']+"   "+outboundFlight+outboundData['Cabin']+outboundDate+" "+stay+"0300 0400"+outboundData['Arr']+"0S    76W \r"
+							+ "S "+inboundData['Airline'] +"   "+inboundFlight +inboundData['Cabin'] +inboundDate +" "+inboundData['Arr']+"0700 0800"+inboundData['Dep']+"0S    76W \r",
+						'inboundStay'  : "XS FSI/"+outboundData['Airline']+"\r"
+							+ "S "+outboundData['Airline']+"   "+outboundFlight+outboundData['Cabin']+outboundDate+" "+outboundData['Dep']+"0300 0400"+outboundData['Arr']+"0S    76W \r"
+							+ "S "+inboundData['Airline'] +"   "+inboundFlight +inboundData['Cabin'] +inboundDate +" "+inboundData['Arr']+"0500 0600"+stay+"0X    76W \r" 
+							+ "S "+inboundData['Airline'] +"   "+inboundFlight +inboundData['Cabin'] +inboundDate +" "+stay+"0700 0800"+inboundData['Dep']+"0S    76W \r",
+						'noStay': "XS FSI/"+outboundData['Airline']+"\r"
+							+ "S "+outboundData['Airline']+"   "+outboundFlight+outboundData['Cabin']+outboundDate+" "+outboundData['Dep']+"0100 0200"+outboundData['Arr']+"0S    76W \r" 
+							+ "S "+inboundData['Airline'] +"   "+inboundFlight +inboundData['Cabin'] +inboundDate +" "+inboundData['Arr']+"0300 0400"+inboundData['Dep']+"0S    76W \r" 
+					}
+				}else{
+					result['Routing'] = {
+						'noStay': outboundData['Dep']+'-'+outboundData['Airline']+'-'+outboundData['Arr']+'-'+inboundData['Airline']+'-'+inboundData['Dep']
+					}
+					result['Fsi'] = {
+						'noStay': "XS FSI/"+outboundData['Airline']+"\r"
+							+ "S "+outboundData['Airline']+"   "+outboundFlight+outboundData['Cabin']+outboundData['FareDate']+" "+outboundData['Dep']+"0100 0200"+outboundData['Arr']+"0S    76W \r" 
+							+ "S "+inboundData['Airline'] +"   "+inboundFlight +inboundData['Cabin'] +inboundData['FareDate'] +" "+inboundData['Arr']+"0300 0400"+inboundData['Dep']+"0S    76W \r" 
+					}
+				}
+				return result;
+		}
+
+		// 根据热门城市筛选舱位
+		if(cabinMatch.length > 1 && cabinMatch[0] != '')
+			for(var a in array){
+				for(var c in cabinMatch){
+					if(cabinMatch[c] === array[a].Cabin)
+						break;
+					if(c === cabinMatch.length-1)
+						array[a].splice(a, 1);
+				}
+			}
+
+		var makeArrayDataResult;
+
+		if(isTest){
+			// 仅匹配相同fare，不包含中转
+			for(var o in array){
+	  		makeArrayDataResult = makeArrayData(array[o], array[o])
+				if(makeArrayDataResult){
+					result.push(makeArrayDataResult)
+				}
+			}
+			return result
+		}
+
+		for(var i in array){   // 去程
+			for(var j in array){ // 回程
+	      if(stayArray.length > 0 && stayArray[0] != ''){
+					for(var s in stayArray){ // 中转点
+						// 按照中转再次拆分
+						makeArrayDataResult = makeArrayData(array[i], array[j], stayArray[s])
+						if(makeArrayDataResult){
+							result.push(makeArrayDataResult)
+						}
+					}
+	      }else{
+	      		makeArrayDataResult = makeArrayData(array[i], array[j])
+						if(makeArrayDataResult){
+							result.push(makeArrayDataResult)
+						}
+	      }
+			}
+		}
+		return result;
 	}
-}
-
-
 
 
 	return {
@@ -1439,7 +1615,8 @@ var createCommand = function(recevier, tpl, set){
 			deleteNote: deleteNote,                           // 删除记录
 			searchNotePrice: searchNotePrice,                 // 查看记录详情
 		},
-		ReqCommand: ReqCommand,                          // 请求命令
+		ReqCommand: ReqCommand,                           // 请求命令
+		mixCabinFromHotcity:mixCabinFromHotcity,          // 根据热门城市混舱
 	}
 }
 
