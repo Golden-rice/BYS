@@ -139,6 +139,7 @@ var setCommand = function(command){
 				// for(var i in res.inGroupResult){
 				// 	inGroupSmpResult.push(uniqueXfsd(res.inGroupResult[i]))
 				// }
+
 				xfsdSmpInGroup = res.inGroupSmpResult
 				xfsdInGroup    = res.inGroupResult
 				
@@ -247,7 +248,7 @@ var setCommand = function(command){
 	$("#content").on("click", ".xfsd-result", function(){
 		// xfsdModal = new OtherModel("运价结果", '');
 		// command.searchXfsdResult({sid: $(this).data('sid')});
-		var sid = $(this).data('sid'), sidArray = sid.split(','), has = false;
+		var sid = $(this).data('sid')+"", sidArray = sid.split(','), has = false;
 		if(xfsdInGroup){ 
 			for(var i in sidArray){
 				if(xfsdInGroup[sidArray[i]]) {
@@ -276,9 +277,10 @@ var setCommand = function(command){
 	$("#content").on("click", ".simplify-xfsd", function(){
 		// xfsdModal = new OtherModel("精简运价结果", '');
 		// command.searchXfsdResultByHotcity({sid: $(this).data('sid')})
-		var sid = $(this).data('sid'), sidArray = sid.split(','), has = false;
+		var sid = $(this).data('sid')+"", sidArray = sid.split(','), has = false;
 
 		if(xfsdSmpInGroup){ 
+
 			for(var i in sidArray){
 				if(xfsdSmpInGroup[sidArray[i]]) {
 					has = true;

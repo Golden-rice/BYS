@@ -402,7 +402,8 @@ function mkTable(array, dom, wrap, type){
 				appendType = type !== ""? type : 'w',
 			  context = wrap !== "" ? wrap : document;
 
-		var length = Object.keys(array).length; // 对象长度
+		// var length = Object.keys(array).length; // 对象长度
+		var length = 2; // 强制调用第二种渲染方法
 		if(length === 1){
 			$(context).html('');
 			var columns = [];
