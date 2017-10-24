@@ -832,10 +832,10 @@ var createCommand = function(recevier, tpl, set){
 			resource: signin.resource.val() || ""
 		} 
 		if (/index.php\/admin\/user/.test(Controller)){
-			var url = Controller + 'login',
+			var url = Controller + 'loginIn',
 					location =  Project + 'index.php/admin/eterm/xfsd';
 		}else{
-			var url = Controller + 'index.php/admin/user/login', 
+			var url = Controller + 'index.php/admin/user/loginIn', 
 					location = Controller + "index.php/admin/eterm/xfsd" ;
 		}
 
@@ -1443,15 +1443,15 @@ var createCommand = function(recevier, tpl, set){
 			}
 
 			var flight = '';
-			if(outboundData['Flight'] != '' && inboundData['Flight'] != '') {
+			if(outboundData['Flight'] !== '' && inboundData['Flight'] !== '') {
 				if(outboundData['Flight'] !== inboundData['Flight']){
 					flight = outboundData['Flight']+','+inboundData['Flight'];
 				}else{
 					flight = outboundData['Flight']
 				}
-			}else if(outboundData['Flight'] != ''){
+			}else if(outboundData['Flight'] !== ''){
 				flight = outboundData['Flight']
-			}else if(inboundData['Flight'] != ''){
+			}else if(inboundData['Flight'] !== ''){
 				flight = inboundData['Flight']
 			}
 
@@ -1488,9 +1488,10 @@ var createCommand = function(recevier, tpl, set){
 					'Fsi'           : {}
 				}
 				var outboundDate   = outboundData['FareDate'],
-						outboundFlight = '0000',
+						outboundFlight = outboundData['Flight'] !==''? outboundData['Flight']: '0000',
 						inboundDate    = inboundData['FareDate'],
-						inboundFlight  = '0000';
+						inboundFlight  = inboundData['Flight'] !==''? inboundData['Flight']: '0000'
+
 				if(stay){
 					result['Routing'] = {
 						'allStay' : outboundData['Dep']+'-'+outboundData['Airline']+'-'+stay+'-'+outboundData['Airline']+'-'+outboundData['Arr']+'-'+inboundData['Airline']+'-'+stay+'-'+inboundData['Airline']+'-'+inboundData['Dep'],
@@ -1574,6 +1575,71 @@ var createCommand = function(recevier, tpl, set){
 		return result;
 	}
 
+	// 生成model
+	var mkOtherModel = function(content){
+		let modelHtml = `
+			<!-- other modal -->
+			<div class="modal fade" id="otherModal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" >
+			  <div class="modal-dialog modal-lg" role="document" style='width:1600px'>
+			    <div class="modal-content">
+
+			      <div class="modal-header">
+			        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+			        <h4 class="modal-title" id="modalLabel"> </h4>
+			      </div>
+			      <!-- modal header -->
+
+			      <div class="modal-body">
+			        <div id="modal-content">
+			            
+
+			        </div>
+			      </div>
+			      <!-- modal body -->
+
+			      <div class="modal-footer">
+			        <button type="button" class="btn btn-default hidden" data-dismiss="modal">关闭</button>
+			      </div>
+			      <!-- modal footer -->
+
+			    </div>
+			  </div>
+			</div>
+			<!-- other modal end -->
+
+		`
+
+		var content = content ? content: document.body;
+		$(content).prepend(modelHtml);
+	}
+
+	// 弹出框   
+	// var model = new command.OtherModel();
+	// model.show();
+	var OtherModel = function(title, content, footer){
+		if(!$('#otherModal').html()){
+			mkOtherModel();
+		}
+
+    $("#otherModal .modal-title").html(title);
+    $("#otherModal #modal-content").html(content);
+    $("#otherModal .modal-footer").html(footer ? footer:`<button type="button" class="btn btn-default hidden"  data-dismiss="modal">关闭</button>`);
+
+    return {
+        hide: function(){
+        	$("#example").modal('hide');
+        },
+        show: function(){
+            $("#otherModal").modal();
+        },
+        set: function(title, contetn, footer){
+			    $("#otherModal .modal-title").html(title);
+			    $("#otherModal #modal-content").html(content);
+			    $("#otherModal .modal-footer").html(footer);
+        }
+    }
+	}
+
 
 	return {
 		xfsd: xfsd,                                       // 获得xfsd数据，并用table回填到页面中
@@ -1615,8 +1681,11 @@ var createCommand = function(recevier, tpl, set){
 			deleteNote: deleteNote,                           // 删除记录
 			searchNotePrice: searchNotePrice,                 // 查看记录详情
 		},
+		// 2017.10.09 
 		ReqCommand: ReqCommand,                           // 请求命令
 		mixCabinFromHotcity:mixCabinFromHotcity,          // 根据热门城市混舱
+		mkOtherModel: mkOtherModel,                       // 生成model的html
+		OtherModel: OtherModel,                           // 生成model的对象
 	}
 }
 

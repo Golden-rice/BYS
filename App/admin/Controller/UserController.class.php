@@ -2,13 +2,19 @@
 namespace admin\Controller;
 use BYS\Controller;
 class UserController extends Controller {
-    public function index(){
+		// 登录页面
+    public function login(){
     	$this->display('User/login');
     }
 
-    public function login(){
+    // 用户首页
+    public function index(){
 
-    		if(isset($_POST["dosubmit"])){
+    }
+
+    public function loginIn(){
+
+    	if(isset($_POST["dosubmit"])){
 
 				$url = "http://eterm.cctba.com:8350/COMMAND?USER=".$_POST['name']."&PASSWORD=".$_POST['password']."&RESOURCEETERM-SHARE-".$_POST['resource']."=&COMMAND=ddi:";
 				if(@file_get_contents($url)){
