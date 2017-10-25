@@ -6,6 +6,89 @@ class LowcabinController extends Controller {
 		$this->display();
 	}
 
+	// 占位
+	public function saveSeat(){
+		$this->display();
+	}
+
+	// 保存记录
+	public function saveHoldSeat(){
+		$note    = json_decode($_POST['note'], true);
+		$source  = $_POST['source'];
+
+		// 判断source中是否有，KeyWord, 去除空格的20个字符
+		$keyWord = substr(preg_replace("/\s|\n|\r|\t/", '', $source), 0, 50);
+		$result  = $this->hasHoldSeatSource($keyWord);
+		if(!$result){
+			$sid = $this->saveHoldSeatSource($source, $note, $keyWord);
+		}
+		if(isset($sid)){
+			if($this->saveHoldSeatResult($note, $sid)){
+				echo json_encode(array('status'=>1));
+				return; 
+			}
+		}
+		echo json_encode(array('status'=>0, 'msg'=> '添加失败，已存在'));
+	}
+
+	// 查询是否有占位记录
+	public function hasHoldSeatSource($keyWord){
+  	$m = model('hold_seat_source');
+  	$result = $m ->where('`KeyWord` ="'.$keyWord.'" ')->select();
+  	// 为空返回false
+  	if(!$result || empty($result[0]) ) return false;
+  	$col = $result[0]; // 仅一条
+		if ( isset($col['KeyWord']) && $keyWord == $col['KeyWord'] ) 
+			return $col;
+
+  	return false;
+	}
+
+	// 保存占位记录
+	public function saveHoldSeatSource($source = '',$note = array(), $keyWord = ''){
+  	$m = model('hold_seat_source');
+  	$add = array(
+  		'KeyWord' => $keyWord,
+  		'Status'  => 0, // 用于检测是否需要降舱处理
+  		'Source'  => $source,
+  		'Note'    => json_encode($note),
+  		'PNR'     => $note['pnr']
+  	);
+  	return $m->add($add);
+  }
+
+  // 保存占位结果记录
+  public function saveHoldSeatResult($array = array(), $id = NULL){
+
+  	if( !isset($array['pnr'])) return;
+		if( $id == NULL) return;
+		$m_source   = model('hold_seat_source');
+		// 回填 解析详情
+  	$m          = model('hold_seat_result');
+  	// 默认第一个为航空公司
+  	$aircompany = substr($array['note'][0]['flight'], 0, 2);
+  	$note       = $array['note'];
+  	$addAll     = array();  // 添加数据库的字段
+
+		foreach($note as $key => $value) {
+			$addAll[] = array(
+				'Client'        => $array['client'],
+				'Flight'        => $value['flight'],
+				'Cabin'         => $value['cabin'],
+				'Depart'        => $value['depart'],
+				'Arrive'        => $value['arrive'],
+				'Date'		      => $value['date'],
+				'Depart_Time'   => $value['departTime'],
+				'Arrive_Time'   => $value['arriveTime'],
+				'Aircompany'    => $aircompany,
+				'Sid'           => $id,
+			);
+		}
+
+		// 保存组数据
+		return $m->addAll($addAll);
+  }
+
 	// 查询所有的降舱记录
 	public function searchAll(){
 		$m = model('low_cabin_source');

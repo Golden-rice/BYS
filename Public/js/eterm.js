@@ -585,8 +585,9 @@ var createCommand = function(recevier, tpl, set){
 
 		recevier.cnyLab = $('#labtoCNY')
 
-		recevier.link(Controller + 'toCNY', {toCNY: "", command: "XS FSC NUC/CNY"}, function(msg){
+		recevier.link(Project + 'index.php/admin/eterm/toCNY', {toCNY: "", command: "XS FSC NUC/CNY"}, function(msg){
 			recevier.rate =  msg.rate - 0;
+			console.log('当前汇率:'+recevier.rate)
 			recevier.cnyLab.html("当前汇率："+msg.rate+'<br>');
 			delete recevier.cnyLab;
 		}); 
@@ -1587,11 +1588,20 @@ var createCommand = function(recevier, tpl, set){
 	}
 
 	// 生成model
-	var mkOtherModel = function(content){
+	var mkOtherModel = function(size, parent){
+
+		if(size === 'big'){
+			var width ='width:1600px'
+		}else if(size === 'medium'){
+			var width = 'width:1000px'
+		}else{
+			var width = '';
+		}
+
 		let modelHtml = `
 			<!-- other modal -->
 			<div class="modal fade" id="otherModal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" >
-			  <div class="modal-dialog modal-lg" role="document" style='width:1600px'>
+			  <div class="modal-dialog " role="document" style="${width}">
 			    <div class="modal-content">
 
 			      <div class="modal-header">
@@ -1620,16 +1630,16 @@ var createCommand = function(recevier, tpl, set){
 
 		`
 
-		var content = content ? content: document.body;
-		$(content).prepend(modelHtml);
+		var parent = parent ? parent: document.body;
+		$(parent).prepend(modelHtml);
 	}
 
 	// 弹出框   
 	// var model = new command.OtherModel();
 	// model.show();
-	var OtherModel = function(title, content, footer){
+	var OtherModel = function(title, content, footer, size){
 		if(!$('#otherModal').html()){
-			mkOtherModel();
+			mkOtherModel(size); // big 大尺寸
 		}
 
     $("#otherModal .modal-title").html(title);
@@ -1651,6 +1661,100 @@ var createCommand = function(recevier, tpl, set){
     }
 	}
 
+	// 解析记录
+	var parseNoteInput = function(string){
+		if(!string) return;
+		var strArray = string.split('\n'),
+				resultNote = {
+					pnr: '',
+					client: '',
+					note : [],
+				};
+
+		// 匹配乘客姓名
+		if(strArray[0]){
+			resultNote.client = /1\.([A-z]+\/[A-z]+)\s/.exec(strArray[0].trim())[1]
+			resultNote.pnr    = /\s(\w+)$/.exec(strArray[0].trim())[1]
+		}
+		for (var i = 1; i < strArray.length; i++) {
+			if(!strArray[i]) continue;
+			var match = strArray[i].trim();
+			resultNote.note[i-1] = {
+				// 匹配航班号
+				flight: /\d\.\s\s([A-z]{2}\d+)\s/.exec(match)[1],
+				// 舱位 
+				cabin: /\s([A-z])\d?\s/.exec(match)[1],
+				// 航段分组
+				group: /\s[A-z](\d)?\s/.exec(match)[1] ? /\s[A-z](\d)?\s/.exec(match)[1] : '',
+				// 日期
+				date: /[A-z]{2}(\d{2}[A-z]{3})/.exec(match)[1],
+				// 出发
+				depart: /\s([A-z]{3})([A-z]{3})\s/.exec(match)[1],
+				// 到达
+				arrive: /\s([A-z]{3})([A-z]{3})\s/.exec(match)[2],
+				// 出发时间
+				departTime: /(\d{4})\s+(\d{4})/.exec(match)[1],
+				// 到达时间
+				arriveTime: /(\d{4})\s+(\d{4}\+?1?)/.exec(match)[2],
+				// 航程状态
+				status: /(HK|SK)\d/.test(match) ? /(HK|SK)\d/.exec(match)[1]: false,
+				// 人数
+				total: /(HK|SK)(\d)+/.test(match) ? /(HK|SK)(\d)+/.exec(match)[2]: false
+			}
+
+		};
+		return resultNote; 
+	}
+
+	// 解析全部的记录
+	var parseAllNoteInput = function(string){
+		if(!string) return;
+		var pattern = new RegExp('1\.', 'g');
+		var noteStringArray = /1\.(.*)/g.exec(string)
+		console.log(noteStringArray)
+	}
+
+	// 展示记录 
+	var mkNoteTable = function(array){
+		if( !array ) return;
+			html =`
+			  <table class="table table-hover table-bordered table-responsive">
+			  <thead>
+					<tr>
+						<th>序号</th>
+						<th>出发</th>
+						<th>到达</th>
+						<th>航班号</th>
+						<th>舱位</th>
+						<th>航段组</th>
+						<th>状态</th>
+						<th>人数</th>
+						<th>日期</th>
+						<th>出发时间</th>
+						<th>到达时间</th>
+					</tr>
+				</thead>
+		`
+		for(var i in array.note){
+			html += `
+					<tr>
+						<td>${i}</td>
+						<td>${array.note[i].depart}</td>
+						<td>${array.note[i].arrive}</td>
+						<td>${array.note[i].flight}</td>
+						<td>${array.note[i].cabin}</td>
+						<td>${array.note[i].group}</td>
+						<td>${array.note[i].status}</td>
+						<td>${array.note[i].total}</td>
+						<td>${array.note[i].date}</td>
+						<td>${array.note[i].departTime}</td>
+						<td>${array.note[i].arriveTime}</td>
+					</tr>
+			`
+		}
+		html += '</table>';
+		return html
+	}
 
 	return {
 		xfsd: xfsd,                                       // 获得xfsd数据，并用table回填到页面中
@@ -1697,6 +1801,9 @@ var createCommand = function(recevier, tpl, set){
 		mixCabinFromHotcity:mixCabinFromHotcity,          // 根据热门城市混舱
 		mkOtherModel: mkOtherModel,                       // 生成model的html
 		OtherModel: OtherModel,                           // 生成model的对象
+		parseAllNoteInput: parseAllNoteInput,             // 解析全部PNR记录
+		parseNoteInput: parseNoteInput,                   // 解析PNR记录
+		mkNoteTable: mkNoteTable,                         // 展示PNR解析记录
 	}
 }
 

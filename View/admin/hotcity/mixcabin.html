@@ -79,12 +79,14 @@ var OtherModel = function(title, content, footer){
 var tpl = {
 	mkSelect: mkSelect
 }
+var rate = 1; // 汇率
 var setCommend = function(command){
 	// 全局变量
 	var otaTpl = {};
 	var selectOtaTpl = {};
 	var price = [];
 	var hotcity = [];
+
 
 	// 获得 price 数据
 	var get = eterm.extend.parseURL(window.location.href).params;
@@ -138,14 +140,14 @@ var setCommend = function(command){
 	searchHotCityById.execute();
 
 	// 汇率
-	if(eterm.eterm.rate){
+	if(!eterm.eterm.rate){
 		command.rate();
-
 	}
 
 	// 选择模板
 	$('#dosubmit').click(function(){
-				console.log(eterm.eterm.rate)
+		rate = eterm.eterm.rate;
+
 		var otaId = $('#otaTpl').val();
 		if(JSON.stringify(otaTpl) == '{}') return;
 
@@ -277,7 +279,7 @@ function renderTpl(translate, tpl){
 function mkMixCabinByTpl(translate, data, defaultDate){
 
 	if(translate == undefined || data == undefined ) return; 
-	console.log(translate, data)
+
 	var html = "";
 	html += '<table class="table table-hover table-bordered table-responsive" style="width:11000px">'
 	
@@ -290,7 +292,7 @@ function mkMixCabinByTpl(translate, data, defaultDate){
 	for(var i in data){
 		html += '<tr>'
 		for (var name in translate){
-			html += '<td>'+( data[i][name] !== undefined ? data[i][name] : defaultDate[name] ) +'</td>'
+			html += '<td class='+name+'>'+( data[i][name] !== undefined ? data[i][name] : defaultDate[name] ) +'</td>'
 		}
 		html += '<td>'+i+'</td>'
 		html += '</tr>'
@@ -298,6 +300,11 @@ function mkMixCabinByTpl(translate, data, defaultDate){
 	html += '</table>'
 
 	$('#content').html(html)
+
+	// 增加汇率计算
+	if(rate){
+		$('.SalesPrice').html( Math.ceil($('.SalesPrice').html()*rate/10)*10 ); 
+	}
 }
 
 

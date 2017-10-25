@@ -1,0 +1,96 @@
+<{extends file='../layout.html'}>
+
+<{block name="title"}>占位<{/block}>
+<{block name="content"}>
+
+<div class="row">
+	<div class="col-lg-12">
+		<!-- 输入框 -->
+		<div class="panel panel-default">
+		  <div class="panel-body">
+				<div class="form-inline">
+						<div class="input-group">
+							<input type="submit" id='add-new'  value='新增记录' class='btn btn-default'>
+						</div>
+						<div class="input-group">
+							<input type="submit" id='search-note'  value='查询记录' class='btn btn-primary'>
+						</div>
+				</div>
+			</div>
+		</div>
+		<!-- 输入框 END -->
+	</div>
+</div>
+
+<div id="content"></div>
+<script>
+require(['eterm', 'dt'], function (eterm, dt){
+var tpl = {};
+var setCommend = function(command){
+// -------------------- 函数内的全局变量 --------------------
+
+
+// -------------------- 请求 --------------------
+var saveHoldSeat = new command.ReqCommand({
+	url: eterm.const.Controller + 'saveHoldSeat',
+	clk: function(res){
+		if(res.msg)
+			alert(res.msg)
+
+		if(res.status){
+			console.log(res)
+		}
+	}
+}) 
+
+// -------------------- 触发器 --------------------
+// 新增记录
+$('#add-new').click(function(){
+	var noteModel = new command.OtherModel("贴入记录", 
+		`<textarea class="form-control" id='note-input' cols="30" rows="5" style='background-color:black;color:green;'></textarea><br><div id='note-anlysis-result'></div>`,
+		`<button type="button" class="btn btn-primary" id='note-submit'>保存</button><button type="button" class="btn btn-default"  data-dismiss="modal" onclick='javascript:window.location.reload();'>关闭</button>`,
+		'medium'
+	);
+	noteModel.show();
+})
+
+
+// 保存note
+$('body').on('click', '#note-submit', function(){
+	var noteSrc = $('#note-input').val();
+	var note = command.parseNoteInput(noteSrc);
+	console.log(note)
+	if(note){
+		$('#note-anlysis-result').html(command.mkNoteTable( note ));
+		saveHoldSeat.execute( {'note': JSON.stringify(note), 'source': noteSrc} );
+	}
+})
+
+// 查询记录
+$('#search-note').click(function(){
+	var searchNoteModel = new command.OtherModel("贴入记录", 
+		`<textarea class="form-control" id='note-input' cols="30" rows="5" style='background-color:black;color:green;'></textarea><br><div id='note-anlysis-result'></div>`,
+		`<button type="button" class="btn btn-primary" id='search-note-submit'>查询</button><button type="button" class="btn btn-default"  data-dismiss="modal" onclick='javascript:window.location.reload();'>关闭</button>`,
+		'medium'
+	);
+	searchNoteModel.show();
+})
+
+// 查询note
+$('body').on('click', '#search-note-submit', function(){
+	var noteSrc = $('#note-input').val();
+	var note = command.parseNoteInput(noteSrc);
+	console.log(note)
+	if(note){
+
+	}
+})
+
+
+}
+setCommend(eterm.createCommand(eterm.eterm, tpl));
+
+})
+
+</script>
+<{/block}>
