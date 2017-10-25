@@ -558,7 +558,8 @@ var createCommand = function(recevier, tpl, set){
 			console.log(msg)
 			// 展示session
 			recevier.mkMixTable(msg, recevier.target, container, 'w'); // recevier.xfsdJson 当前选择
-			recevier.mkMixTable = null;
+			
+			delete recevier.mkMixTable;
 		})
 
 	}
@@ -587,8 +588,7 @@ var createCommand = function(recevier, tpl, set){
 		recevier.link(Controller + 'toCNY', {toCNY: "", command: "XS FSC NUC/CNY"}, function(msg){
 			recevier.rate =  msg.rate - 0;
 			recevier.cnyLab.html("当前汇率："+msg.rate+'<br>');
-
-			recevier.cnyLab = null;
+			delete recevier.cnyLab;
 		}); 
 	}
 
@@ -630,9 +630,9 @@ var createCommand = function(recevier, tpl, set){
 					recevier.lab.command.html(data.command);
 
 					// 垃圾回收
-					recevier.lab = null;
-					recevier.mkTable = null;
-					recevier.rmTable = null;
+					delete recevier.lab;
+					delete recevier.mkTable;
+					delete recevier.rmTable;
 
 				})(_arg[0])
 			});
@@ -1487,10 +1487,11 @@ var createCommand = function(recevier, tpl, set){
 		      // S UA   981\09SEP NYC0300 0400BJS0S    76W 
 					'Fsi'           : {}
 				}
-				var outboundDate   = outboundData['FareDate'],
-						outboundFlight = outboundData['Flight'] !==''? outboundData['Flight']: '0000',
-						inboundDate    = inboundData['FareDate'],
-						inboundFlight  = inboundData['Flight'] !==''? inboundData['Flight']: '0000'
+				// 日期
+				var outboundDate   = outboundData['FareDate'], inboundDate    = inboundData['FareDate'];
+				// 航班号
+				var outboundFlight = outboundData['Flight'] !==''? outboundData['Flight']: '0000',
+						inboundFlight  = inboundData['Flight'] !==''? inboundData['Flight']: '0000';
 
 				if(stay){
 					result['Routing'] = {
@@ -1546,10 +1547,20 @@ var createCommand = function(recevier, tpl, set){
 		if(isTest){
 			// 仅匹配相同fare，不包含中转
 			for(var o in array){
-	  		makeArrayDataResult = makeArrayData(array[o], array[o])
-				if(makeArrayDataResult){
-					result.push(makeArrayDataResult)
-				}
+	      if(stayArray.length > 0 && stayArray[0] != ''){
+					for(var s in stayArray){ // 中转点
+						// 按照中转再次拆分
+			  		makeArrayDataResult = makeArrayData(array[o], array[o], stayArray[s])
+						if(makeArrayDataResult){
+							result.push(makeArrayDataResult)
+						}
+					}
+	      }else{
+		  		makeArrayDataResult = makeArrayData(array[o], array[o])
+					if(makeArrayDataResult){
+						result.push(makeArrayDataResult)
+					}
+	      }
 			}
 			return result
 		}

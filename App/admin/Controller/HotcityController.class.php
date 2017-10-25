@@ -2,6 +2,7 @@
 namespace admin\Controller;
 use BYS\Controller;
 class HotcityController extends Controller {
+
   public function plan(){
   	$this->display();
   }
@@ -314,11 +315,15 @@ class HotcityController extends Controller {
         array_push($array, $xfsd);
       }
     }
+
+    // 如果有中转，则按照中转再次划分
+    if($hotcity['HC_Routing'] !== '')  $stayArray = explode(',',$hotcity['HC_Routing']);
+
     // 生成准备保存的数据
     foreach ($array as $num => $value) {
       preg_match("/\/(\d{1,2}\w{3})\//", $value['Command'], $fareDateMatch);
       // from XFareEtermPriceDetailDTO
-      $addAll[] = array(
+      $add = array(
         //  fareKey 关键字：dep_city/arr_city/airline/pax_type/source/source_office/source_agreement/other(其他字段)/fare_date
         'FareKey'                 => $value['FareKey'], 
         // 运价的时间，格式是 YYYYMM 201510，查询时间
@@ -352,10 +357,20 @@ class HotcityController extends Controller {
         // 'NucRate'                 => '',
         // 'AtPage'                  => '',
         // 'RouteFlag'               => '',
+        'Flight'                  => '',
         'Command'                 => $value['Command'],
         'Hid'                     => $hotcity['Id'],
         'Rule'                    => $value['xfsd_Rule'],
       );
+      if(isset($stayArray) && count($stayArray) > 0){
+        foreach ($stayArray as $stay) {
+          $add['Stay'] = $stay;
+          $addAll[] = $add; 
+        }
+      }else{
+        $addAll[] = $add;
+      }
+
     }
     $m_price_source->addAll($addAll);
     echo json_encode(array('msg'=>'保存成功', 'status'=>1, 'hid'=>$hotcity['Id']));

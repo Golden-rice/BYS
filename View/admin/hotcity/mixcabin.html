@@ -137,8 +137,15 @@ var setCommend = function(command){
 	searchPriceSource.execute();
 	searchHotCityById.execute();
 
+	// 汇率
+	if(eterm.eterm.rate){
+		command.rate();
+
+	}
+
 	// 选择模板
 	$('#dosubmit').click(function(){
+				console.log(eterm.eterm.rate)
 		var otaId = $('#otaTpl').val();
 		if(JSON.stringify(otaTpl) == '{}') return;
 
@@ -165,9 +172,7 @@ var setCommend = function(command){
 		}
 
 		if(price.length > 0){
-			
 			mkMixCabinByTpl(JSON.parse(selectOtaTpl.TplMatch), toCtrip(price), JSON.parse(selectOtaTpl.Tpl))
-
 		}else{
 			alert('未获得政策数据')
 		}

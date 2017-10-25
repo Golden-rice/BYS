@@ -39,7 +39,7 @@
 		// 应用默认值
 		'default' => array(
 			'controller' => 'user',
-			'action'     => 'index',
+			'action'     => 'login',
 			'app'        => 'admin'
 		),
 

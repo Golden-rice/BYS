@@ -404,7 +404,7 @@ function mkTable(array, target, wrap, type){
 					<th>航路</th>
 					<th>航空公司</th>
 					<th>目标舱位</th>
-					<th>计划来源</th>
+					<!-- <th>计划来源</th> -->
 					<th>运价状态</th>
 					<th>舱位状态</th>
 					<th>状态</th>
@@ -424,8 +424,8 @@ function mkTable(array, target, wrap, type){
 					<td>${array[i].HC_Routing}</td>
 					<td>${array[i].HC_Aircompany}</td>
 					<td>${array[i].HC_Cabin}</td>
-					<td>航空公司：${query? query['aircompany'] : ""} | 出发：${query? query['depart'] : ''} | 区域：${query? query['region'] : ''} | 规则：${query? query['rule']: ''}</td>
-					<td>`
+					<!-- <td>航空公司：${query? query['aircompany'] : ""} | 出发：${query? query['depart'] : ''} | 区域：${query? query['region'] : ''} | 规则：${query? query['rule']: ''}</td>-->
+					<td> `
 		html +=	array[i].HC_XfsdResult_Status == 2 ? `<a href="javascript:void(0)" class="xfsd-result" data-sid="${array[i].HC_XfsdResult_Sid}">全部</a> | <a href="javascript:void(0)" class="simplify-xfsd" data-sid="${array[i].HC_XfsdResult_Sid}">精简</a> `: '等待'
 		html +=`</td>
 					<td>`
@@ -615,15 +615,20 @@ function mkMixCabinTable(data){
 		})
 	}
 	columns.push(
-	// Fsi
+	// Routing
 	{
 		data: null,
-		title: 'Fsi'
+		title: '航路'
 	},
 	// input: 航班限制 Flight
 	{
 		data: null,
 		title: '航班限制'
+	},
+	// Fsi
+	{
+		data: null,
+		title: 'Fsi'
 	})
 
 	// Routing
@@ -640,7 +645,7 @@ function mkMixCabinTable(data){
     data: data,
     columns : columns,
 	  columnDefs: [{
-        targets: 14, // Fsi
+        targets: 16, // Fsi
         render: function(data, type, row, meta) {
         	var html = "<textarea rows='3' cols='50' class='form-control' disabled>"
         	for(var i in data.Fsi){
@@ -648,6 +653,12 @@ function mkMixCabinTable(data){
         	}
         	html += '</textarea>'
           return html
+        }
+    },
+    {
+        targets: 14, // 航路
+        render: function(data, type, row, meta) {
+          return row.Routing.allStay;
         }
     },
     {
