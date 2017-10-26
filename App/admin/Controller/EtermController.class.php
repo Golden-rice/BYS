@@ -171,10 +171,16 @@ class EtermController extends Controller {
   // 更新 cmd 的source 
   private function updateCmdSource($array = array(), $cmd = ''){
 		$m = model("{$cmd}_source");
-  	$update = array(
-  		'detail' => isset($array['source'])? $array['source']: '',
-  		'GmtModified' => time()
-  	);
+		if(isset($array['source'])){
+	  	$update = array(
+	  		'detail' => $array['source'],
+	  		'GmtModified' => time()
+	  	);
+		}else{
+	  	$update = array(
+	  		'GmtModified' => time()
+	  	);
+		}
   	$m->where('`command` = "'.$array['command'].'" ')->update($update);
   	// 仅有一条
   	$result = $m->where('`command` = "'.$array['command'].'" ')->select();
@@ -536,7 +542,7 @@ class EtermController extends Controller {
 		// 循环 
 		foreach ($repeat['data'] as $value) {
 			$array[$value] = array();
-
+			$idArray = array();
 			// 拼装命令及执行
 			for ($i = 0; $i <= $during; $i++) { 
 				$days    = strtotime($startDate) +$i*24*60*60;
@@ -550,22 +556,38 @@ class EtermController extends Controller {
 					$avh->command($command, "w", false);
 					$array[$value] = array_merge($array[$value], $avh->analysis(array(1,2,6)));
 					$id = $this->updateCmdSource(array('source' => $avh->readSource(), 'command' => $command),'avh');
+					array_push($idArray, $id);
 					// 更新result
 					$this->updateCmdResult($array[$value], $id, $command,'avh');
 				}
 				elseif( isset($result['GmtModified']) && $result['GmtModified'] + 24*60*60 >= time()){
-					// 有，但是储存时间不大于一天，读取数据库数据
-					$id = $result['Id'];
-					$avh->wtTmp($result['Detail']);
-					$array[$value] = array_merge($array[$value], $avh->analysis(array(1,2,6)));
-					// 更新 source GmtModified
-					$this->updateCmdSource(array('GmtModified' => time(), 'command' => $command), 'avh');
+					// 有，但是储存时间不大于一天
+
+					if($result['Detail'] === ''){
+						// 如果没有返回数据，更新
+						$avh->command($command, "w", false);
+						$array[$value] = array_merge($array[$value], $avh->analysis(array(1,2,6)));
+						$id = $this->updateCmdSource(array('source' => $avh->readSource(), 'command' => $command),'avh');
+						array_push($idArray, $id);
+						// 更新result
+						$this->updateCmdResult($array[$value], $id, $command,'avh');
+					}else{
+						// 读取数据库数据
+						$id = $result['Id'];
+						array_push($idArray, $id);
+						$avh->wtTmp($result['Detail']);
+						$array[$value] = array_merge($array[$value], $avh->analysis(array(1,2,6)));
+						// 更新 source GmtModified
+						$this->updateCmdSource(array('GmtModified' => time(), 'command' => $command), 'avh');
+					}
 				}
 				else{
 					// 没有，新增
 					$avh->command($command, "w", false);
 					$array[$value] = array_merge($array[$value], $avh->analysis(array(1,2,6)));
+					// 此处返回的id不准确，会被其他日期最新的id替换掉
 					$id = $this->saveCmdSource(array('source' => $avh->readSource(), 'command' => $command), 'avh'); // 储存至数据库
+					array_push($idArray, $id);
 					$this->saveAvhResult($array[$value], $id, $command);
 				}
 			}
@@ -573,7 +595,7 @@ class EtermController extends Controller {
 
 		if($return){
 			if(!isset($id)) $id = NULL; // 返回储存和更新的sid
-			return array('array'=>$array, 'msg'=> \BYS\Report::printLog(), 'id'=>$id);
+			return array('array'=>$array, 'msg'=> \BYS\Report::printLog(), 'id'=>$idArray);
 		}
 		else{
 			echo json_encode(array('array'=>$array, "type"=>'array'));

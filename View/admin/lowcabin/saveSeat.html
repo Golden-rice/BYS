@@ -15,6 +15,9 @@
 						<div class="input-group">
 							<input type="submit" id='search-note'  value='查询记录' class='btn btn-primary'>
 						</div>
+						<div class="input-group">
+							<input type="submit" id='search-plans'  value='查询计划任务' class='btn btn-primary'>
+						</div>
 				</div>
 			</div>
 		</div>
@@ -71,6 +74,21 @@ var deleteHoldSeat = new command.ReqCommand({
 		}
 	}
 }) 
+
+// 计划任务
+var searchPlans = new command.ReqCommand({
+	url: eterm.const.Controller + 'seatPlanDefaultSet',
+	query: {'returnPlan': ''},
+	clk: function(res){
+		if(res.msg)
+			alert(res.msg)
+
+		if(res.status){
+			console.log(res)
+		}
+	}
+}) 
+
 
 
 // -------------------- 触发器 --------------------
@@ -134,6 +152,11 @@ $('body').on('click', '#search-note-submit', function(){
 // 删除记录
 $("#content").on('click', '.delete-note', function(){
 	deleteHoldSeat.execute( { sid: $(this).data('sid')} );
+})
+
+// 计划任务
+$('#search-plans').click(function(){
+	searchPlans.execute();
 })
 
 }

@@ -11,6 +11,153 @@ class LowcabinController extends Controller {
 		$this->display();
 	}
 
+	// 占位计划任务初始化
+	public function seatPlanDefaultSet(){
+
+		// strtoupper(date('dM',time() + (1 * 24 * 60 * 60)))
+		$outboundStartDate = time() + (1  * 24 * 60 * 60);
+		$outboundEndDate   = time() + (46 * 24 * 60 * 60);
+		$inboundStartDate  = time() + (1  * 24 * 60 * 60);
+		$inboundEndDate    = time() + (61 * 24 * 60 * 60);
+		$m = model('plan_avh_source');
+		// 清空  plan_avh 由于 avh 具有过期，重复检验功能 avh_source avh_result 不清空
+
+		$plans = array(
+			array(
+				'start'=> "PEK",
+				'end'=> "DXB",
+				'startDate'=> $outboundStartDate,
+				'endDate'=> $outboundEndDate,
+				'aircompany' => 'EK'
+			),
+			array(
+				'start'=> "DXB",
+				'end'=> "PEK",
+				'startDate'=> $inboundStartDate,
+				'endDate'=> $inboundEndDate,
+				'aircompany' => 'EK'
+			),
+			array(
+				'start'=> "PVG",
+				'end'=> "DXB",
+				'startDate'=> $outboundStartDate,
+				'endDate'=> $outboundEndDate,
+				'aircompany' => 'EK'
+			),
+			array(
+				'start'=> "DXB",
+				'end'=> "PVG",
+				'startDate'=> $inboundStartDate,
+				'endDate'=> $inboundEndDate,
+				'aircompany' => 'EK'
+			),
+			array(
+				'start'=> "CAN",
+				'end'=> "DXB",
+				'startDate'=> $outboundStartDate,
+				'endDate'=> $outboundEndDate,
+				'aircompany' => 'EK'
+			),
+			array(
+				'start'=> "DXB",
+				'end'=> "CAN",
+				'startDate'=> $inboundStartDate,
+				'endDate'=> $inboundEndDate,
+				'aircompany' => 'EK'
+			),
+		);
+
+		if(isset($_POST['returnPlan'])){
+			echo json_encode(array('result'=>$plans));
+			return;
+		}
+		$m->deleteAll();
+
+		$addAll = array();
+		$updateAll = array();
+		$updateWhereAll = array();
+		foreach($plans as $plan){
+			$result = $m->where("`Start` = '{$plan['start']}' AND `End` = '{$plan['end']}'")->select();
+			if($result){
+				// 此处用清空表代替，暂留逻辑
+				// 日期不对：startDate < 当前天数+1
+				// if(strtotime($result[0]['StartDate']) < $outboundStartDate){
+				// 	array_push($updateWhereAll , "`Id` = {$result[0]['Id']}");
+				// 	array_push($updateAll,  array(
+				// 		'StartDate' => $plan['startDate'],
+				// 		'EndDate'   => $plan['endDate']
+				// 	));
+				// }
+			}else{
+				// 没有该数据
+				$dateRange = ($plan['endDate'] - $plan['startDate']) / (24 * 60 * 60);
+				for($i = 0; $i < $dateRange; $i++){
+					// 隔5天
+					if($i%5 === 0)
+						$addAll[] = array(
+							'Start'      => $plan['start'],
+							'End'        => $plan['end'],
+							'Aircompany' => $plan['aircompany'],
+							'StartDate'  => strtoupper(date('dM', $plan['startDate'] + $i * 24 * 60 * 60)),
+							'EndDate'    => strtoupper(date('dM', $plan['startDate'] + ($i+4) * 24 * 60 * 60)),
+						);
+				}
+			}
+		}
+		if(!empty($addAll)){
+			$m->addAll($addAll);
+			var_dump('addAll', $addAll);
+		}
+		if(!empty($updateAll)){
+			$m->updateAll($updateWhereAll, $updateAll);
+			var_dump('updateAll', $updateAll);
+		}
+
+	}
+
+	// 占位计划运行
+	public function seatPlanRun(){
+		$eterm        = reflect('eterm');
+		$m_plan       = model('plan_avh_source');
+
+		// 调用 defalutSet，清空plan 并回填相应数据
+		// $this->seatPlanDefaultSet();
+
+		// 读取 status = 0 的信息
+		$result_plan = $m_plan->where('`Status` = 0')->limit('10')->select();
+		// 更新 plan_source sid( 全部的avh id) status , 利用守护进程 每天晚上跑，检测回填source id 是不是5条，如果是则status = 1
+		if($result_plan){
+			$updateAll      = array();
+			$updateWhereAll = array();
+			foreach ($result_plan as $plan) {
+				$_POST['start']      = $plan['Start'];
+				$_POST['end']        = $plan['End'];
+				$_POST['startDate']  = $plan['StartDate'];
+				$_POST['endDate']    = $plan['EndDate'];  
+				$_POST['aircompany'] = $plan['Aircompany'];    
+				$_POST['other']      = 'D';   
+				$avh_run_result      = $eterm->searchAvhByInput(true);
+				if(!empty($avh_run_result['id'])){
+					// plan中的 sid 由多个 id 组合 
+					// 日期间隔为5天
+					if(count($avh_run_result['id']) >= 5){
+						var_dump($plan['Id'], $avh_run_result['id'],"<br>");
+						array_push($updateWhereAll, "`Id` = {$plan['Id']}" );
+						array_push($updateAll, array(
+							'Status' => 1,
+							'Sid'    => implode($avh_run_result['id'], ',')
+						));
+					}
+				}
+				ob_flush();
+				flush();
+			}
+
+			// 更新全部
+			$m_plan->updateAll($updateWhereAll, $updateAll);
+		}
+	}
+
 	// 保存记录
 	public function saveHoldSeat(){
 		$note    = json_decode($_POST['note'], true);
