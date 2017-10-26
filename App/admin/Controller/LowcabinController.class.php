@@ -89,6 +89,56 @@ class LowcabinController extends Controller {
 		return $m->addAll($addAll);
   }
 
+  // 查询占位中是否有该航段记录
+  public function searchHoldSeat(){
+  	$note      = json_decode($_POST['note'], true);
+  	$parseNote = $note['note'];
+
+  	$m_result  = model('hold_seat_result');
+  	$m_source  = model('hold_seat_source');
+  	$where_id = array();
+  	// 获得筛选条件
+  	foreach($parseNote as $list_note){
+  		$searchCabinList = rtrim($list_note['searchCabinList']);
+  		if($searchCabinList && $searchCabinArray = explode(',', $searchCabinList)){
+  			// 生成舱位筛选条件
+  			$where_searchCabin = '';
+  			foreach ($searchCabinArray as $searchCabin) {
+  				$where_searchCabin .= "'$searchCabin',";
+  			}
+  			$where_searchCabin = rtrim($where_searchCabin,',');
+		  	$result_result = $m_result->where("`Arrive`='{$list_note['arrive']}' AND `Depart`='{$list_note['depart']}' AND `Flight`='{$list_note['flight']}' AND `Cabin` in ({$where_searchCabin})")->select();
+	  		$m_result->reset();
+	  		if($result_result && !in_array($result_result[0]['Sid'], $where_id))
+	  			array_push($where_id, $result_result[0]['Sid']);
+	  	}
+  	}
+
+  	// 为了获得 sid 不重复，筛选：出发、到达、航班号
+  	if(!empty($where_id)){
+  		// 组合sid 
+  		$result_source = $m_source->where("Id in (".implode(',', $where_id).")")->select();
+  		if($result_source){
+	  		echo json_encode(array('status'=>1, 'result'=>$result_source));
+	  		return;
+	  	}
+  	}
+  	echo json_encode(array('status'=>0, 'msg'=> '无数据'));
+  }
+
+  // 删除占位记录
+  public function deleteHoldSeat(){
+		if(isset($_POST['sid'])){
+			$sid           = $_POST['sid'];
+			$m_source      = model('hold_seat_source');
+			$m_result      = model('hold_seat_result');
+			$result_source = $m_source->where("`Id` = {$sid}")->delete();
+			$result_result = $m_result->where("`Sid` = {$sid}")->delete();
+			echo json_encode(array('msg'=>'删除成功', 'status'=>$result_source.$result_result));
+		}
+
+  }
+
 	// 查询所有的降舱记录
 	public function searchAll(){
 		$m = model('low_cabin_source');
