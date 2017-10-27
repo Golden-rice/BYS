@@ -13,7 +13,7 @@
 		<div class="form-inline">
 
 			<div class="input-group">
-					<span class="input-group-addon" id="input-airCompany">航空公司</span><input type="text" name="airCompany" id="airCompany" placeholder="两代码" class='form-control' onblur="upper(this)" style='width:100px' aria-describedby="input-airCompany">
+					<span class="input-group-addon" id="input-aircompany">航空公司</span><input type="text" name="aircompany" id="aircompany" placeholder="两代码" class='form-control' onblur="upper(this)" style='width:100px' aria-describedby="input-aircompany">
 					<span class="input-group-addon" id="input-startDate">起始日期</span><input type="text" name="startDate" id="startDate" class='form-control' onblur="upper(this)" style='width:100px' value="" aria-describedby="input-startDate">
 					<span class="input-group-addon" id="input-endDate">结束日期</span><input type="text" name="endDate" id="endDate" class='form-control' onblur="upper(this)" style='width:100px' value="" aria-describedby="input-endDate">
 					<span class="input-group-addon" id="input-start">出发地</span><input type="text" name="start" id="start" placeholder="机场代码" class='form-control' onblur="upper(this)" style='width:100px' aria-describedby="input-start">
@@ -92,6 +92,23 @@
 <script>
 require(['eterm'], function(eterm){
 var setCommend = function(command){
+	// 获得get
+	var get = eterm.extend.parseURL(window.location).query.substr(1).split('&');
+	var query = parseURLQuery(get);
+	if(query){
+		for(var i in query){
+			$('#'+i).val(query[i])
+		}
+	}
+	function parseURLQuery(query){
+		if(query[0] === '') return;
+		var obj = {};
+		for(var i in query){
+			var match = /^(\w+)=(.+)$/g.exec(query[i]);
+			if(match[1]) obj[match[1]] = match[2];
+		}
+		return obj
+	}
 
 	$('#test').click(function(){
 		command.avh({
@@ -110,7 +127,7 @@ var setCommend = function(command){
 			end: $('#end').val(),
 			startDate: $('#startDate').val(),
 			endDate: $('#endDate').val(),
-			aircompany: $('#airCompany').val(),
+			aircompany: $('#aircompany').val(),
 			other: $('#other').val()
 		}, true)
 	})
@@ -270,13 +287,13 @@ function matchTd(data, matchArr){
 // 	$end = $('#end').val(),
 // 	$startDate = $('#startDate').val(),
 // 	$endDate = $('#endDate').val();
-// 	$airCompany = $('#airCompany').val();
+// 	$aircompany = $('#aircompany').val();
 
 // 	rmTable('table-res');
 // 	var a;
 
 // 	progress({context: '#content-progress'}).after(function(){
-// 		a = getData('/eterm/admin/avh.php', 'dosubmit=cabin&start='+$start+'&end='+$end+'&startDate='+$startDate+'&endDate='+$endDate+'&airCompany='+$airCompany)
+// 		a = getData('/eterm/admin/avh.php', 'dosubmit=cabin&start='+$start+'&end='+$end+'&startDate='+$startDate+'&endDate='+$endDate+'&aircompany='+$aircompany)
 // 			mkTable(a.arr, 'table-res', '#content');
 // 	}).after(function(){
 

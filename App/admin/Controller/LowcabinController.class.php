@@ -20,7 +20,6 @@ class LowcabinController extends Controller {
 		$inboundStartDate  = time() + (1  * 24 * 60 * 60);
 		$inboundEndDate    = time() + (61 * 24 * 60 * 60);
 		$m = model('plan_avh_source');
-		// 清空  plan_avh 由于 avh 具有过期，重复检验功能 avh_source avh_result 不清空
 
 		$plans = array(
 			array(
@@ -67,15 +66,25 @@ class LowcabinController extends Controller {
 			),
 		);
 
+		// 用于前端返回计划
 		if(isset($_POST['returnPlan'])){
-			echo json_encode(array('result'=>$plans));
+			$return = $plans;
+			foreach ($return as $key => $value) {
+				$return[$key]['startDate'] = strtoupper(date('dM', $value['startDate'] ));
+				$return[$key]['endDate'] = strtoupper(date('dM', $value['endDate'] ));
+			}
+			echo json_encode(array('result'=>$return, 'status'=>1));
 			return;
 		}
+		
+		// 清空plan表
 		$m->deleteAll();
 
-		$addAll = array();
-		$updateAll = array();
+		// 初始化
+		$addAll         = array();
+		$updateAll      = array();
 		$updateWhereAll = array();
+
 		foreach($plans as $plan){
 			$result = $m->where("`Start` = '{$plan['start']}' AND `End` = '{$plan['end']}'")->select();
 			if($result){
@@ -119,6 +128,13 @@ class LowcabinController extends Controller {
 	public function seatPlanRun(){
 		$eterm        = reflect('eterm');
 		$m_plan       = model('plan_avh_source');
+
+		// 设置账号
+		if(!isset($_SESSION['name'])){
+			$_SESSION['name']     = 'av66';
+			$_SESSION['password'] = 'av66av66';
+			$_SESSION['resource'] = 'BJS248';
+		}
 
 		// 调用 defalutSet，清空plan 并回填相应数据
 		// $this->seatPlanDefaultSet();

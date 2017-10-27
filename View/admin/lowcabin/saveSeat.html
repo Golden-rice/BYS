@@ -85,6 +85,8 @@ var searchPlans = new command.ReqCommand({
 
 		if(res.status){
 			console.log(res)
+			var plansModel = new command.OtherModel("计划任务", mkPlansTable(res.result));
+			plansModel.show()
 		}
 	}
 }) 
@@ -158,6 +160,41 @@ $("#content").on('click', '.delete-note', function(){
 $('#search-plans').click(function(){
 	searchPlans.execute();
 })
+
+
+// -------------------- 函数 --------------------
+// 展示计划任务
+function mkPlansTable(array){
+	if(!array.length) return
+	let html = `
+		  <table class="table table-hover table-bordered table-responsive">
+		  <thead>
+				<tr>
+					<th>序号</th>
+					<th>出发</th>
+					<th>到达</th>
+					<th>航空公司</th>
+					<th>起始日期</th>
+					<th>结束日期</th>
+					<th>操作</th>
+				</tr>
+			</thead>
+	`
+	for(var i in array){
+		html += `
+				<tr>
+					<td>${i}</td>
+					<td>${array[i].start}</td>
+					<td>${array[i].end}</td>
+					<td>${array[i].aircompany}</td>
+					<td>${array[i].startDate}</td>
+					<td>${array[i].endDate}</td>
+					<td><a href="${eterm.const.Project}index.php/admin/eterm/avh?start=${array[i].start}&end=${array[i].end}&startDate=${array[i].startDate}&endDate=${array[i].endDate}&aircompany=${array[i].aircompany}&other=D" class='search-avh' target='_blank'>查看</a></td>
+				</tr>
+		`
+	}
+	return html;
+}
 
 }
 setCommend(eterm.createCommand(eterm.eterm, tpl));
@@ -243,6 +280,8 @@ function mkTable(array, target, wrap, type){
 
 	appendType === 'a'? $(context).append(html): $(context).html(html);
 }
+
+
 
 })
 
