@@ -167,7 +167,7 @@ class HotcityController extends Controller {
 
   	// 更新 avh
   	if( !empty($avh['id']) ){
-  		$update['HC_AvhResult_Sid'] = $avh['id'];
+  		$update['HC_AvhResult_Sid'] = implode($avh['id'], ',');
   		$update['HC_AvhResult_Status'] = 2; // 更新成功
   	}else{
   		$update['HC_AvhResult_Status'] = -1;
@@ -184,7 +184,6 @@ class HotcityController extends Controller {
   	if($update['HC_XfsdResult_Status'] === 2 && $update['HC_AvhResult_Status'] === 2){
   		$update['HC_Status'] = 2;
   	}
-
   	return $update;
   }
 
