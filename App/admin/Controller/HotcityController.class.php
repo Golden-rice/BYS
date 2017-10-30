@@ -62,7 +62,7 @@ class HotcityController extends Controller {
   		$_POST['tripType']   = '*RT';
   		$_POST['other']      = empty($col['HC_Cabin'])? '':'*'.preg_replace('/,/', '*', $col['HC_Cabin']);
     	$result_xfsd         = $eterm->searchXfsdByInput(true);
-
+      // var_dump($result_xfsd );
       // 判断 xfsd 追加一次数据
       $is_result = $this->is_continue($result_xfsd['array'][$_POST['end']], explode(',', $result[0]['HC_Cabin']));
 
@@ -98,7 +98,7 @@ class HotcityController extends Controller {
       // 打印至 log 记录
       \BYS\Report::p($col);
     	\BYS\Report::p($result_update);
-      $logContent = '['.date('Y-m-d H:i:s',time()).']: status:'.($result_update? 'success': 'failed')."; {$col['HC_Depart']}-{$col['HC_Arrive']}-{$col['HC_Aircompany']}; progress-xfsd:".($col['HC_XfsdResult_Status'] == 2 ? 'success': 'failed').';progress-avh'.($col['HC_AvhResult_Status'] == 2 ? 'success': 'failed')."\r\n\x0a";
+      $logContent = '['.date('Y-m-d H:i:s',time()).']: status:'.($result_update? 'success': 'failed')."; {$col['HC_Depart']}-{$col['HC_Arrive']}-{$col['HC_Aircompany']}; progress-xfsd:".($col['HC_XfsdResult_Status'] == 2 ? 'success': 'failed').';progress-avh:'.($col['HC_AvhResult_Status'] == 2 ? 'success': 'failed')."\r\n\x0a";
 
       // 记录结果
       fwrite($log , $logContent);
@@ -181,7 +181,7 @@ class HotcityController extends Controller {
   	}
 
   	// 判断是否全部更新
-  	if(isset($update['HC_XfsdResult_Sid']) && isset($update['HC_AvhResult_Sid'])){
+  	if($update['HC_XfsdResult_Status'] === 2 && $update['HC_AvhResult_Status'] === 2){
   		$update['HC_Status'] = 2;
   	}
 
