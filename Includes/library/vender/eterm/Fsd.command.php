@@ -7,7 +7,7 @@ class Fsd extends Eterm{
 	public function fare($switch, $date, $command){
 		// 解析政策文件，并返回解析后的结果
 		$this->date = $date;
-	    $this->command = $command;
+	  $this->command = $command;
 
 		if(empty($switch)){
 	  	$switch = array(0,1,2,3); 

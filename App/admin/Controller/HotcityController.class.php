@@ -20,7 +20,7 @@ class HotcityController extends Controller {
   // 展示计划执行状况
   public function show(){
   	$hotcity = model('hot_city');
-  	$result = $hotcity ->select();
+  	$result  = $hotcity ->select();
   	echo json_encode(array('result'=>$result));
   }
 
@@ -248,13 +248,6 @@ class HotcityController extends Controller {
     echo json_encode(array('status'=>0, 'msg'=>'无可用数据'));
   }
 
-  // 根据输入查询 price_source表
-  public function searchPriceByInput(){
-    $start         = $_POST['start'];
-    $end           = $_POST['end'];
-    $aircompany    = $_POST['aircompany'];
-    $departureDate = $_POST['departureDate'];
-  }
 
   // 更新 price_source 的销售日期
   // where 与 update 的数组的索引必须一一对应，且 where 与 update 仅只能有一条
@@ -308,7 +301,10 @@ class HotcityController extends Controller {
     $array           = array();  // 待添加的xfsd数据
     $addAll          = array();  // 合成后待添加的数据
 
-    if(!$arrayXfsdResult) return;
+    if(!isset($arrayXfsdResult['inGroupSmpResult'])) {
+      var_dump($arrayXfsdResult);
+      return;
+    }
     foreach ($arrayXfsdResult['inGroupSmpResult'] as $key => $xfsdInGroup) {
       foreach ($xfsdInGroup as $key => $xfsd) {
         array_push($array, $xfsd);
@@ -429,6 +425,25 @@ class HotcityController extends Controller {
     else
       echo json_encode(array('msg'=>'出现错误', 'status'=>0));
   }
+
+  // 验证fsi
+  public function checkfsi(){
+
+    $fsiInput = preg_replace("/\\\\r/", "\n", $_POST['fsi']);
+      
+    if($fsiInput){
+      import('vender/eterm/app.php');
+      $eterm   = reflect('eterm');
+      $fsi     = new \Fsi($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);      
+      // 获取汇率
+      // 获取fsi 
+      $result = $fsi->isTrueFareBasis($fsiInput);
+
+      echo json_encode($result);
+
+    }
+  }
+
 
   // ----------------------------- 原方法 ---------------------------
   
@@ -622,5 +637,7 @@ class HotcityController extends Controller {
     $m_price_source->addAll($addAll);
     echo json_encode(array('msg'=>'保存成功', 'status'=>1, 'hid'=>$hotcity_result[0]['Id']));
   }
+
+
 
 }

@@ -105,7 +105,10 @@ var setCommand = function(command){
 	var	hid;            // 当前混舱的hotcity id 
 	var hotcity;        // 热门城市数据
 
-
+	// 汇率
+	if(!eterm.eterm.rate){
+		command.rate();
+	}
 
 	// 查询全部且分组的 xfsd
 	var searchXfsdResultByHotcity = new command.ReqCommand({
@@ -170,7 +173,8 @@ var setCommand = function(command){
 		url: eterm.const.Controller + 'updatePriceSource',
 		clk: function(res){
 			if(res.msg)
-				alert(res.msg)
+				console.log(res.msg)
+				// alert(res.msg)
 
 			if(res.status){
 				// mixModal.hide();
@@ -184,13 +188,26 @@ var setCommand = function(command){
 		url: eterm.const.Controller + 'updatePriceSource',
 		clk: function(res){
 			if(res.msg)
-				alert(res.msg)
+				console.log(res.msg)
+				// alert(res.msg)
 
 			if(res.status){
 				// mixModal.hide();
 				// searchPriceSource.execute({'hid': hid});
 				// selectMixCabinTpl.execute({});
 				window.open(eterm.const.Controller + 'mixcabin?hid='+hid)
+			}
+		}
+	}) 
+
+	var updatePriceSourceIsCheck = new command.ReqCommand({
+		url: eterm.const.Controller + 'updatePriceSource',
+		clk: function(res){
+			if(res.msg)
+				// alert(res.msg)
+
+			if(res.status){
+				console.log(res)
 			}
 		}
 	}) 
@@ -239,6 +256,35 @@ var setCommand = function(command){
 				setTimeout(function(){
 					b.show();
 				},500)
+			}
+		}
+	}) 
+
+	// 检查fsi
+	var checkfsi = new command.ReqCommand({
+		url: eterm.const.Controller + 'checkfsi',
+		clk: function(res){
+
+			if(res.msg)
+				alert(res.msg)
+
+			if(res.status){
+				var src = checkfsi.returnConfig().query;
+
+				if(res.price == command.mkFarePrice( src.price, eterm.eterm.rate)){
+					$('#'+src.id).html('验证成功').next('input').val(1);
+					updatePriceSourceIsCheck.execute({
+						'update': {
+							'IsCheck': JSON.stringify([1])
+						}, 
+						'where' : {
+							'Stay': JSON.stringify([$('#'+src.id).next('input').data('stay')])
+						},
+						'Hid': hid,
+					});
+				}else{
+					console.log('价格不一致',res.price, command.mkFarePrice( src.price, eterm.eterm.rate), src.price)
+				}
 			}
 		}
 	}) 
@@ -352,12 +398,11 @@ var setCommand = function(command){
 	$('#otherModal').on('click', '#set-flight', function(){
 		// 更新
 		if(hid != undefined){
-			var flightInput = [];
+			var flightInput = [];          // 航班限制
 			var farebasisConditions = [];
 			$('.input-flight').each(function(){
 				farebasisConditions.push($(this).data('farebasis'))
 				flightInput.push($(this).val())
-
 			})
 			updatePriceSourceFlight.execute({
 				'update': {
@@ -368,13 +413,16 @@ var setCommand = function(command){
 				},
 				'Hid': hid,
 			});
+
 		}else{
 			console.log('查询hotcity id 错误');
 		}
 	})
 
-	// 
-
+	// 检查fsi
+	$('#otherModal').on('click', '.check-fsi', function(){
+		checkfsi.execute({fsi: $(this).data('fsi'), id: $(this).closest('span').attr('id'), price: $(this).data('price')})
+	})
 
 }
 
@@ -604,7 +652,7 @@ function mkMixCabinTable(data){
 		'OutboundWeek' : '可用星期',
 		'Airline'      : '航空公司',
 		'SaleDate'     : '销售日期',
-		// 'Fsi'          : 'Fsi', 
+		// 'Fsi'         : 'Fsi', 
 		// 'Routing'     : '航路',
 	}
 
@@ -647,11 +695,16 @@ function mkMixCabinTable(data){
 	  columnDefs: [{
         targets: 16, // Fsi
         render: function(data, type, row, meta) {
-        	var html = "<textarea rows='3' cols='50' class='form-control' disabled>"
-        	for(var i in data.Fsi){
-        		html += data.Fsi[i]+"\r------------------------------\r"
+        	// var html = "<textarea rows='3' cols='50' class='form-control' disabled>"
+        	// for(var i in data.Fsi){
+        	// 	html += data.Fsi[i]+"\r------------------------------\r"
+        	// }
+        	// html += '</textarea>'
+        	if(row.IsCheck){
+        		var html = '验证成功'
+        	}else{
+	        	var html = '<span  id="fsi-'+row.index+'""><a href="javascript:void(0)" class="check-fsi" data-fsi='+JSON.stringify(data.Fsi.allStay)+' data-price="'+row.RoundFare+'">验证</a></span><input type="hidden" class="input-IsCheck" data-stay='+row.Stay+' >'
         	}
-        	html += '</textarea>'
           return html
         }
     },

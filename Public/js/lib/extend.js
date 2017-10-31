@@ -175,17 +175,22 @@ Date.prototype.format = function(format){
   // 格式化当前日期
   // new Date().format("yyyy-MM-dd hh:mm:ss");
    var date = {
-        "M+" : this.getMonth()+1,                 //月份 
-        "d+" : this.getDate(),                    //日 
-        "h+" : this.getHours(),                   //小时 
-        "m+" : this.getMinutes(),                 //分 
-        "s+" : this.getSeconds(),                 //秒 
-        "q+" : Math.floor((this.getMonth()+3)/3), //季度 
-        "S"  : this.getMilliseconds()             //毫秒 
+        "M+" : this.getMonth()+1,                            //月份 
+        "d+" : this.getDate(),                               //日 
+        "h+" : this.getHours(),                              //小时 
+        "m+" : this.getMinutes(),                            //分 
+        "s+" : this.getSeconds(),                            //秒 
+        "q+" : Math.floor((this.getMonth()+3)/3),            //季度 
+        "S"  : this.getMilliseconds()                        //毫秒 
    };
    if (/(y+)/i.test(format)) {
           format = format.replace(RegExp.$1, (this.getFullYear() + '').substr(4 - RegExp.$1.length));
    }
+   //英文字母月份，例如JUN     
+   if(/(U)/i.test(format)) {
+          format = format.replace(RegExp.$1, this.toString().substr(4,3).toUpperCase());
+   }
+
    for (var k in date) {
           if (new RegExp("(" + k + ")").test(format)) {
                  format = format.replace(RegExp.$1, RegExp.$1.length == 1
@@ -200,6 +205,10 @@ Date.prototype.max = function(date1, date2){
   return (new Date(date1)).valueOf() > (new Date(date2)).valueOf() ? date1 : date2;
 }
 
+// 生成 01OCT 这样格式
+Date.prototype.formatEx = function(format){
+
+}
 
 // 清除两边空格 
 String.prototype.trim = function(Symbol) {
