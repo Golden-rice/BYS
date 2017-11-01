@@ -308,6 +308,12 @@ class EtermController extends Controller {
   public function searchXfsdByInput($return = false){
   	import('vender/eterm/app.php');
 
+  	if(isset($_POST['username'])){
+  		$_SESSION['name']      = $_POST['username'];
+  		$_SESSION['password']  = $_POST['password'];
+  		$_SESSION['resource']  = $_POST['resource'];
+  	}
+
 		$start      = $_POST['start'];
 		$endMore    = $_POST['end'];
 		$startDate  = $_POST['startDate'];

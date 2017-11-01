@@ -1808,7 +1808,12 @@ var createCommand = function(recevier, tpl, set){
 
 	// 生成票面 NUC TO CNY
 	var mkFarePrice = function(price, rate){
-		return Math.ceil((price-0)*(rate-0)/10)*10;
+		if(!rate && !recevier.rate){
+			rate();
+			rate = recevier.rate
+		}
+
+		return Math.ceil((price-0)*(recevier.rate-0)/10)*10;
 	}
 
 	return {

@@ -428,7 +428,6 @@ class HotcityController extends Controller {
 
   // 验证fsi
   public function checkfsi(){
-
     $fsiInput = preg_replace("/\\\\r/", "\n", $_POST['fsi']);
       
     if($fsiInput){
@@ -440,7 +439,6 @@ class HotcityController extends Controller {
       $result = $fsi->isTrueFareBasis($fsiInput);
 
       echo json_encode($result);
-
     }
   }
 

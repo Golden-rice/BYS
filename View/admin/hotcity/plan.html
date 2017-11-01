@@ -121,7 +121,7 @@ var setCommand = function(command){
 				xfsdInGroup    = res.inGroupResult
 				xfsdSmpInGroup = res.inGroupSmpResult
 				
-				var	allFareModal     = new OtherModel("运价结果", xfsdTable(xfsdInGroup, 'xfsd-result-model'));
+				var	allFareModal = new OtherModel("运价结果", xfsdTable(xfsdInGroup, 'xfsd-result-model'));
 					allFareModal.show();
 				
 			}
@@ -269,10 +269,22 @@ var setCommand = function(command){
 				alert(res.msg)
 
 			if(res.status){
+				console.log(res)
 				var src = checkfsi.returnConfig().query;
-
-				if(res.price == command.mkFarePrice( src.price, eterm.eterm.rate)){
-					$('#'+src.id).html('验证成功').next('input').val(1);
+				var totalPrice = 0;
+				var priceDetail = res.priceDetail;
+				for(var i in priceDetail.farebasisPrice){
+					totalPrice += priceDetail.farebasisPrice[i].price - 0;
+				}
+				// 判断价格是否一致，防止有附加值 totalPrice 替换 res.price 
+				totalPrice = command.mkFarePrice( totalPrice, eterm.eterm.rate)
+				if( totalPrice == command.mkFarePrice( src.price, eterm.eterm.rate)){
+					var tooltipTitle = '<table>';
+					for(var i in priceDetail.farebasisPrice){
+						tooltipTitle += "<tr><td>"+priceDetail.farebasisPrice[i].farebasis+"</td><td>"+priceDetail.farebasisPrice[i].leg+"</td><td>"+priceDetail.farebasisPrice[i].price+"</td></tr>"
+					}
+					tooltipTitle += "</table>"
+					$('#'+src.id).html('验证成功'+'<a class="tooltip-option" href="javascript:void(0)" data-toggle="tooltip" title="'+tooltipTitle+'"><i class="icon-info-sign"></i>i</a>').next('input').val(1);
 					updatePriceSourceIsCheck.execute({
 						'update': {
 							'IsCheck': JSON.stringify([1])
@@ -282,8 +294,11 @@ var setCommand = function(command){
 						},
 						'Hid': hid,
 					});
+					$('.tooltip-option').tooltip({
+            html: true
+         	});
 				}else{
-					console.log('价格不一致',res.price, command.mkFarePrice( src.price, eterm.eterm.rate), src.price)
+					console.log('价格不一致', totalPrice, res.price, command.mkFarePrice( src.price, eterm.eterm.rate), src.price)
 				}
 			}
 		}
@@ -695,16 +710,21 @@ function mkMixCabinTable(data){
 	  columnDefs: [{
         targets: 16, // Fsi
         render: function(data, type, row, meta) {
+        	// fsi 命令
         	// var html = "<textarea rows='3' cols='50' class='form-control' disabled>"
         	// for(var i in data.Fsi){
         	// 	html += data.Fsi[i]+"\r------------------------------\r"
         	// }
         	// html += '</textarea>'
-        	if(row.IsCheck){
-        		var html = '验证成功'
-        	}else{
+
+        	// 检验按钮
+        	// if(row.IsCheck){
+        	// 	var html = '验证成功'
+        	// }else{
 	        	var html = '<span  id="fsi-'+row.index+'""><a href="javascript:void(0)" class="check-fsi" data-fsi='+JSON.stringify(data.Fsi.allStay)+' data-price="'+row.RoundFare+'">验证</a></span><input type="hidden" class="input-IsCheck" data-stay='+row.Stay+' >'
-        	}
+        	// }
+
+
           return html
         }
     },
@@ -734,6 +754,8 @@ function mkMixCabinTable(data){
     // }
     ]      
 	})
+
+
 }
 // --------------------  过期方法 ---------------------
 function xfsdTpl(array, dom, show){
