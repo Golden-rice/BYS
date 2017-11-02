@@ -35,6 +35,7 @@ class HotcityController extends Controller {
 
   	$hotcity = model('hot_city');
   	$result  = $hotcity->where("`HC_Status` = 0 OR `GmtModified` < ".(time()-24*60*60))->limit('3')->select(); // 
+    // $result  = $hotcity->limit('3')->select(); // 测试数据
   	$eterm   = reflect('eterm');
 
     $log =  fopen('log.txt', 'a');
@@ -306,8 +307,10 @@ class HotcityController extends Controller {
       return;
     }
     foreach ($arrayXfsdResult['inGroupSmpResult'] as $key => $xfsdInGroup) {
-      foreach ($xfsdInGroup as $key => $xfsd) {
-        array_push($array, $xfsd);
+      if(!empty($xfsdInGroup)){
+        foreach ($xfsdInGroup as $key => $xfsd) {
+          array_push($array, $xfsd);
+        }
       }
     }
 
