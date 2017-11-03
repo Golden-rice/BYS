@@ -201,7 +201,7 @@ var setCommand = function(command){
 	}) 
 
 	var updatePriceSourceIsCheck = new command.ReqCommand({
-		url: eterm.const.Controller + 'updatePriceSource',
+		url: eterm.const.Controller + 'updatePriceSourceByOne',
 		clk: function(res){
 			if(res.msg)
 				// alert(res.msg)
@@ -279,19 +279,19 @@ var setCommand = function(command){
 				// 判断价格是否一致，防止有附加值 totalPrice 替换 res.price 
 				totalPrice = command.mkFarePrice( totalPrice, eterm.eterm.rate)
 				if( totalPrice == command.mkFarePrice( src.price, eterm.eterm.rate)){
-					var tooltipTitle = '<table>';
+					var tooltipTitle = '';
 					for(var i in priceDetail.farebasisPrice){
-						// tooltipTitle += "<tr><td>&nbsp;"+priceDetail.farebasisPrice[i].farebasis+"&nbsp;</td><td>&nbsp;"+priceDetail.farebasisPrice[i].leg+"&nbsp;</td><td>&nbsp;"+priceDetail.farebasisPrice[i].price+"&nbsp;</td></tr>"
 						tooltipTitle += "&nbsp;"+priceDetail.farebasisPrice[i].farebasis+"&nbsp;|&nbsp;"+priceDetail.farebasisPrice[i].leg+"&nbsp;|&nbsp;"+priceDetail.farebasisPrice[i].price+"&nbsp;\r"
 					}
-					tooltipTitle += "</table>"
+
 					$('#'+src.id).html('验证成功'+' <a class="tooltip-option" href="javascript:void(0)" data-toggle="tooltip" title="'+tooltipTitle+'" data-placement="left"><i class="fa fa-tag"></i></a>').next('input').val(1);
 					updatePriceSourceIsCheck.execute({
 						'update': {
-							'IsCheck': JSON.stringify([1])
+							'IsCheck': 1,
+							'CheckDetail': JSON.stringify(priceDetail)
 						}, 
 						'where' : {
-							'Stay': JSON.stringify([$('#'+src.id).next('input').data('stay')])
+							'Stay': $('#'+src.id).next('input').data('stay'),
 						},
 						'Hid': hid,
 					});
@@ -701,10 +701,10 @@ function mkMixCabinTable(data){
 	// 	title: '航路'
 	// })
 
-	$('#otherModal #modal-content').html('<table id="mixCabinTable" class="table table-hover table-bordered table-responsive" width="2000px"></table>')
+	$('#otherModal #modal-content').html('<div style="overflow-x:scroll;"><table id="mixCabinTable" class="table table-hover table-bordered table-responsive" width="2000px"></table></div>')
 	$('#mixCabinTable').DataTable({
     // responsive: true,
-    scrollX: true,
+    // scrollX: true,
     iDisplayLength: 100,
     data: data,
     columns : columns,
@@ -719,12 +719,20 @@ function mkMixCabinTable(data){
         	// html += '</textarea>'
 
         	// 检验按钮
-        	// if(row.IsCheck){
-        	// 	var html = '验证成功'
-        	// }else{
-	        	var html = '<span  id="fsi-'+row.index+'""><a href="javascript:void(0)" class="check-fsi" data-fsi='+JSON.stringify(data.Fsi.allStay)+' data-price="'+row.RoundFare+'">验证</a></span><input type="hidden" class="input-IsCheck" data-stay='+row.Stay+' >'
-        	// }
+        	if(row.IsCheck){
+        		var tooltipTitle = '';
+        		if(row.CheckDetail){
+        			var checkDetail = JSON.parse(row.CheckDetail)
+							for(var i in checkDetail.farebasisPrice){
+								tooltipTitle += "&nbsp;"+checkDetail.farebasisPrice[i].farebasis+"&nbsp;|&nbsp;"+checkDetail.farebasisPrice[i].leg+"&nbsp;|&nbsp;"+checkDetail.farebasisPrice[i].price+"&nbsp;\r"
+							}
+        		}
 
+        		var html = '验证成功' + '&nbsp;<a class="tooltip-option" href="javascript:void(0)" data-toggle="tooltip" title="'+tooltipTitle+'" data-placement="left"><i class="fa fa-tag"></i></a>'
+        	}else{
+	        	var html = '<span  id="fsi-'+row.index+'""><a href="javascript:void(0)" class="check-fsi" data-fsi='+JSON.stringify(data.Fsi.allStay)+' data-price="'+row.RoundFare+'">验证</a></span><input type="hidden" class="input-IsCheck" data-stay='+row.Stay+' >'
+        	}
+        	// var html = 'aaaaa<a class="tooltip-option btn " href="javascript:void(0)" data-toggle="tooltip" title="<h1>aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</h1>" data-placement="left"><i class="fa fa-tag"></i>aaaaa</a>'
 
           return html
         }
@@ -756,7 +764,9 @@ function mkMixCabinTable(data){
     ]      
 	})
 
-
+					$('.tooltip-option').tooltip({
+            html: true
+         	});
 }
 // --------------------  过期方法 ---------------------
 function xfsdTpl(array, dom, show){

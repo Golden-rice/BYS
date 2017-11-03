@@ -249,8 +249,30 @@ class HotcityController extends Controller {
     echo json_encode(array('status'=>0, 'msg'=>'无可用数据'));
   }
 
+  // 更新 price_source 一条数据
+  // 更新某条，多个where
+  public function updatePriceSourceByOne(){
+    $update         = $_POST['update'];
+    $where          = $_POST['where'];
+    $hid            = $_POST['Hid'];
+    $m              = model('price_source');
+    $result         = $m->where("`Hid` = {$hid}")->select();
+    if($result){
+      $whereString  = ''; 
+      foreach($where as $whereAttr => $whereVal){
+        $whereString .= (is_string($whereVal) ? "`{$whereAttr}` = '$whereVal' AND" : "`{$whereAttr}` =  $whereVal AND");
+      }
+      $whereString .= " `Hid` = {$hid}";
+      $update_result = $m->where($whereString)->update($update);
 
-  // 更新 price_source 的销售日期
+      echo json_encode(array('msg'=>'更新成功', 'status'=>1));
+      return;
+    }
+    echo json_encode(array('msg'=>'更新失败，未查到该条数据', 'status'=>0));
+  }
+
+
+  // 批量更新 price_source 多条数据
   // where 与 update 的数组的索引必须一一对应，且 where 与 update 仅只能有一条
   public function updatePriceSource(){
     $update         = $_POST['update'];
@@ -267,10 +289,12 @@ class HotcityController extends Controller {
       $whereArray   = array(); 
       $updateArray  = array();
       $whereAttr    = $whereAttrs[0];
-      $updateAttr   = $updateAttrs[0];
       foreach(json_decode($where[$whereAttr],true) as $whereVal){
         array_push($whereArray, (is_string($whereVal) ? "`{$whereAttr}` =  '$whereVal'" : "`{$whereAttr}` =  $whereVal")." AND `Hid` = {$hid}" );
       }
+
+      // update 中某个属性更新的值与 where 一一对应，因此只能有一个update属性
+      $updateAttr   = $updateAttrs[0];
       foreach(json_decode($update[$updateAttr],true) as $updateVal) { 
         array_push($updateArray, array($updateAttr => $updateVal));
       }

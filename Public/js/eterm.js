@@ -1506,8 +1506,8 @@ var createCommand = function(recevier, tpl, set){
 			// Fsi航班号
 			var outboundFlight = outboundData['Flight'] !==''? outboundData['Flight']: '0000',
 					inboundFlight  = inboundData['Flight'] !==''? inboundData['Flight']: '0000';
-
-			var result = {
+			var result = copy(outboundData);
+			    result = $.extend(result, {
 					'FareBasis'     : outboundData['FareBasis']+'/'+inboundData['FareBasis'],
 					'Advp'          : maxDate(outboundData['Advp'], inboundData['Advp']),
 					'SingleFare'    : outboundData['SingleFare']-0 == 0 ? 0:(outboundData['SingleFare']-0)/2+(inboundData['SingleFare']-0)/2,
@@ -1539,7 +1539,7 @@ var createCommand = function(recevier, tpl, set){
 		      // S UA   981\09SEP BJS0100 0200CHI0X    76W
 		      // S UA   981\09SEP NYC0300 0400BJS0S    76W 
 					'Fsi'           : {}
-				}
+				})
 
 
 				if(outboundData['Stay']){
