@@ -9,7 +9,7 @@ class Report {
 	}
 
 	static public function error($words){
-		echo $words;
+		throw new \Exception($words);
 		exit;
 	}
 

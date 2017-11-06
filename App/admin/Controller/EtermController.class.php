@@ -396,6 +396,7 @@ class EtermController extends Controller {
 			$array[$end]['length']     = count($resultArr);
 			$array[$end]['command']    = $command;
 			$array[$end]['other']      = $other;
+			$array[$end]['id']         = $id;
 
 			ob_flush();
 			flush();
@@ -405,7 +406,7 @@ class EtermController extends Controller {
 			if(!isset($id)) $id = NULL; // 返回储存和更新的sid
 			return array('array'=>$array, 'msg'=> \BYS\Report::printLog(), 'id'=>$id);
 		}else{
-			echo json_encode(array('array'=>$array, 'time'=>'更新时间：'.date('Y-m-d H:i:s', $xfsd->fileTime)) );
+			echo json_encode(array('array'=>$array, 'time'=>'更新时间：'.date('Y-m-d H:i:s', $xfsd->fileTime), 'id'=>$id));
 		}
   }
 

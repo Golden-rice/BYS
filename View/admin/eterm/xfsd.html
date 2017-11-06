@@ -4,7 +4,7 @@
 <{block name="content"}>
 
 <div class="row">
-	<div class="col-lg-8">
+	<div class="col-lg-9">
 		<!-- 输入框 -->
 		<div class="panel panel-default">
 		  <div class="panel-body">
@@ -19,7 +19,7 @@
 							<span class="input-group-addon" id="input-aircompany">航空公司</span><input type="text" name='aircompany' id='aircompany' value='' aria-describedby="input-aircompany" class='form-control'  onblur="upper(this)"  style='width:100px'>
 						</div>
 							
-						<div class="input-group">
+						<!-- <div class="input-group">
 							<label class="radio-inline">
 								<input type="radio" id='allType'  class='tripType' name="tripType" value='' checked> 全部
 							</label>
@@ -31,7 +31,14 @@
 							<label class="radio-inline">
 								<input type="radio" id='cbackLine' class='tripType' name="tripType" value='*RT'> 往返
 							</label>	
-						</div>
+						</div> -->
+						<div class="input-group">
+							<select class="form-control" id="tripType"  aria-describedby="input-tripType">
+								<option class='tripType' value="">全部</option>
+								<option class='tripType' value="*OW">单程</option>
+								<option class='tripType' value="*RT">往返</option>
+							</select>
+						</div> 
 						
 						<div class="input-group">
 							<input type="text" name='private' id='private' placeholder='例如CBJS1012'  class='form-control'  onblur="upper(this)" style='width:150px'>
@@ -72,7 +79,7 @@
 	</div>
 	
 	<!-- 侧边辅助栏 -->
-	<div class="col-lg-4">
+	<div class="col-lg-3">
 
 		<!-- 工具 -->
 		<div class="panel panel-default">
@@ -90,7 +97,8 @@
 						<!-- <input type="button" name="allPolicy" id="allPolicy" value="读取规则" class='btn btn-primary'> -->
 						<!-- <button id='updateDB' class='btn btn-default'>同步至数据库</button> -->
 						<button id='mixCabin' class='btn btn-default' >混舱</button>
-						<button type="button" class="btn btn-default" id="openAddCabin">录入混舱数据</button>
+						<button id='addInHotcity' class='btn btn-default' >全部加入至热门城市</button>
+						<!-- <button type="button" class="btn btn-default" id="openAddCabin">录入混舱数据</button> -->
 			</div>
 		</div>
 		<!-- 工具结束 -->
@@ -100,7 +108,7 @@
 		  <li class="list-group-item">默认排序（/X）</li>
 		   <li class="list-group-item">默认NUC数值，显示数值会乘汇率，使用命令行输入时请注意添加NUC</li>
 		  <li class="list-group-item">混舱以FaraBasis区分，可能会多增加数据</li>
-		  <li class="list-group-item time">时间</li>
+		  <!-- <li class="list-group-item time">时间</li> -->
 		  <li class="list-group-item" id="labtoCNY">汇率</li>
 		</ul>
 		<!-- 提醒结束 -->
@@ -254,7 +262,7 @@ var setCommend = function(command){
 			startDate: $('#startDate').val(),
 			aircompany: $('#aircompany').val(),
 			private: $("#private").val() || "",
-			tripType: $(".tripType:checked").val(),
+			tripType: $(".tripType:selected").val(),
 			other: $("#other").val() || ""
 		});
 	})
@@ -371,19 +379,57 @@ var setCommend = function(command){
 
 	// 测试
 	$('#test').click(function(){
-			command.rate();
-			command.xfsd({
-				dosubmit: "",
-				start: 'BJS',
-				end: 'CHI',
-				startDate: '15OCT',
-				aircompany: 'UA',
-				private: '',
-				tripType:"",
-				other: ""
-			})
+
+			$('#start').val('BJS')
+			$('#end').val('ABQ')
+			$('#startDate').val('15NOV')
+			$('#aircompany').val('UA')
+
+		command.rate();
+		command.xfsd({
+			dosubmit: "",
+			start: $('#start').val(),
+			end: $('#end').val(),
+			startDate: $('#startDate').val(),
+			aircompany: $('#aircompany').val(),
+			private: $("#private").val() || "",
+			tripType: $(".tripType:selected").val(),
+			other: $("#other").val() || ""
+		});
 	})
 
+	// 2017.11.3
+
+	var insertHotcity =  new command.ReqCommand({
+		url: eterm.const.Project + 'index.php/admin/hotcity/appendHCAndPS',
+		clk: function(res){
+			// if(res.msg)
+			// 	alert(res.msg)
+
+			// if(res.status)
+				console.log(res)
+		}
+	}) 
+
+	// 加入至热门城市
+	$('#addInHotcity').click(function(){
+		var xfsd = eterm.eterm.xfsd;
+		var sid  = '';
+		for(var end in xfsd){
+			sid += xfsd[end].id+',';
+		}
+		sid = sid.trim(',');
+		insertHotcity.execute({
+			'append': {
+				'HC_XfsdResult_Sid': sid,
+			}, 
+			'where' : {
+				'HC_Depart': $('#start').val(),
+				'HC_Arrive': $('#end').val(),
+				'HC_Aircompany': $('#aircompany').val(),
+			}
+		});
+	})
 }
 
 // 配置setCommand()

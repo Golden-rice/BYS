@@ -205,7 +205,7 @@
 	 	}
 
 	  /**
-		 * 当返回失败时，查看sql语句
+		 * 查看sql语句
 		 * @return string
 		 */	 	
 	  public function testSql(){
@@ -443,5 +443,44 @@
 		        return strtolower(trim(preg_replace("/[A-Z]/", "_\\0", $name), "_"));
 		    }
 		}
+	 	/** 
+		 封装的SQL事件
+		 */
+
+	 	/**
+		 * 查询数据
+		 * @param array $where   条件数组
+		 * @param array $select  字段数组
+		 * @param array $orderby 排序数组
+		 */
+	 	public function find($where = array(), $orderbys = array(), $select = array()){
+	 		// 清空
+	 		$this->reset();
+	 		
+	 		if(!empty($where)){
+		 		// 将$where转化成sql语句
+		 		$whereString = '';
+		 		foreach ($where as $whereAttr => $whereVal) {
+		 			$whereString = is_string($whereVal) ? " `{$whereAttr}` = '{$whereVal}'" : " `{$whereAttr}` = {$whereVal} AND";
+		 		}
+		 		$whereString = rtrim($this->where, 'AND');
+		 		$this->where($whereString);
+	 		} 
+
+	 		if(!empty($orderbys)){
+	 			// 将$orderby转换成sql语句
+	 			$orderString = '';
+	 			foreach ($orderbys as $orderbyKey => $orderby) {
+	 				$orderString = " {$orderby['column']} ".($orderby['asc'] == true ?'ASC':'DESC').',';
+	 			}
+	 			$orderString = rtrim($this->where, ',');
+	 			$this->order($orderString);
+	 		}
+	 		
+	 		return $this->select(implode($select, ','));
+	 	}
+
 	 }
+
+
 ?>

@@ -186,7 +186,7 @@ Date.prototype.format = function(format){
    if (/(y+)/i.test(format)) {
           format = format.replace(RegExp.$1, (this.getFullYear() + '').substr(4 - RegExp.$1.length));
    }
-   //英文字母月份，例如JUN     
+   //英文字母月份，例如01JUN=>ddU
    if(/(U)/i.test(format)) {
           format = format.replace(RegExp.$1, this.toString().substr(4,3).toUpperCase());
    }
@@ -205,15 +205,11 @@ Date.prototype.max = function(date1, date2){
   return (new Date(date1)).valueOf() > (new Date(date2)).valueOf() ? date1 : date2;
 }
 
-// 生成 01OCT 这样格式
-Date.prototype.formatEx = function(format){
 
-}
-
-// 清除两边空格 
+// 清除两边符号，默认为空格 
 String.prototype.trim = function(Symbol) {
   if(Symbol){
-    var patten = new RegExp("/(^"+Symbol+"*)|("+Symbol+"*$)/",'g');
+    var patten = new RegExp("(^"+Symbol+"*)|("+Symbol+"*$)",'g');
     return this.replace(patten, ''); 
   }
   return this.replace(/(^\s*)|(\s*$)/g, ''); 

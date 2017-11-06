@@ -60,7 +60,6 @@ abstract class Controller {
    * @access public
    * @param  string $method 方法名
    * @param  array  $args   参数
-   * @return mixed
    */
   public function __call($method, $args) {
     echo "无{$method}方法，其参数是:";
@@ -75,4 +74,78 @@ abstract class Controller {
   }
 
 
+  /**
+   * 数据库控制器方法分派
+   * 根据传递的参数，将参数传递给某方法
+   * @access public
+   */
+  public function assignAction(){
+    // 判断提交方法的方式 POST ? GET ?
+    if(REQUEST_METHOD == 'GET' && isset($_GET['action'])){
+
+      $action = $_GET['action'];
+    }
+    elseif(REQUEST_METHOD == 'POST' && isset($_POST['action'])){
+      $action = $_POST['action'];
+    }
+    else{
+      Report::error('请求方法错误，缺少必要参数');
+    }
+    // 执行该方法
+    $this->$action();
+  }
+
+  /**
+   * 数据查询
+   * @access public
+   */
+    /*
+      语法：
+      "query":
+      {
+        "conditions":{  
+          "dep": "BJS",
+          "arr": "MIA",
+          "airline": "UA"
+        }, 
+        "select": ['dep', 'arr'],
+        "orderby":[{"column":"gmtCreate","asc":"true"}]
+      }
+    */
+  public function query($modelName = '', $config = array()){
+    $m = model($modelName);
+    // 必须
+    if(isset($config['conditions']))
+      // 反序列化
+      if(is_string($config['conditions'])){
+        $where = json_decode($config['conditions'], true);
+      }else{
+        $where = $config['conditions'];
+      }
+    
+
+    if(isset($config['select']))
+      // 反序列化
+      if(is_string($config['select'])){
+        $select = json_decode($config['select'], true);
+      }else{
+        $select = $config['select'];
+      }
+    else
+      $select = array();
+
+    if(isset($config['orderby']))
+      // 反序列化
+      if(is_string($config['orderby'])){
+        $orderby = json_decode($config['orderby'], true);
+      }else{
+        $orderby = $config['orderby'];
+      }
+    else
+      $orderby = array();
+      
+    // var_dump($where, $orderby, $select, $modelName , $config);
+
+    return $m->find($where, $orderby, $select);
+  }
 }

@@ -20,8 +20,12 @@ class HotcityController extends Controller {
   // 展示计划执行状况
   public function show(){
   	$hotcity = model('hot_city');
-  	$result  = $hotcity ->select();
+  	$result  = $hotcity->select();
   	echo json_encode(array('result'=>$result));
+  }
+
+  public function show2(){
+    echo json_encode(array('result'=>$this->query('hot_city', array('conditions'=>[]) )));
   }
 
   // 执行计划，一天以后则更新
@@ -149,7 +153,8 @@ class HotcityController extends Controller {
 
 		$update = array('GmtModified' => time());
 
-		// 更新 xfsd
+		// 更新 xfsd 
+    // 此处 xfsd 仅在传一个城市作为目的地时正常，当传递多个城市时，id被替换成最新的，真实的id包含在各个目的地中
   	if( !empty($xfsd['id']) ){
       // 存在多个
       $xfsd_sid = $xfsd['id'];
@@ -187,6 +192,7 @@ class HotcityController extends Controller {
   	}
   	return $update;
   }
+
 
   // 如果利用post 传入 xfsd sid 则，直接返回xfsd，否则根据post 传递查询hotcity后，获得sid，再查询 xfsd
   public function searchXfsdResultByHotcity($return = false){
@@ -249,22 +255,73 @@ class HotcityController extends Controller {
     echo json_encode(array('status'=>0, 'msg'=>'无可用数据'));
   }
 
+  public function appendHCAndPS(){
+    $append         = $_POST['append'];
+    $where          = $_POST['where'];
+    $m_hotcity      = model('hot_city');
+    $whereString    = ''; 
+    if(isset($_POST['separator'])) 
+      $separator = $_POST['separator'];
+    else
+      $separator = ',';
+
+    foreach($where as $whereAttr => $whereVal){
+      $whereString .= (is_string($whereVal) ? " `{$whereAttr}` = '$whereVal' AND" : "`{$whereAttr}` =  $whereVal AND");
+    }
+    $whereString    = rtrim($whereString, 'AND');
+    $result         = $m_hotcity->where($whereString)->select();
+    
+    if($result){
+      $pattern = '/'.$append['HC_XfsdResult_Sid'].'/';
+      if(preg_match($pattern, $result[0]['HC_XfsdResult_Sid'])){
+        echo json_encode(array('msg'=>'已存在', 'status'=>0));
+        return;
+      }
+
+      // 更新 priceSource 
+      $hotcity = $result[0];
+      $hotcity['HC_XfsdResult_Sid'] = $append['HC_XfsdResult_Sid'];
+
+      $result_price = $this->savePriceSource($hotcity, false);
+      if($result_price){
+        // 更新 hotcity
+        foreach ($append as $attr => $attrVal) {
+          $append[$attr] = empty($result[0][$attr]) ? $append[$attr] : $result[0][$attr].$separator.$append[$attr];
+        }
+        $result_hotcity = $m_hotcity->where($whereString)->update($append);
+      }
+
+      if($result_price && $result_hotcity){
+        // echo json_encode(array('msg'=>'更新成功', 'status'=>1));
+        return;
+      }else{
+        var_dump($result_price, $result_hotcity);
+      }
+    }else{
+      echo json_encode(array('msg'=>'未查询到该条数据', 'status'=>0));
+    }
+  }
+
   // 更新 price_source 一条数据
   // 更新某条，多个where
   public function updatePriceSourceByOne(){
     $update         = $_POST['update'];
     $where          = $_POST['where'];
-    $hid            = $_POST['Hid'];
     $m              = model('price_source');
-    $result         = $m->where("`Hid` = {$hid}")->select();
+    $whereString    = ''; 
+    foreach($where as $whereAttr => $whereVal){
+      $whereString .= (is_string($whereVal) ? "`{$whereAttr}` = '$whereVal' AND" : "`{$whereAttr}` =  $whereVal AND");
+    }
+    if(!isset($_POST['Hid'])){
+      $whereString    = rtrim($whereString, 'AND');
+      $result         = $m->where($whereString)->select();
+    }else{
+      $hid            = $_POST['Hid'];
+      $result         = $m->where("`Hid` = {$hid}")->select();
+      $whereString   .= " `Hid` = {$hid}";
+    }
     if($result){
-      $whereString  = ''; 
-      foreach($where as $whereAttr => $whereVal){
-        $whereString .= (is_string($whereVal) ? "`{$whereAttr}` = '$whereVal' AND" : "`{$whereAttr}` =  $whereVal AND");
-      }
-      $whereString .= " `Hid` = {$hid}";
       $update_result = $m->where($whereString)->update($update);
-
       echo json_encode(array('msg'=>'更新成功', 'status'=>1));
       return;
     }
@@ -311,16 +368,24 @@ class HotcityController extends Controller {
     echo json_encode(array('msg'=>'更新失败，未查到该条数据', 'status'=>0));
   }
 
-  // 跑完plan，生成相应的精简且不分组的price数据，保存
-  public function savePriceSource($hotcity){
+  public function canSavePriceSource($hotcity){
     $m_price_source = model('price_source');
 
     if($m_price_source->where("`Hid`= {$hotcity['Id']}")->select()){
       echo json_encode(array('msg'=>'已存在', 'status'=>2, 'hid'=>$hotcity['Id']));
-      return;
-    }
+      return false;
+    } 
 
-    if(!isset($hotcity['HC_XfsdResult_Sid'])) return;
+    if(!isset($hotcity['HC_XfsdResult_Sid'])) return false;
+
+    return true;
+  }
+
+  // 跑完plan，生成相应的精简且不分组的price数据，保存
+  public function savePriceSource($hotcity, $check=true){
+    $m_price_source = model('price_source');
+    if($check && !$this->canSavePriceSource($hotcity)) return;
+    
     $_POST['sid']    = $hotcity['HC_XfsdResult_Sid'];
     $arrayXfsdResult = $this->searchXfsdResultByHotcity(true);
     $array           = array();  // 待添加的xfsd数据
@@ -328,7 +393,7 @@ class HotcityController extends Controller {
 
     if(!isset($arrayXfsdResult['inGroupSmpResult'])) {
       var_dump($arrayXfsdResult);
-      return;
+      return false;
     }
     foreach ($arrayXfsdResult['inGroupSmpResult'] as $key => $xfsdInGroup) {
       if(!empty($xfsdInGroup)){
@@ -396,6 +461,7 @@ class HotcityController extends Controller {
     }
     $m_price_source->addAll($addAll);
     echo json_encode(array('msg'=>'保存成功', 'status'=>1, 'hid'=>$hotcity['Id']));
+    return true;
   }
 
   public function updateSaleDate(){
