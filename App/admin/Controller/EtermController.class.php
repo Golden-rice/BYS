@@ -143,15 +143,16 @@ class EtermController extends Controller {
   }
 
   // 查询 cmd 的source 是否存在
-  private function hasCmdSource($command = '', $cmd = ''){
+  private function hasCmdSource($where = array(), $cmd = ''){
   	$m = model("{$cmd}_source");
-  	$result = $m ->where('`command` ="'.$command.'" ')->select();
-  					// var_dump($result);
+  	$result = $m->find($where);
+
   	// 为空返回false
   	if(!$result || empty($result[0]) ) return false;
   	$col = $result[0]; // 仅一条
-		if ( isset($col['Command']) && $command == $col['Command'] ) 
-			return $col;
+		if ( isset($col['Command']) )  // 是否获取正确数据
+			if( $where['office'] == $col['Office']  && $where['command'] == $col['Command'] )
+				return $col;
 
   	return false;
   }
@@ -165,7 +166,8 @@ class EtermController extends Controller {
   		'command' => isset($array['command'])? $array['command'] : '',
   		'detail'  => isset($array['source'])? $array['source']: '',
   	);
-  	return $m->add($add);
+  	$result = $m->add($add);
+  	return $result;
   }
 
   // 更新 cmd 的source 
@@ -261,7 +263,7 @@ class EtermController extends Controller {
   		$array    = array(); 
   		foreach ($endArr as $end) {
 				$command = $this->toXfsdCommand($start, $end, $startDate, $aircompany, $tripType, $code, $other );
-	  		$result  = $this->hasCmdSource($command, 'xfsd');
+	  		$result  = $this->hasCmdSource(array('command'=>$command, 'office'=>$_SESSION['resource']), 'xfsd');
 	  		echo $end."<br>";
 
 	  		if( is_array($result) && isset($result['Id']) ){ 
@@ -338,8 +340,7 @@ class EtermController extends Controller {
 		foreach($endArr as $end){
 			// 生成命令
 			$command = $this->toXfsdCommand($start, $end, $startDate, $aircompany, $tripType, $code, $other );
-			$result  = $this->hasCmdSource($command, 'xfsd');
-
+			$result  = $this->hasCmdSource(array('command'=>$command, 'office'=>$_SESSION['resource']), 'xfsd');
 			// 有，日期已过期
 			if ( isset($result['GmtModified']) && $result['GmtModified'] + 24*60*60 < time() ){ 
 
@@ -374,6 +375,7 @@ class EtermController extends Controller {
 			}
 			// 有，但是储存时间不大于一天，读取数据库数据
 			elseif( isset($result['GmtModified']) && $result['GmtModified'] + 24*60*60 >= time()){
+
 				$id = $result['Id'];
 				$xfsd->wtTmp($result['Detail']);
 				$resultArr   = $ab_flag ? $xfsd->analysis(array(2,3,4)) : $xfsd->analysis(array(2,3));
@@ -381,12 +383,13 @@ class EtermController extends Controller {
 			}
 			// 无，从新查询，并临时保存 source 及 result 
 			else{
-
+				
 				$xfsd->command($command, "w");
 				$resultArr   = $ab_flag ? $xfsd->analysis(array(1,2,3,4)) : $xfsd->analysis(array(1,2,3));
 				$array[$end] = $resultArr;
 				$id          = $this->saveCmdSource(array('source' => $xfsd->readSource(), 'command' => $command), 'xfsd'); // 储存至数据库
 				$this->saveXfsdResult($array[$end], $id, $command);
+
 			}
 
 			// 封装基础数据格式，仅用于前台展示用
@@ -557,7 +560,7 @@ class EtermController extends Controller {
 				$d       = strtoupper(date('d',$days));
 				$date    = $d.$m;
 				$command = $repeat['pos'] == 'start' ? 'AVH/'.$value.$end.$date.$other.$aircompany : 'AVH/'.$start.$value.$date.$other.$aircompany;
-				$result  = $this->hasCmdSource($command, 'avh');
+				$result  = $this->hasCmdSource(array('command'=>$command, 'office'=>$_SESSION['resource']), 'avh');
 				if ( isset($result['GmtModified']) && $result['GmtModified'] + 24*60*60 < time() ){ 
 					// 有且存储时间大于一天，更新
 					$avh->command($command, "w", false);
@@ -681,7 +684,7 @@ class EtermController extends Controller {
 		$command    = 'XS/FSD'.$start.$end.'/'.date('tM', time()+10*24*60*60 ).'/'.$aircompany.'/NEGO/X';
 		$fsl        = new \Fsl($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
 
-		$result = $this->hasCmdSource($command, 'fsl');
+		$result = $this->hasCmdSource(array('command'=>$command, 'office'=>$_SESSION['resource']), 'fsl');
 		// 比default多个analysis 
 		if ( isset($result['GmtModified']) && $result['GmtModified'] + 30*24*60*60 > time() ){ 
 			$id = $result['Id'];
@@ -735,7 +738,7 @@ class EtermController extends Controller {
 				$start      = $d[0];
 				$command    = 'XS/FSD'.$start.$end.'/'.date('tM', time()+10*24*60*60 ).'/'.$aircompany.'/NEGO/X';
 				$fsl        = new \Fsl($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
-				$result     = $this->hasCmdSource($command, 'fsl');
+				$result     = $this->hasCmdSource(array('command'=>$command, 'office'=>$_SESSION['resource']), 'fsl');
 
 				// 数据保留1个月
 				if ( isset($result['GmtModified']) && $result['GmtModified'] + 30*24*60*60 > time() ){ 

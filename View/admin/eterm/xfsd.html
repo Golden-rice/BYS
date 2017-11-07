@@ -403,10 +403,10 @@ var setCommend = function(command){
 	var insertHotcity =  new command.ReqCommand({
 		url: eterm.const.Project + 'index.php/admin/hotcity/appendHCAndPS',
 		clk: function(res){
-			// if(res.msg)
-			// 	alert(res.msg)
+			if(res.msg)
+				alert(res.msg)
 
-			// if(res.status)
+			if(res.status)
 				console.log(res)
 		}
 	}) 

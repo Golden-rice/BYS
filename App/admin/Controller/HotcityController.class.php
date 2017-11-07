@@ -25,7 +25,7 @@ class HotcityController extends Controller {
   }
 
   public function show2(){
-    echo json_encode(array('result'=>$this->query('hot_city', array('conditions'=>[]) )));
+    echo json_encode(array('result'=>$this->query('hot_city', array('conditions'=>array()) )));
   }
 
   // 执行计划，一天以后则更新
@@ -39,7 +39,7 @@ class HotcityController extends Controller {
 
   	$hotcity = model('hot_city');
   	$result  = $hotcity->where("`HC_Status` = 0 OR `GmtModified` < ".(time()-24*60*60))->limit('3')->select(); // 
-    // $result  = $hotcity->limit('3')->select(); // 测试数据
+    // $result  = $hotcity->limit('1')->select(); // 测试数据
   	$eterm   = reflect('eterm');
 
     $log =  fopen('log.txt', 'a');
@@ -67,7 +67,7 @@ class HotcityController extends Controller {
   		$_POST['tripType']   = '*RT';
   		$_POST['other']      = empty($col['HC_Cabin'])? '':'*'.preg_replace('/,/', '*', $col['HC_Cabin']);
     	$result_xfsd         = $eterm->searchXfsdByInput(true);
-      // var_dump($result_xfsd );
+      // var_dump('result_xfsd', $result_xfsd );
       // 判断 xfsd 追加一次数据
       $is_result = $this->is_continue($result_xfsd['array'][$_POST['end']], explode(',', $result[0]['HC_Cabin']));
 
@@ -121,12 +121,13 @@ class HotcityController extends Controller {
     // 去重数据：仅在所有舱位中取一条，默认按照第一条为选中。
     $tmpXfsd  = array();  // 临时xfsd并初始化
 
-    if($hc_cabin != ''){
+    if(!empty($hc_cabin) && $hc_cabin[0] !== ''){
+
       foreach ($array as $row){
         if(!is_array($row)) break;
         // 排除无限的适用日期
-        if($row['allowDateEnd'] == '2099-12-30') continue;
-        if(!in_array($row['seat'], $tmpXfsd) && time() + 30*60*60 < strtotime($row['allowDateEnd']) ){
+        if($row['allowDateEnd'] === '2099-12-30' || $row['allowDateEnd'] === '') continue;
+        if(!in_array($row['seat'], $tmpXfsd) && time() + 30*60*60 > strtotime($row['allowDateEnd']) ){
           $tmpXfsd[$row['seat']] = $row;
         }
       }
@@ -134,16 +135,16 @@ class HotcityController extends Controller {
       foreach ($array as $row){
         if(!is_array($row)) break;
          // 排除无限的适用日期
-        if($row['allowDateEnd'] == '2099-12-30') continue;
-        if( (!in_array($row['seat'], $tmpXfsd) && in_array($row['seat'], $hc_cabin)) && time() + 30*60*60 < strtotime($row['allowDateEnd']) ){
+        if($row['allowDateEnd'] === '2099-12-30' || $row['allowDateEnd'] === '') continue;
+        if( (!in_array($row['seat'], $tmpXfsd) && in_array($row['seat'], $hc_cabin)) && time() + 30*60*60 > strtotime($row['allowDateEnd']) ){
           $tmpXfsd[$row['seat']] = $row;
         }
       }
     }
 
+
     if(!empty($tmpXfsd))
       return $tmpXfsd;
-
     return false;
   }
 

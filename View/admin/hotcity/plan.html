@@ -4,6 +4,7 @@
 <{block name="content"}>
 
 <div id="content"></div>
+
 <!-- other modal -->
 <div class="modal fade" id="otherModal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" >
   <div class="modal-dialog modal-lg" role="document" style='width:1600px'>
@@ -32,6 +33,8 @@
   </div>
 </div>
 <!-- other modal end -->
+
+<div id="model-wrap"></div>
 
 <script>
 require(['eterm', 'dt'], function (eterm, dt){
@@ -264,13 +267,26 @@ var setCommand = function(command){
 	var checkfsi = new command.ReqCommand({
 		url: eterm.const.Controller + 'checkfsi',
 		clk: function(res){
-
-			if(res.msg)
-				alert(res.msg)
+			console.log(res)
+			var src = checkfsi.returnConfig().query;
+			var $data = $('#'+src.id).next('input');
+			if(res.msg){
+				alert(res.msg);
+				$('#'+src.id).html('<a href="javascript:void(0)" class="fsi-failed-click">隐藏</a>').closest('tr').after('<tr class="fsi-failed-tr"><td colspan=16><textarea class="form-control"  rows="16" style="background-color:black;color:green;">'+res.log+'</textarea></td></tr>')
+			
+					updatePriceSourceIsCheck.execute({
+						'update': {
+							'IsCheck': -1
+						}, 
+						'where' : {
+							'Stay': $data.data('stay'),
+							'Id' :  $data.data('id'),
+						},
+						'Hid': hid,
+					});
+			}
 
 			if(res.status){
-				console.log(res)
-				var src = checkfsi.returnConfig().query;
 				var totalPrice = 0;
 				var priceDetail = res.priceDetail;
 				for(var i in priceDetail.farebasisPrice){
@@ -285,13 +301,17 @@ var setCommand = function(command){
 					}
 
 					$('#'+src.id).html('验证成功'+' <a class="tooltip-option" href="javascript:void(0)" data-toggle="tooltip" title="'+tooltipTitle+'" data-placement="left"><i class="fa fa-tag"></i></a>').next('input').val(1);
+
+
+					// 更新数据库
 					updatePriceSourceIsCheck.execute({
 						'update': {
 							'IsCheck': 1,
 							'CheckDetail': JSON.stringify(priceDetail)
 						}, 
 						'where' : {
-							'Stay': $('#'+src.id).next('input').data('stay'),
+							'Stay': $data.data('stay'),
+							'Id' :  $data.data('id'),
 						},
 						'Hid': hid,
 					});
@@ -440,6 +460,25 @@ var setCommand = function(command){
 		checkfsi.execute({fsi: $(this).data('fsi'), id: $(this).closest('span').attr('id'), price: $(this).data('price')})
 	})
 
+	// 隐藏 fsi返回的结果
+	$('#otherModal').on('click', '.fsi-failed-click', function(){
+
+		var $fsi_failed_tr = $(this).closest('tr').next('tr');
+		if($fsi_failed_tr.css('display') === 'none'){
+			$fsi_failed_tr.show();
+			$(this).text('隐藏')
+		}else{
+			$fsi_failed_tr.hide();
+			$(this).text('显示')
+		}
+	})
+
+	// 查看无适用运价的fsi
+	$('#otherModal').on('click', '.look-fsi', function(){
+		command.mkOtherModel('otherModel-2', "", '#model-wrap')
+		var model = new command.OtherModel('fsi', '<textarea class="form-control"  rows="16" style="background-color:black;color:green;">'+$(this).data('fsi')+'</textarea>', '', 'otherModel-2');
+		model.show();
+	})
 }
 
 setCommand(eterm.createCommand(eterm.eterm,tpl));
@@ -719,7 +758,7 @@ function mkMixCabinTable(data){
         	// html += '</textarea>'
 
         	// 检验按钮
-        	if(row.IsCheck){
+        	if(row.IsCheck == 1){
         		var tooltipTitle = '';
         		if(row.CheckDetail){
         			var checkDetail = JSON.parse(row.CheckDetail)
@@ -729,10 +768,11 @@ function mkMixCabinTable(data){
         		}
 
         		var html = '验证成功' + '&nbsp;<a class="tooltip-option" href="javascript:void(0)" data-toggle="tooltip" title="'+tooltipTitle+'" data-placement="left"><i class="fa fa-tag"></i></a>'
+        	}else if(row.IsCheck == -1){
+	        	var html = '指定的票价不符合运价规则' ; // + '&nbsp;<a class="look-fsi" href="javascript:void(0)" data-fsi="'+row.Fsi.allStay+'">查看fsi</a>'
         	}else{
-	        	var html = '<span  id="fsi-'+row.index+'""><a href="javascript:void(0)" class="check-fsi" data-fsi='+JSON.stringify(data.Fsi.allStay)+' data-price="'+row.RoundFare+'">验证</a></span><input type="hidden" class="input-IsCheck" data-stay='+row.Stay+' >'
+	        	var html = '<span id="fsi-'+row.index+'""><a href="javascript:void(0)" class="check-fsi" data-fsi='+JSON.stringify(data.Fsi.allStay ? data.Fsi.allStay : data.Fsi.noStay)+' data-price="'+row.RoundFare+'">验证</a></span><input type="hidden" class="input-IsCheck" data-stay='+row.Stay+' data-id='+row.Id+'>'
         	}
-        	// var html = 'aaaaa<a class="tooltip-option btn " href="javascript:void(0)" data-toggle="tooltip" title="<h1>aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</h1>" data-placement="left"><i class="fa fa-tag"></i>aaaaa</a>'
 
           return html
         }
@@ -740,7 +780,7 @@ function mkMixCabinTable(data){
     {
         targets: 14, // 航路
         render: function(data, type, row, meta) {
-          return row.Routing.allStay;
+          return row.Routing.allStay ? row.Routing.allStay : row.Routing.noStay;
         }
     },
     {

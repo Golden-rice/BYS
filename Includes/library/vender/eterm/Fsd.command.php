@@ -74,8 +74,8 @@ class Fsd extends Eterm{
   			$arr_tmp[$key] = preg_replace($fliter_str_2, '  ', $line);
   		}elseif(preg_match($fliter_str_6, $line)){
   			unset($arr_tmp[$key]);
-  		}elseif(preg_match($fliter_str_3, $line)){
-  			if(preg_match_all('/D\s+\d+/', $arr_tmp[$key+3])){  // 如果带有D 123类型
+  		}elseif(preg_match($fliter_str_3, $line) && isset($arr_tmp[$key+3])){
+  			if(preg_match('/D\s+\d+/', $arr_tmp[$key+3])){  // 如果带有D 123类型
   				unset($arr_tmp[$key+3]);
   			}
   			unset($arr_tmp[$key]);

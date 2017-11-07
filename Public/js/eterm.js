@@ -1411,8 +1411,8 @@ var createCommand = function(recevier, tpl, set){
 
 		// 内积 a^2
 		var result     = [],                        // 最终混舱结果
-				stayArray  = hotcity['HC_Routing'].split(','),       // 全部的中转城市
-				cabinMatch = hotcity['HC_Cabin'].split(','), // 热门城市舱位对照
+				stayArray  = hotcity['HC_Routing'] ? hotcity['HC_Routing'].split(',') : [],       // 全部的中转城市
+				cabinMatch = hotcity['HC_Cabin'] ? hotcity['HC_Cabin'].split(',') : [], // 热门城市舱位对照
 				date       = new Date();                  // 时间对象
 
 		function parseDate(smpDate){
@@ -1506,6 +1506,16 @@ var createCommand = function(recevier, tpl, set){
 			// Fsi航班号
 			var outboundFlight = outboundData['Flight'] !==''? outboundData['Flight']: '0000',
 					inboundFlight  = inboundData['Flight'] !==''? inboundData['Flight']: '0000';
+
+			// IsCheck 是否检验过
+			if(outboundData['IsCheck'] == 1 && inboundData['IsCheck'] == 1 ){
+				var isCheck = 1;
+			}else if(outboundData['IsCheck'] == -1 || inboundData['IsCheck'] == -1){
+				var isCheck = -1;
+			}else{
+				var isCheck = 0;
+			}
+
 			var result = copy(outboundData);
 			    result = $.extend(result, {
 					'FareBasis'     : outboundData['FareBasis']+'/'+inboundData['FareBasis'],
@@ -1529,7 +1539,7 @@ var createCommand = function(recevier, tpl, set){
 					'Stay'          : outboundData['Stay'] ? outboundData['Stay'] : '', 
 					'Airline'       : outboundData['Airline'],
 					// 新增字段：是否经过FSI检验
-					'IsCheck'       : outboundData['IsCheck'] == 1 && inboundData['IsCheck'] == 1 ? 1:0,
+					'IsCheck'       : isCheck,
 					// 新增字段：航路
 					'Routing'       : {},
 					// 新增字段：fsi
@@ -1638,7 +1648,8 @@ var createCommand = function(recevier, tpl, set){
 	}
 
 	// 生成model
-	var mkOtherModel = function(size, parent){
+	var mkOtherModel = function(modelId, size, parent){
+		if(!modelId) modelId='otherModal';
 
 		if(size === 'big'){
 			var width ='width:1600px'
@@ -1650,7 +1661,7 @@ var createCommand = function(recevier, tpl, set){
 
 		let modelHtml = `
 			<!-- other modal -->
-			<div class="modal fade" id="otherModal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" >
+			<div class="modal fade" id="${modelId}" tabindex="-1" role="dialog" aria-labelledby="modalLabel" >
 			  <div class="modal-dialog " role="document" style="${width}">
 			    <div class="modal-content">
 
@@ -1661,10 +1672,7 @@ var createCommand = function(recevier, tpl, set){
 			      <!-- modal header -->
 
 			      <div class="modal-body">
-			        <div id="modal-content">
-			            
-
-			        </div>
+			        <div id="modal-content"></div>
 			      </div>
 			      <!-- modal body -->
 
@@ -1677,7 +1685,6 @@ var createCommand = function(recevier, tpl, set){
 			  </div>
 			</div>
 			<!-- other modal end -->
-
 		`
 
 		var parent = parent ? parent: document.body;
@@ -1687,27 +1694,29 @@ var createCommand = function(recevier, tpl, set){
 	// 弹出框   
 	// var model = new command.OtherModel();
 	// model.show();
-	var OtherModel = function(title, content, footer, size){
-		if(!$('#otherModal').html()){
-			mkOtherModel(size); // big 大尺寸
+	var OtherModel = function(title, content, footer, modelId, size){
+		if(!modelId) modelId = 'otherModal';
+
+		if(!$("#"+modelId).html()){
+			mkOtherModel(modelId, size); // big 大尺寸
 		}
 
-    $("#otherModal .modal-title").html(title);
-    $("#otherModal #modal-content").html(content);
-    $("#otherModal .modal-footer").html(footer ? footer:`<button type="button" class="btn btn-default hidden"  data-dismiss="modal">关闭</button>`);
+    $("#"+modelId+" .modal-title").html(title);
+    $("#"+modelId+" #modal-content").html(content);
+    $("#"+modelId+" .modal-footer").html(footer ? footer:`<button type="button" class="btn btn-default hidden"  data-dismiss="modal">关闭</button>`);
 
     return {
-        hide: function(){
-        	$("#example").modal('hide');
-        },
-        show: function(){
-            $("#otherModal").modal();
-        },
-        set: function(title, contetn, footer){
-			    $("#otherModal .modal-title").html(title);
-			    $("#otherModal #modal-content").html(content);
-			    $("#otherModal .modal-footer").html(footer);
-        }
+      hide: function(){
+      	$("#example").modal('hide');
+      },
+      show: function(){
+          $("#"+modelId).modal();
+      },
+      set: function(title, contetn, footer){
+		    $("#"+modelId+" .modal-title").html(title);
+		    $("#"+modelId+" #modal-content").html(content);
+		    $("#"+modelId+" .modal-footer").html(footer);
+      }
     }
 	}
 

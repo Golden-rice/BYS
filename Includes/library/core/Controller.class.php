@@ -144,8 +144,6 @@ abstract class Controller {
     else
       $orderby = array();
       
-    // var_dump($where, $orderby, $select, $modelName , $config);
-
     return $m->find($where, $orderby, $select);
   }
 }

@@ -443,6 +443,7 @@
 		        return strtolower(trim(preg_replace("/[A-Z]/", "_\\0", $name), "_"));
 		    }
 		}
+		
 	 	/** 
 		 封装的SQL事件
 		 */
@@ -461,9 +462,9 @@
 		 		// 将$where转化成sql语句
 		 		$whereString = '';
 		 		foreach ($where as $whereAttr => $whereVal) {
-		 			$whereString = is_string($whereVal) ? " `{$whereAttr}` = '{$whereVal}'" : " `{$whereAttr}` = {$whereVal} AND";
+		 			$whereString .= is_string($whereVal) ? " `{$whereAttr}` = '{$whereVal}' AND" : " `{$whereAttr}` = {$whereVal} AND";
 		 		}
-		 		$whereString = rtrim($this->where, 'AND');
+		 		$whereString = rtrim($whereString, 'AND');
 		 		$this->where($whereString);
 	 		} 
 
@@ -471,12 +472,11 @@
 	 			// 将$orderby转换成sql语句
 	 			$orderString = '';
 	 			foreach ($orderbys as $orderbyKey => $orderby) {
-	 				$orderString = " {$orderby['column']} ".($orderby['asc'] == true ?'ASC':'DESC').',';
+	 				$orderString .= " {$orderby['column']} ".($orderby['asc'] == true ?'ASC':'DESC').',';
 	 			}
-	 			$orderString = rtrim($this->where, ',');
+	 			$orderString = rtrim($orderString, ',');
 	 			$this->order($orderString);
 	 		}
-	 		
 	 		return $this->select(implode($select, ','));
 	 	}
 
