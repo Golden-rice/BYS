@@ -188,7 +188,8 @@ var createCommand = function(recevier, tpl, set){
 
 		// 请求数据
 		var url = query.dosubmit === 'command' ? Controller + 'searchXfsdByCommand' :  Controller + 'searchXfsdByInput';
-
+		// var url = Controller + 'tmp';
+		
 		// 验证
 		if(query.end.length > 110){
 			alert('目的地过多，最多25个目的地，请重新输入');

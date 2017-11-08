@@ -441,7 +441,6 @@ function mkTable(array, dom, wrap, type){
 	// dom: 为渲染模板起名
 	// context: 指定渲染容器
 	// appendType: 回填模式 w代表覆盖，a代表追加
-
 		"use strict";
 		// ES6 
 		let html = '',
@@ -541,7 +540,10 @@ function mkTable(array, dom, wrap, type){
 				}
 			}
 		}else{
+
+
 			for(let arr in array){
+
 				html += `<table class="${dom} table-hover table-bordered table-responsive">
 					<tr>
 						<th>序号</th>
@@ -567,10 +569,10 @@ function mkTable(array, dom, wrap, type){
 					</tr>`
 					
 				for(let line =0; line< array[arr]['length']; line++){
+					if(!array[arr][line]) continue;
 					html += `
 					<tr class='line'>
 						<td class='index'>${line}</td>
-						<!--${array[arr][line]['index']}-->
 						<td><input type="checkbox" id="c${arr}${line}" class="cSelect cSelect${arr}" value="${array[arr][line]['fare']}"></td>
 						<td class='fare'>${array[arr][line]['fare']}</td>
 						<td class='special'>${array[arr][line]['special']}</td>
@@ -663,7 +665,6 @@ function mkMatchTable(array, dom, wrap, type){
 				html += `
 				<tr class='line'>
 					<td class='index'>${line}</td>
-					<!-- ${array[arr][line]['index']} -->
 					<td class='fare'>${array[arr][line]['fare']}</td>
 					<!--  <td class='special'>${array[arr][line]['special']}</td> -->
 					<td class='ADVPDay'>${array[arr][line]['ADVPDay']}</td>

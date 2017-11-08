@@ -28,6 +28,14 @@ class HotcityController extends Controller {
     echo json_encode(array('result'=>$this->query('hot_city', array('conditions'=>array()) )));
   }
 
+  public function test(){
+    $eterm   = reflect('eterm');
+    $_POST['start'] = 'BJS';
+    $_POST['end'] = 'SCL';
+    $_POST['aircompany'] = 'AA';
+    $eterm->searchSkByInput();
+  }
+
   // 执行计划，一天以后则更新
   public function run(){
 

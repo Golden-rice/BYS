@@ -82,39 +82,39 @@ class Eterm{
 		}
 
 	  public function mixCommand($commandArr, $type = 'w', $p=false){
-	    	// 多条命令发送，数组包含该信息是否回填至缓存中
-	  	  $commandURL = '';
-	  	  $commandTXT = '';
-	  	  // foreach($commandArr as $command => $addFlag){
-		    foreach($commandArr as $command){
-					$commandURL .= '&COMMAND='.urlencode($command);
-					$commandTXT .= $command;
-				}
+    	// 多条命令发送，数组包含该信息是否回填至缓存中
+  	  $commandURL = '';
+  	  $commandTXT = '';
 
-				$this->command = $commandTXT;
+	    foreach($commandArr as $command){
+				$commandURL .= '&COMMAND='.urlencode($command);
+				$commandTXT .= $command;
+			}
 
-				// 以fare和航空公司区分政策文件
-				/*
-				preg_match_all('/\/#[\w]?\*?(\w+)\/\/\//',$this->command, $str);
-				$fare = $str[1][0];
-				if(!empty($fare)){
-					preg_match_all('/\/(\w{2})\//',  $this->command, $str2);
-					preg_match_all('/fsn1\/\/(\d*)/',$this->command, $str3);
-					$index      = $str3[1][0];
-					$aircompany = $str2[1][0];
-				}
-				*/
+			$this->command = $commandTXT;
 
-				// if(!file_exists($this->tmp) || !filesize($this->tmp)>0){
-			 		$requestURL='http://eterm.cctba.com:8350/COMMAND?USER='.$this->name.'&PASSWORD='.$this->password.'&RESOURCEETERM-SHARE-'.$this->resource.$commandURL;
-			 	 	try{
-				 	 	$file = file_get_contents($requestURL);
-			 	 	}catch(Exception $e){
-			 	 		 echo 'Caught exception: ',  $e->getMessage(), "\n";
-			 	 		 return;
-			 	 	}
-				 	$this->saveStr($file, $type);
-				// }
+			// 以fare和航空公司区分政策文件
+			/*
+			preg_match_all('/\/#[\w]?\*?(\w+)\/\/\//',$this->command, $str);
+			$fare = $str[1][0];
+			if(!empty($fare)){
+				preg_match_all('/\/(\w{2})\//',  $this->command, $str2);
+				preg_match_all('/fsn1\/\/(\d*)/',$this->command, $str3);
+				$index      = $str3[1][0];
+				$aircompany = $str2[1][0];
+			}
+			*/
+
+
+	 		$requestURL='http://eterm.cctba.com:8350/COMMAND?USER='.$this->name.'&PASSWORD='.$this->password.'&RESOURCEETERM-SHARE-'.$this->resource.$commandURL;
+	 	 	try{
+		 	 	$file = file_get_contents($requestURL);
+	 	 	}catch(Exception $e){
+	 	 		 echo 'Caught exception: ',  $e->getMessage(), "\n";
+	 	 		 return;
+	 	 	}
+		 	$this->saveStr($file, $type);
+
 	  }
 
 	  public function setTime($fileName){

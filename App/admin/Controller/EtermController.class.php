@@ -25,6 +25,20 @@ class EtermController extends Controller {
   	$this->display();
   }
 
+  // 临时的一些操作
+  public function tmp(){
+  	$filename = '~Runtime/new 1.txt';
+  	$handle = fopen($filename, 'r');
+  	$contents = fread($handle, filesize ($filename));
+  	import('vender/eterm/app.php');
+  	$xfsd = new \Xfsd($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
+  	$xfsd->wtTmp($contents);
+  	$result = $xfsd->toArray();
+  	// var_dump($contents);
+  	// var_dump($result);
+  	echo json_encode(array('array'=>$result));
+  }
+
   // 获取汇率
   public function toCNY(){
   	import('vender/eterm/app.php');
@@ -523,7 +537,6 @@ class EtermController extends Controller {
 		$aircompany = $_POST['aircompany'];   
 		$other      = $_POST['other'];    
 
-
 	 	// 航空公司前缀处理
 	 	if(!preg_match("/^(\/|\*)\w{2}$/", $aircompany, $prefix))
 	 		$aircompany = '/'.$aircompany;
@@ -757,6 +770,16 @@ class EtermController extends Controller {
 
 
 		\BYS\Report::p($array);
+	}
+
+	// 查询航班时刻
+	public function searchSkByInput(){
+		import('vender/eterm/app.php');
+		$sk         = new \Sk($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
+
+		// api: array('start'=>'', 'end'=>'', 'aircompany'=>'')
+		$result = $sk->set($_POST)->parseDetail();
+		var_dump($result);
 	}
 
 	// 新增混舱
