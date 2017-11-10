@@ -117,9 +117,9 @@ $a->build('avh',array(
 	// end 到达
 	'avh_Arr'       => 'char(3) NOT NULL',
 	// startTime 出发时间
-	'avh_DepTime'   => 'time NOT NULL',
+	'avh_DepTime'   => 'datetime NOT NULL',
 	// endTime 到达时间
-	'avh_ArrTime'   => 'time NOT NULL',
+	'avh_ArrTime'   => 'datetime NOT NULL',
 	// flightTime 飞行日期
 	'avh_FlightTime'   => 'time NOT NULL',
 	// startDate 查询日期
@@ -142,7 +142,7 @@ $a->build('avh',array(
 	'gmtModified'   => 'int(13) DEFAULT NULL',
 ));
 
-// fsl source
+// fsl souce 及 result
 $a->build('fsl', array(
 	'Id'            => 'bigint(20) NOT NULL AUTO_INCREMENT',
 	// 命令
@@ -159,6 +159,72 @@ $a->build('fsl', array(
 	'Fsl_Translate' => 'varchar(100) DEFAULT NULL',
 	// 合并后的中转城市
 	'Fsl_result'    => 'varchar(500) DEFAULT NULL',
+	// 创建时间
+	'gmtCreate'     => 'int(13) NOT NULL',
+	// 修改时间
+	'gmtModified'   => 'int(13) DEFAULT NULL',
+));
+
+// sk souce 及 result
+$a->build('sk', array(
+	'Id'            => 'bigint(20) NOT NULL AUTO_INCREMENT',
+	// 命令
+	'Command'       => 'varchar(100) NOT NULL',
+	// 状态：-2 已知错误发生 -1 失败 0 等待 1 进行中 2 成功
+	'Status'        => 'int(1) NOT NULL',
+	// OFFICE 号
+	'Office'        => 'char(10) DEFAULT NULL',
+	// source id
+	'Sid'           => 'bigint(20) NOT NULL',
+	// 航班号
+	'Sk_Flight'     => 'varchar(5) NOT NULL', 
+	// 出发
+	'Sk_Dep'        => 'char(3) NOT NULL',
+	// 到达
+	'Sk_Arr'        => 'char(3) NOT NULL',
+	// 到达
+	'Sk_Aircompany' => 'char(2) DEFAULT NULL',
+	// 出发时间
+	'Sk_DepTime'    => 'char(3) DEFAULT NULL',
+	// 到达时间
+	'Sk_ArrTime'    => 'char(3) DEFAULT NULL',
+	// 是否直达
+  'Sk_IsDirect'   => 'int(1) NOT NULL',
+  // 分组 Id-航路序号-航段序号
+  'Sk_Rid'        => 'varchar(10) NOT NULL',
+  // 作用点，将X转换成可用
+  'Sk_AllowWeek'  => 'varchar(7) NOT NULL',
+  // 起始适用日期
+  'Sk_DateStart'  => 'date NOT NULL',
+  // 结束适用日期
+  'Sk_DateEnd'    => 'date NOT NULL',
+  // 未知
+  'Sk_Other'      => 'varchar(100) NOT NULL',
+	// 创建时间
+	'gmtCreate'     => 'int(13) NOT NULL',
+	// 修改时间
+	'gmtModified'   => 'int(13) DEFAULT NULL',
+));
+
+// sk souce 及 result
+$a->build('yy', array(
+	'Id'            => 'bigint(20) NOT NULL AUTO_INCREMENT',
+	// 命令
+	'Command'       => 'varchar(100) NOT NULL',
+	// 状态：-2 已知错误发生 -1 失败 0 等待 1 进行中 2 成功
+	'Status'        => 'int(1) NOT NULL',
+	// OFFICE 号
+	'Office'        => 'char(10) DEFAULT NULL',
+	// source id
+	'Sid'           => 'bigint(20) NOT NULL',
+	// 出发
+	'Yy_Start'      => 'char(3) NOT NULL',
+	// 到达
+	'Yy_End'        => 'char(3) NOT NULL',
+	// 航空公司
+	'Yy_Aircompany' => 'char(2) NOT NULL',
+	// 是否是共享
+	'Yy_IsCommon'   => 'int(1) NOT NULL',
 	// 创建时间
 	'gmtCreate'     => 'int(13) NOT NULL',
 	// 修改时间

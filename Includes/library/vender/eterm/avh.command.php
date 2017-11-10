@@ -111,10 +111,10 @@ class Avh extends Eterm{
 		 			$arrData = $this->partFormat($airData); 
 		 			
 		 			$arr_tmp[$date][$part][$key] = array(
-		 				'start' => preg_replace("/\s/", "", $arrData["start"]), // $arrData["start"] == "   "? "" : $arrData["start"]
+		 				'start' => trim($arrData["start"]), // $arrData["start"] == "   "? "" : $arrData["start"]
 		 				'end'   => $arrData["end"],
-		 				'flight' => preg_replace("/\s/", "", $arrData["flight"]),
-		 				'dateFrom' => preg_replace("/\s/", "", $arrData["dateFrom"]), // $arrData["dateFrom"] == "   " ? "" : $arrData["dateFrom"]
+		 				'flight' => trim($arrData["flight"]),
+		 				'dateFrom' => trim($arrData["dateFrom"]), // $arrData["dateFrom"] == "   " ? "" : $arrData["dateFrom"]
 		 				'startTime' => substr($arrData["startTime"], 0, 2).":".substr($arrData["startTime"], 2),
 		 				'endTime' => substr($arrData["endTime"], 0, 2).":".substr($arrData["endTime"], 2),
 		 				'flightTime' => $arrData["flightTime"] == false ? "" : $arrData["flightTime"],

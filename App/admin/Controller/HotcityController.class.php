@@ -30,10 +30,10 @@ class HotcityController extends Controller {
 
   public function test(){
     $eterm   = reflect('eterm');
-    $_POST['start'] = 'BJS';
-    $_POST['end'] = 'SCL';
-    $_POST['aircompany'] = 'AA';
-    $eterm->searchSkByInput();
+    $_POST['start'] = 'CN';
+    $_POST['end'] = 'US';
+    $_POST['aircompany'] = 'UA';
+    $eterm->searchYyByInput();
   }
 
   // 执行计划，一天以后则更新
@@ -82,8 +82,8 @@ class HotcityController extends Controller {
       $result_xfsd_continue = array();
       if($is_result && is_array($is_result)){
         foreach($is_result as $cabin => $result_col){
-          $_POST['startDate'] = strtoupper( date('dM', strtotime($result_col['allowDateEnd']) + 24*60*60 ) );
-          $_POST['other']     = "*{$result_col['seat']}";
+          $_POST['startDate']     = strtoupper( date('dM', strtotime($result_col['allowDateEnd']) + 24*60*60 ) );
+          $_POST['other']         = "*{$result_col['seat']}";
           $result_xfsd_continue[] = $eterm->searchXfsdByInput(true);
           // sleep(2);
           ob_flush();

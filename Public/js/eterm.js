@@ -1549,7 +1549,9 @@ var createCommand = function(recevier, tpl, set){
 		      // S UA   1310\09SEP CHI0300 0400NYC0S    76W 
 		      // S UA   981\09SEP BJS0100 0200CHI0X    76W
 		      // S UA   981\09SEP NYC0300 0400BJS0S    76W 
-					'Fsi'           : {}
+					'Fsi'           : {},
+					// qte
+
 				})
 
 
