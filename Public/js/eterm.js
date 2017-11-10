@@ -1551,10 +1551,15 @@ var createCommand = function(recevier, tpl, set){
 		      // S UA   981\09SEP NYC0300 0400BJS0S    76W 
 					'Fsi'           : {},
 					// qte
-
+					// SS  AA180  O   15NOV  PEKLAX GK1/   1830 1515                                   
+					// SS  AA181  O   25NOV  LAXPEK GK1/   1055 1620+1 
+					// -> QTE:/${aircompany}
+					// ...
+					// -> IG
+					'Qte'           : {}
 				})
 
-
+				// 生成fsi
 				if(outboundData['Stay']){
 					result['Routing'] = {
 						'allStay' : outboundData['Dep']+'-'+outboundData['Airline']+'-'+outboundData['Stay'] +'-'+outboundData['Airline']+'-'+outboundData['Arr']+'-'+inboundData['Airline']+'-'+inboundData['Stay'] +'-'+inboundData['Airline']+'-'+inboundData['Dep'],
@@ -1590,6 +1595,8 @@ var createCommand = function(recevier, tpl, set){
 							+ "S "+inboundData['Airline'] +"   "+inboundFlight +inboundData['Cabin'] +inboundData['FareDate'] +" "+inboundData['Arr']+"0300 0400"+inboundData['Dep']+"0S    76W \r" 
 					}
 				}
+
+				// 生成qte
 				return result;
 		}
 

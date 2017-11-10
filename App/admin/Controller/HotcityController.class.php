@@ -28,13 +28,6 @@ class HotcityController extends Controller {
     echo json_encode(array('result'=>$this->query('hot_city', array('conditions'=>array()) )));
   }
 
-  public function test(){
-    $eterm   = reflect('eterm');
-    $_POST['start'] = 'CN';
-    $_POST['end'] = 'US';
-    $_POST['aircompany'] = 'UA';
-    $eterm->searchYyByInput();
-  }
 
   // 执行计划，一天以后则更新
   public function run(){
@@ -49,8 +42,11 @@ class HotcityController extends Controller {
   	$result  = $hotcity->where("`HC_Status` = 0 OR `GmtModified` < ".(time()-24*60*60))->limit('3')->select(); // 
     // $result  = $hotcity->limit('1')->select(); // 测试数据
   	$eterm   = reflect('eterm');
+    $log     =  fopen('log.txt', 'a');
 
-    $log =  fopen('log.txt', 'a');
+    $m_bsis_air  = model('aircompany');  // 航空公司
+    $m_bsis_city = model('airport_city_code');  // 机场与城市对照表
+    $m_yy        = model('yy_result'); // yy : 查询航空公司中转城市
 
   	// 查询日期为当月的15日，如果当天大于15号，则查询日期下个月的1号
     if(intval(date('d', time())) > 15 )
@@ -75,7 +71,7 @@ class HotcityController extends Controller {
   		$_POST['tripType']   = '*RT';
   		$_POST['other']      = empty($col['HC_Cabin'])? '':'*'.preg_replace('/,/', '*', $col['HC_Cabin']);
     	$result_xfsd         = $eterm->searchXfsdByInput(true);
-      // var_dump('result_xfsd', $result_xfsd );
+
       // 判断 xfsd 追加一次数据
       $is_result = $this->is_continue($result_xfsd['array'][$_POST['end']], explode(',', $result[0]['HC_Cabin']));
 
@@ -92,17 +88,51 @@ class HotcityController extends Controller {
       }
 
       // 如果设置了is_continue 恢复 startDate
-      // \BYS\Report::p( $result_xfsd_continue , $is_result);
+      \BYS\Report::p( $result_xfsd_continue , $is_result);
       // avh 
       $_POST['startDate']  = $startDate;
     	$_POST['other']      = '';
     	$_POST['endDate']    = $_POST['startDate']; 
     	$result_avh          = $eterm->searchAvhByInput(true);
-    	// fsl
-    	$result_fsl          = $eterm->searchFslByInput(true);
+
+      // 查询中转城市 
+      $routing             = array();
+      $res_air = $m_bsis_air->find(array('Air_Code'=>$col['HC_Aircompany']), array(), array('Air_Code', 'Air_ShortName', 'Air_Union', 'Air_Union_Type'));
+      if($res_air[0]['Air_Union_Type'] == 1){ // 星空联盟
+        // fsl
+      	$result_fsl        = $eterm->searchFslByInput(true);
+        $fslName           = "{$col['HC_Depart']}{$col['HC_Arrive']}/{$col['HC_Aircompany']}";
+        $routing           = isset($result_fsl['array'][$fslName]['result']) ? $result_fsl['array'][$fslName]['result'] : array();
+      }else{
+        // YY 
+        // 城市代码转化成机场代码
+        $cityToAirport     = $m_bsis_city->where("`ACC_CityCode` = '{$col['HC_Depart']}'")->select("ACC_Code, ACC_CityCode");
+        // 降维
+        $airport = array();
+        if($cityToAirport)
+          foreach ($cityToAirport as $cVal) {
+            $airport[] = $cVal['ACC_Code'];
+          }
+        else
+          var_dump('城市代码无法查找到机场代码');
+
+        // 查询yy（非共享）
+        $result_yy         = $m_yy->where("`Yy_Aircompany` = '{$col['HC_Aircompany']}' AND `Yy_IsCommon` = 0")->select('Yy_Start, Yy_End, Yy_Aircompany');
+        if(!$result_yy){
+          // 没有，发送YY请求 
+          $eterm->setYY(true);
+          $result_yy       = $m_yy->where("`Yy_Aircompany` = '{$col['HC_Aircompany']}' AND `Yy_IsCommon` = 0")->select('Yy_Start, Yy_End, Yy_Aircompany');
+        }
+        
+        // 查找在该机场的中转点
+        foreach ($result_yy as $rk => $rv) {
+          if(in_array($rv['Yy_Start'], $airport))
+            $routing[] = $rv['Yy_End'];
+        }
+      }
 
       // 更新hotcity数据
-    	$update = $this->savePlanResult($result_xfsd, $result_avh, $result_fsl, $result_xfsd_continue);
+    	$update = $this->savePlanResult($result_xfsd, $result_avh, $routing, $result_xfsd_continue);
       $result_update = $hotcity->where("`Id` = {$col['Id']}")->update($update);
 
       // 生成基础政策数据 price_source
@@ -157,7 +187,7 @@ class HotcityController extends Controller {
   }
 
   // 根据跑完的及其后日期的xfsd，avh，返回更新 hot_city 表的数据
-  private function savePlanResult($xfsd , $avh, $fsl, $xfsd_continue = array()){
+  private function savePlanResult($xfsd , $avh, $routing, $xfsd_continue = array()){
   	$hotcity = model('hot_city');
 
 		$update = array('GmtModified' => time());
@@ -189,11 +219,7 @@ class HotcityController extends Controller {
   	}
 
   	// 更新 routing
-  	if( !empty($fsl['id']) ){
-  		foreach($fsl['array'] as $target => $val){
-  			$update['HC_Routing'] = implode($val['result'],',');
-  		}
-  	}
+  	$update['HC_Routing'] = implode($routing,',');
 
   	// 判断是否全部更新
   	if($update['HC_XfsdResult_Status'] === 2 && $update['HC_AvhResult_Status'] === 2){

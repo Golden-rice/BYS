@@ -855,6 +855,14 @@ class EtermController extends Controller {
 	}
 
 	// ------------------------ YY ------------------------
+	// 设置YY 
+  public function setYY($return = false){
+    $_POST['start'] = 'CN';
+    $_POST['end'] = 'US';
+    // $_POST['aircompany'] = 'UA';
+    $this->searchYyByInput($return);
+  }
+
 	// 查询航班时刻
 	public function searchYyByInput($return = false){
 		import('vender/eterm/app.php');

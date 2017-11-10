@@ -227,24 +227,7 @@ var setCommand = function(command){
 			}
 		}
 	}) 
-
-	// 查询price source
-	// var searchPriceSource = new command.ReqCommand({
-	// 	url: eterm.const.Controller + 'searchPriceSource',
-	// 	clk: function(res){
-	// 		if(res.msg)
-	// 			alert(res.msg)
-
-	// 		if(res.status){
-	// 			var ValidResult = command.mixCabinFromHotcity(res.result, hotcity);
-	// 			console.log(res, ValidResult)
-	// 			var c  = new OtherModel("混舱数据", mkMixCabinTable(ValidResult));
-	// 			setTimeout(function(){
-	// 				c.show();
-	// 			},500)
-	// 		}
-	// 	}
-	// }) 
+ 
 
 	// 查询price source
 	var setPriceSourceFlight = new command.ReqCommand({
@@ -670,7 +653,8 @@ function mkSaleDateInsertTableFromPrice(array){
 		html += `
 			<tr>
 				<td>${array[i].FareBasis}</td>
-				<td>XS/FSD${array[i].Dep}${array[i].Arr}//${array[i].Airline}/#*${array[i].FareBasis}/${array[i].Rule.replace(' ', '')}//# -> XS FSN1//15（销售限制）, XS FSN1//4（航班限制）</td>
+				<td>XS/FSD${array[i].Dep}${array[i].Arr}//${array[i].Airline}/#*${array[i].FareBasis}/// -> XS FSN1//15（销售限制）, XS FSN1//4（航班限制）</td> 
+				<!-- XS/FSD${array[i].Dep}${array[i].Arr}//${array[i].Airline}/#*${array[i].FareBasis}/${array[i].Rule.replace(' ', '')}//# -->
 				<td><input type='text' class='form-control saleDate' data-rule="${array[i].Rule}" value="${saleDate}" placeholder='格式：XXXX-XX-XX>XXXX-XX-XX，输入一条'></td>
 			</tr>
 		`
