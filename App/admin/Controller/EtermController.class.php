@@ -531,7 +531,10 @@ class EtermController extends Controller {
 				$m       = strtoupper(date('M',$days));
 				$d       = strtoupper(date('d',$days));
 				$date    = $d.$m;
-				$command = strtoupper($repeat['pos'] == 'start' ? 'AVH/'.$value.$end.$date.$other.$aircompany : 'AVH/'.$start.$value.$date.$other.$aircompany);
+				// O : 承运航班
+				// E : 出发时间排序（DESC）
+				// A : 到达时间排序（DESC）
+				$command = strtoupper($repeat['pos'] == 'start' ? 'AVHOE/'.$value.$end.$date.$other.$aircompany : 'AVH/'.$start.$value.$date.$other.$aircompany);
 				$result  = $this->hasCmdSource(array('command'=>$command, 'office'=>$_SESSION['resource']), 'avh');
 				if ( isset($result['GmtModified']) && $result['GmtModified'] + 24*60*60 < time() ){ 
 					// 有且存储时间大于一天，更新

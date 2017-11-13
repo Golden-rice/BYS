@@ -34,7 +34,7 @@
 </div>
 <!-- other modal end -->
 
-<div id="model-wrap"></div>
+<div id="model-wrap-1"></div>
 
 <script>
 require(['eterm', 'dt'], function (eterm, dt){
@@ -99,6 +99,8 @@ function uniqueXfsd(result){
 	return array;
 }
 
+
+
 var setCommand = function(command){
 
 	command.showHotCityPlan();
@@ -112,6 +114,7 @@ var setCommand = function(command){
 	if(!eterm.eterm.rate){
 		command.rate();
 	}
+
 
 	// 查询全部且分组的 xfsd
 	var searchXfsdResultByHotcity = new command.ReqCommand({
@@ -171,20 +174,6 @@ var setCommand = function(command){
 		}
 	}) 
 
-	// 更新基础政策：销售日期
-	var updatePriceSourceSaleDate = new command.ReqCommand({
-		url: eterm.const.Controller + 'updatePriceSource',
-		clk: function(res){
-			if(res.msg)
-				console.log(res.msg)
-				// alert(res.msg)
-
-			if(res.status){
-				// mixModal.hide();
-				setPriceSourceFlight.execute({'hid': hid})
-			}
-		}
-	}) 
 
 	// 更新基础政策：航班限制
 	var updatePriceSourceFlight = new command.ReqCommand({
@@ -195,9 +184,6 @@ var setCommand = function(command){
 				// alert(res.msg)
 
 			if(res.status){
-				// mixModal.hide();
-				// searchPriceSource.execute({'hid': hid});
-				// selectMixCabinTpl.execute({});
 				window.open(eterm.const.Controller + 'mixcabin?hid='+hid)
 			}
 		}
@@ -229,19 +215,27 @@ var setCommand = function(command){
 	}) 
  
 
-	// 查询price source
-	var setPriceSourceFlight = new command.ReqCommand({
+	// 设置航班限制
+	var setPriceSourcePolicy = new command.ReqCommand({
 		url: eterm.const.Controller + 'searchPriceSource',
 		clk: function(res){
+
 			if(res.msg)
 				alert(res.msg)
 
 			if(res.status){
-				var testValidResult = command.mixCabinFromHotcity(res.result, hotcity, true)
-				var b = new OtherModel("混舱测试数据", mkMixCabinTable(testValidResult), `<button type="button" class="btn btn-primary" id='set-flight' data-dismiss="modal">保存航班限制，并下一步</button><button type="button" class="btn btn-default"  data-dismiss="modal">关闭</button>`);
-				setTimeout(function(){
-					b.show();
-				},500)
+				setPriceSourcePolicy.data = res.result;
+
+				var model = new command.OtherModel(
+					"回填政策并检验",
+					mkMixCabinTable(command.mixCabinFromHotcity(res.result, hotcity, true)), 
+					`<button type="button" class="btn btn-default" id='set-saleDate' >销售日期</button>
+					 <button type="button" class="btn btn-default" id='set-Flight'>航班限制</button>
+					 <button type="button" class="btn btn-primary" id='save-rewrite' data-dismiss="modal">关闭</button>`
+				);
+				// setTimeout(function(){
+				model.show();
+				// },500)
 			}
 		}
 	}) 
@@ -363,55 +357,56 @@ var setCommand = function(command){
 		}
 	})
 
-	// // 混舱 xfsd 临时
-	// $("#content").on('click', '.mix-cabin', function(){
-	// 	// 暴露全局变量
-	// 	// 销售日期更新
-	// 	hid     = $(this).data('id');
-	// 	// 获得hotcity数据
-	// 	hotcity = $(this).data('hotcity');
-
-	// 	searchPriceSource.execute({'hid': hid})
-
-	// })
-	
 
 	// 混舱 xfsd 
 	$("#content").on('click', '.mix-cabin', function(){
-		// 暴露全局变量
-		// 销售日期更新
+		// 全局点击的标识
 		hid     = $(this).data('id');
 		// 获得hotcity数据
 		hotcity = $(this).data('hotcity');
 
-		reqPriceSourceRule.execute({'hid': hid});
+		// 弹出更新销售日期
+		// reqPriceSourceRule.execute({'hid': hid});
 
+		// 弹出回填政策
+		setPriceSourcePolicy.execute({'hid': hid});
 	})
 
-	// 销售日期的【下一步】
-	$('#otherModal').on('click', '#set-saleDate', function(){
-		// 更新
-		if(hid != undefined){
-			var saleDateInput = [];
-			var ruleConditions = [];
-			$('.saleDate').each(function(){
-				ruleConditions.push($(this).data('rule'));
-				saleDateInput.push($(this).val());
-			})
-			updatePriceSourceSaleDate.execute({
-				'update': {
-					'SaleDate': JSON.stringify(saleDateInput)
-				}, 
-				'where' : {
-					'Rule': JSON.stringify(ruleConditions)
-				},
-				'Hid': hid,
-			});
 
+
+	// 设置销售日期
+	$('#otherModal').on('click', '#set-saleDate', function(){
+		// 回填销售日期
+		var a = new command.OtherModel(
+			"回填销售日期", 
+			mkSaleDateInsertTableFromPrice(distingRule(setPriceSourcePolicy.data)), 
+			`<button type="button" class="btn btn-primary" data-dismiss="modal" id='save-saleDate'>保存</button>`,
+			'otherModal-2','medium', "#model-wrap-1");
+		a.show();
+	})
+
+	// 保存回填的销售日期
+	$('#model-wrap-1').on('click', '#save-saleDate', function(){
+		// 生成新数据
+		if(hid != undefined){
+			var updata = [], where = [];
+			$('.saleDate').each(function(){
+				where.push($(this).data('rule'));
+				updata.push($(this).val());
+			})
+			// by colunm name, where, updata, source
+			updateDataBy({'Rule': where}, {'SaleDate': updata}, setPriceSourcePolicy.data);
 		}else{
 			console.log('查询hotcity id 错误');
 		}
+
+		// 清空 model content，并回填新数据
+		$('#otherModal #modal-content').html(mkMixCabinTable(command.mixCabinFromHotcity(setPriceSourcePolicy.data, hotcity, true)))
+		
 	})
+
+	setPolicyColFunction('Flight', 'FareBasis')
+
 
 	// 混舱fsi测试的【下一步】
 	$('#otherModal').on('click', '#set-flight', function(){
@@ -462,6 +457,161 @@ var setCommand = function(command){
 		var model = new command.OtherModel('fsi', '<textarea class="form-control"  rows="16" style="background-color:black;color:green;">'+$(this).data('fsi')+'</textarea>', '', 'otherModel-2');
 		model.show();
 	})
+
+	// colName 更新属性名（一个）, whereName 更新条件名（一个）,clk展示回填面板的数据处理函数, fn 对回填结果的处理函数，mk${colName}InsertTableFromPrice 默认使用的展示回填面板函数
+	function setPolicyColFunction(colName, whereName, clk, fn){
+		$('#otherModal').on('click', '#set-'+colName, function(){
+			var a,
+					source   = setPriceSourcePolicy.data, 
+					renderFn = 'mk'+colName+'InsertTableFromPrice'; 
+
+			if(!(renderFn && renderFn in command)){
+				console.log('展示回填面板函数不存在', command)
+				return;
+			} 
+
+			// 回填colName
+			if(clk && command.isFunction(clk)) source = clk(source)
+			a = new command.OtherModel(
+				"回填销售日期", 
+				command[renderFn](source), 
+				`<button type="button" class="btn btn-primary" data-dismiss="modal" id="save-${colName}">保存</button>`,
+				'otherModal-2','medium', "#model-wrap-1");
+			a.show();
+		})
+
+		// 保存回填的colName
+		$('#model-wrap-1').on('click', '#save-'+colName, function(){
+			// 生成新数据
+			if(hid != undefined){
+				var updata = [], updataObj = {},
+						where = [], whereObj  = {}, 
+						data;
+
+				$('.'+colName).each(function(){
+					where.push($(this).data(whereName.toLowerCase()));
+					updata.push($(this).val());
+
+				})
+
+				// by colunm name, where, updata, source
+				updataObj[colName]  = updata;
+				whereObj[whereName] = where;
+				data = updateDataBy(whereObj, updataObj, setPriceSourcePolicy.data);
+			}else{
+				console.log('查询hotcity id 错误');
+			}
+
+			if(fn && command.isFunction(fn)) data = fn(data)
+		  data = command.mixCabinFromHotcity(setPriceSourcePolicy.data, hotcity, true)
+
+			// 清空 model content，并回填新数据
+			$('#otherModal #modal-content').html(mkMixCabinTable(data));
+			
+		})
+	}
+
+	// 混舱1.1：回填销售日期
+	command.mkSaleDateInsertTableFromPrice = function(array){
+		let html = '', saleDate = '';
+		html += `<table class="table table-hover table-bordered table-responsive">
+			<thead>
+				<tr>
+					<th>FareBasis</th>
+					<th>命令</th>
+					<th>销售日期</th>
+				</tr>
+			</thead>
+		`;
+
+		for(var i in array){
+			if(array[i].SaleDate) saleDate = array[i].SaleDate;
+			html += `
+				<tr>
+					<td>${array[i].FareBasis}</td>
+					<td>XS/FSD${array[i].Dep}${array[i].Arr}//${array[i].Airline}/#*${array[i].FareBasis}/// -> XS FSN1//15（销售限制）, XS FSN1//4（航班限制）</td> 
+					<!-- XS/FSD${array[i].Dep}${array[i].Arr}//${array[i].Airline}/#*${array[i].FareBasis}/${array[i].Rule.replace(' ', '')}//# -->
+					<td><input type='text' class='form-control SaleDate' style='width:350px' data-Rule="${array[i].Rule}" value="${saleDate}" placeholder='XXXX-XX-XX>XXXX-XX-XX，输入一条'></td>
+				</tr>
+			`
+		}
+		return html;
+	}
+
+	// 混舱1.2：回填航班限制
+	command.mkFlightInsertTableFromPrice = function(array){
+		let html = '', flight = '';
+		html += `<table class="table table-hover table-bordered table-responsive">
+			<thead>
+				<tr>
+					<th>FareBasis</th>
+					<th>命令</th>
+					<th>航班限制</th>
+				</tr>
+			</thead>
+		`;
+
+		for(var i in array){
+			if(array[i].Flight) flight = array[i].Flight;
+			html += `
+				<tr>
+					<td>${array[i].FareBasis}</td>
+					<td>XS/FSD${array[i].Dep}${array[i].Arr}//${array[i].Airline}/#*${array[i].FareBasis}/// -> XS FSN1//15（销售限制）, XS FSN1//4（航班限制）</td> 
+					<!-- XS/FSD${array[i].Dep}${array[i].Arr}//${array[i].Airline}/#*${array[i].FareBasis}/${array[i].Rule.replace(' ', '')}//# -->
+					<td><input type='text' class='form-control Flight' value="${flight}" placeholder='格式：' data-Farebasis='${array[i].FareBasis}'></td>
+				</tr>
+			`
+		}
+		return html;
+	}
+
+	// 区分Rule
+	function distingRule(array){
+		var rule = {}, result = [];
+		for(var i in array){
+			if(!rule[array[i].Rule]){
+				rule[array[i].Rule] = 1;
+				result.push(array[i]);
+			}
+		}
+		return result;
+	}
+
+	// 更新 source 
+	function updateDataBy(where, updata, source){
+		if(!source.length) {
+			console.log('数据源不存在')
+			return;
+		}
+
+		// 目前仅支持一个条件
+		for(var o in where){
+			var wKey = o;
+			break;
+		}
+
+		// 目前仅支持一个更新
+		for(var p in updata){
+			var pKey = p;
+			break;
+		}
+
+		for(var i in source){
+			if(source[i][wKey] !== undefined && source[i][pKey] !== undefined){
+				for(var k in where[wKey]){
+					// 条件相等时
+					if(source[i][wKey] == where[wKey][k] && source[i].Hid == hid){
+						source[i][pKey] = updata[pKey][k];
+					}
+				}
+			}else{
+				console.log('查询的条件在源数据中没有')
+				break;
+			}
+		}
+		return source;
+	}
+
 }
 
 setCommand(eterm.createCommand(eterm.eterm,tpl));
@@ -635,37 +785,10 @@ function avhTpl(array, dom){ // (data, className, container)
 }
 
 
-// 混舱1：回填销售日期
-function mkSaleDateInsertTableFromPrice(array){
-	let html = '', saleDate = '';
-	html += `<table class="table table-hover table-bordered table-responsive">
-		<thead>
-			<tr>
-				<th>FareBasis</th>
-				<th>命令</th>
-				<th>销售日期</th>
-			</tr>
-		</thead>
-	`;
+// 混舱1.3：回填其他可用的信息
 
-	for(var i in array){
-		saleDate = array[i].SaleDate ? array[i].SaleDate: '';
-		html += `
-			<tr>
-				<td>${array[i].FareBasis}</td>
-				<td>XS/FSD${array[i].Dep}${array[i].Arr}//${array[i].Airline}/#*${array[i].FareBasis}/// -> XS FSN1//15（销售限制）, XS FSN1//4（航班限制）</td> 
-				<!-- XS/FSD${array[i].Dep}${array[i].Arr}//${array[i].Airline}/#*${array[i].FareBasis}/${array[i].Rule.replace(' ', '')}//# -->
-				<td><input type='text' class='form-control saleDate' data-rule="${array[i].Rule}" value="${saleDate}" placeholder='格式：XXXX-XX-XX>XXXX-XX-XX，输入一条'></td>
-			</tr>
-		`
-	}
-	return html;
-}
 
-// 混舱1.2：测试farebasis可用 isTest = true
-// 混舱1.3：回填使政策可用的信息
 // 混舱2：混舱
-
 function mkMixCabinTable(data){
 
 	if(data.length === 0 ) return;
@@ -792,6 +915,9 @@ function mkMixCabinTable(data){
             html: true
          	});
 }
+
+
+
 // --------------------  过期方法 ---------------------
 function xfsdTpl(array, dom, show){
 

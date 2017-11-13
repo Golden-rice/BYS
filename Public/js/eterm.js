@@ -1387,12 +1387,14 @@ var createCommand = function(recevier, tpl, set){
 					return;
 				}
 
-				_self.req(_self.url, _self.query, _self.clk);
-				// _self.req(_self.url, _self.query).done(function(result){
-				// 	if( config.clk && recevier.isFunction(config.clk) ){
-				// 		return _self.clk(result);
-				// 	}
-				// })
+				// _self.req(_self.url, _self.query, _self.clk);
+
+				_self.req(_self.url, _self.query).done(function(result){
+					if( config.clk && recevier.isFunction(config.clk) ){
+						if( recevier.isString (result)) result = eval('['+result+']')[0]
+						return _self.clk(result);
+					}
+				})
 			},
 			returnConfig: function(){
 				return _self;
@@ -1704,11 +1706,11 @@ var createCommand = function(recevier, tpl, set){
 	// 弹出框   
 	// var model = new command.OtherModel();
 	// model.show();
-	var OtherModel = function(title, content, footer, modelId, size){
+	var OtherModel = function(title, content, footer, modelId, size, parent){
 		if(!modelId) modelId = 'otherModal';
 
 		if(!$("#"+modelId).html()){
-			mkOtherModel(modelId, size); // big 大尺寸
+			mkOtherModel(modelId, size, parent); // big 大尺寸
 		}
 
     $("#"+modelId+" .modal-title").html(title);
