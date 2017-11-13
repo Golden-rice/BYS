@@ -146,4 +146,68 @@ abstract class Controller {
       
     return $m->find($where, $orderby, $select);
   }
+
+
+  /**
+   * 逐条更新数据
+   * @access public
+   */
+    /*
+      语法：
+      "update":
+      {
+        "value":{  
+          "dep": "BJS",
+          "arr": "MIA",
+          "airline": "UA"
+        }, 
+        "where": ['dep', 'arr']
+      }
+    */
+  public function update($modelName = '', $config = array()){
+
+  }
+
+  /**
+   * 批量更新数据
+   * @access public
+   */
+    /*
+      语法：
+      "updates":[
+      {
+        "value":{  
+          "dep": "BJS",
+          "arr": "MIA",          
+        }, 
+        "where": {
+          "airline": "UA"
+        }
+      },
+      {
+        "value":{  
+          "dep": "BJS",
+        }, 
+        "where": {
+          "airline": "UA",
+          "arr": "MIA",
+        }
+      }]
+
+    */
+  public function updates($modelName = '', $config = array()){
+    $m = model($modelName);
+    if(empty($config)) {
+      \BYS\Report::error('数据为空');
+      return;
+    }
+    // 反序列化
+    if(is_string($config)){
+      $datas = json_decode($config, true);
+    }else{
+      $datas = $config;
+    }
+
+    return $m->updates($datas);
+  }
 }

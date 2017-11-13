@@ -228,7 +228,6 @@ class HotcityController extends Controller {
   	return $update;
   }
 
-
   // 如果利用post 传入 xfsd sid 则，直接返回xfsd，否则根据post 传递查询hotcity后，获得sid，再查询 xfsd
   public function searchXfsdResultByHotcity($return = false){
     $xfsd_model    = model('xfsd_result');
@@ -363,44 +362,12 @@ class HotcityController extends Controller {
     echo json_encode(array('msg'=>'更新失败，未查到该条数据', 'status'=>0));
   }
 
-
   // 批量更新 price_source 多条数据
-  // where 与 update 的数组的索引必须一一对应，且 where 与 update 仅只能有一条
-  public function updatePriceSource(){
-    $update         = $_POST['update'];
-    $where          = $_POST['where'];
-    $updateAttrs    = array_keys($update); 
-    $whereAttrs     = array_keys($where); 
-    if(count($updateAttrs) > 1 || count($whereAttrs) >1){
-      var_dump('超过允许更新的长度');
-    }
-    $hid            = $_POST['Hid'];
-    $m              = model('price_source');
-    $result         = $m->where("`Hid` = {$hid}")->select();
-    if($result){
-      $whereArray   = array(); 
-      $updateArray  = array();
-      $whereAttr    = $whereAttrs[0];
-      foreach(json_decode($where[$whereAttr],true) as $whereVal){
-        array_push($whereArray, (is_string($whereVal) ? "`{$whereAttr}` =  '$whereVal'" : "`{$whereAttr}` =  $whereVal")." AND `Hid` = {$hid}" );
-      }
-
-      // update 中某个属性更新的值与 where 一一对应，因此只能有一个update属性
-      $updateAttr   = $updateAttrs[0];
-      foreach(json_decode($update[$updateAttr],true) as $updateVal) { 
-        array_push($updateArray, array($updateAttr => $updateVal));
-      }
-
-      // foreach ($update_src as $rule => $saleDate) { 
-      //   array_push($whereArray, "`Rule` = '{$rule}' AND `Hid` = {$hid}");
-      //   array_push($updateArray, array('SaleDate'=>$saleDate));
-      // }
-      $update_result = $m->updateAll($whereArray, $updateArray);
-
-      echo json_encode(array('msg'=>'更新成功', 'status'=>1));
-      return;
-    }
-    echo json_encode(array('msg'=>'更新失败，未查到该条数据', 'status'=>0));
+  public function updatePriceSourceByAll(){
+    echo json_encode(array(
+      'result'=>$this->updates('price_source', $_POST['updates']),
+      'msg'   => \BYS\Report::printLog() === '' ? '更新成功' : \BYS\Report::printLog()
+    ));
   }
 
   public function canSavePriceSource($hotcity){
@@ -499,29 +466,6 @@ class HotcityController extends Controller {
     return true;
   }
 
-  public function updateSaleDate(){
-    $hid    = $_POST['hid'];
-    $m      = model('price_source');
-    $m->prepare("SELECT FareBasis, Rule AS xfsd_Rule, Dep AS xfsd_Dep, Arr AS xfsd_Arr, Airline AS xfsd_Owner, ValidBegin AS xfsd_DateStart, SaleDate, COUNT(FareBasis) AS count FROM e_cmd_price_source WHERE `Hid` = {$hid}  GROUP BY Rule");
-    $result = $m->execute();
-    if($result){
-      echo json_encode(array('result'=>$result, 'status'=>1));
-    }
-    else
-      echo json_encode(array('msg'=>'出现错误', 'status'=>0));
-  }
-
-  // 查询source
-  public function searchPriceSourceRule(){
-    $hid    = $_POST['hid'];
-    $m      = model('price_source');
-    $result = $m->where("`Hid`={$hid}")->group('Rule')->select('*, COUNT(FareBasis)');
-    if($result)
-      echo json_encode(array('result'=>$result, 'status'=>1));
-    else
-      echo json_encode(array('msg'=>'出现错误', 'status'=>0));
-  }
-
   // 查询source
   public function searchPriceSource(){
     $hid    = $_POST['hid'];
@@ -572,7 +516,18 @@ class HotcityController extends Controller {
 
 
   // ----------------------------- 原方法 ---------------------------
-  
+  public function updateSaleDate(){
+    $hid    = $_POST['hid'];
+    $m      = model('price_source');
+    $m->prepare("SELECT FareBasis, Rule AS xfsd_Rule, Dep AS xfsd_Dep, Arr AS xfsd_Arr, Airline AS xfsd_Owner, ValidBegin AS xfsd_DateStart, SaleDate, COUNT(FareBasis) AS count FROM e_cmd_price_source WHERE `Hid` = {$hid}  GROUP BY Rule");
+    $result = $m->execute();
+    if($result){
+      echo json_encode(array('result'=>$result, 'status'=>1));
+    }
+    else
+      echo json_encode(array('msg'=>'出现错误', 'status'=>0));
+  }
+
   public function setSaleDate(){
     $start         = $_POST['start'];
     $end           = $_POST['end'];
@@ -627,7 +582,6 @@ class HotcityController extends Controller {
     echo json_encode(array('result'=>$xfsd_result));
 
   }
-
 
   // 根据xfsd查询政策
   public function searchPriceByXfsd(){
@@ -699,71 +653,40 @@ class HotcityController extends Controller {
         */
   }
 
-  public function savePriceSourceFromXfsd(){
-    $m_price_source = model('price_source');
-    $m_hotcity      = model('hot_city');
-    $array          = json_decode($_POST['data'], true);
-    $query          = $_POST['query'];
-    $where          = "`HC_Depart` = '{$query['start']}' ";
-    if(!empty($query['end'])) $where .= " AND `HC_Arrive` = '{$query['end']}'";
-    if(!empty($query['aircompany'])) $where .= " AND `HC_Aircompany` = '{$query['aircompany']}'";
-    $hotcity_result = $m_hotcity->where($where)->select();
+  // 批量更新 price_source 多条数据
+  // where 与 update 的数组的索引必须一一对应，且 where 与 update 仅只能有一条
+  public function updatePriceSource(){
+    $update         = $_POST['update'];
+    $where          = $_POST['where'];
+    $updateAttrs    = array_keys($update); 
+    $whereAttrs     = array_keys($where); 
+    if(count($updateAttrs) > 1 || count($whereAttrs) >1){
+      var_dump('超过允许更新的长度');
+    }
+    $hid            = $_POST['Hid'];
+    $m              = model('price_source');
+    $result         = $m->where("`Hid` = {$hid}")->select();
+    if($result){
+      $whereArray   = array(); 
+      $updateArray  = array();
+      $whereAttr    = $whereAttrs[0];
+      foreach(json_decode($where[$whereAttr],true) as $whereVal){
+        array_push($whereArray, (is_string($whereVal) ? "`{$whereAttr}` = '$whereVal'" : "`{$whereAttr}` =  $whereVal")." AND `Hid` = {$hid}" );
+      }
 
-    if($m_price_source->where("`Hid`= {$hotcity_result[0]['Id']}")->select()){
-      echo json_encode(array('msg'=>'已存在', 'status'=>2, 'hid'=>$hotcity_result[0]['Id']));
+      // update 中某个属性更新的值与 where 一一对应，因此只能有一个update属性
+      $updateAttr   = $updateAttrs[0];
+      foreach(json_decode($update[$updateAttr],true) as $updateVal) { 
+        array_push($updateArray, array($updateAttr => $updateVal));
+      }
+
+      $update_result = $m->updateAll($whereArray, $updateArray);
+
+      echo json_encode(array('msg'=>'更新成功', 'status'=>1));
       return;
     }
-    if(empty($array)) {
-      echo json_encode(array('msg'=>'无数据'));
-      return ;
-    }
-    $addAll         = array();
-    foreach ($array as $num => $value) {
-      preg_match("/\/(\d{2}\w{3})\//", $value['Command'], $fareDateMatch);
-      // from XFareEtermPriceDetailDTO
-      $addAll[] = array(
-        //  fareKey 关键字：dep_city/arr_city/airline/pax_type/source/source_office/source_agreement/other(其他字段)/fare_date
-        'FareKey'                 => $value['FareKey'], 
-        // 运价的时间，格式是 YYYYMM 201510，查询时间
-        'FareDate'                => isset($fareDateMatch[1])?$fareDateMatch[1]: '',
-        // 目标舱位
-        'FareCabin'               => $hotcity_result[0]['HC_Cabin'],
-        'Dep'                     => $value['xfsd_Dep'],
-        'Arr'                     => $value['xfsd_Arr'],
-        'Airline'                 => $value['xfsd_Owner'],
-        'FareBasis'               => $value['FareBasis'],
-        'Cabin'                   => $value['xfsd_Cabin'],
-        'PassengerType'           => 'ADT', // default 
-        'SingleFare'              => $value['xfsd_SingleFee'],
-        'RoundFare'               => $value['xfsd_RoundFee'],
-        'Currency'                => 'CNY',
-        // 'CabinFlag'               => '',
-        // 'FareFlag'                => '',
-        'MinStop'                 => $value['xfsd_MinStay'],
-        'MaxStop'                 => $value['xfsd_MaxStay'],
-        'ValidBegin'              => $value['xfsd_DateStart'],
-        'ValidEnd'                => $value['xfsd_DateEnd'],
-        'DepType'                 => $hotcity_result[0]['HC_Depart'],
-        'ArrType'                 => $hotcity_result[0]['HC_Arrive'],
-        'Direction'               => $value['xfsd_Region'],
-        // 'Tpm'                     => '',
-        // 'Mpm'                     => '',
-        'OutboundWeek'            => $value['xfsd_Indicator'],
-        'Advp'                    => $value['xfsd_Advp'],
-        // 10.00  货币进位取舍(6)
-        'RoundValue'              => 10.00,
-        // 'NucRate'                 => '',
-        // 'AtPage'                  => '',
-        // 'RouteFlag'               => '',
-        'Command'                 => $value['Command'],
-        'Query'                   => json_encode($query),
-        'Rule'                    => $value['xfsd_Rule'],
-      );
-    }
-    $m_price_source->addAll($addAll);
-    echo json_encode(array('msg'=>'保存成功', 'status'=>1, 'hid'=>$hotcity_result[0]['Id']));
+    echo json_encode(array('msg'=>'更新失败，未查到该条数据', 'status'=>0));
   }
-
 
 
 }

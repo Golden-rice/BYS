@@ -290,21 +290,58 @@
 		 * 更新一条数据
 		 * @return mix 结果
 		 */	 	
-	 	public function update($data = array()){
+	 	public function update($data = array(), $return = false){
 	 		if (count($data) <=0) return;
  			$sql = "UPDATE {$this->tableName} SET ";
  			foreach ($data as $attr => $val) {
  				$sql .= "`{$attr}` = ".(is_string($val)? "'{$val}'" : (int)$val).',';
  			}
 	 		$sql = rtrim($sql, ',').$this->where;
+	 		if($return) return $sql;
 	 		$this->prepare($sql);
 	 		$this->execute();
 	 		return $this->prepare->rowCount();
 	 	}
 
 	 	/**
+		 * 批量更新数据
+		 * @param array $datas   包含了更新和条件的数组
+		 */
+	 	public function updates($datas){
+	 		// 清空
+	 		$this->reset();
+	 		// 批量生成数据
+
+	 		if(!empty($datas)){
+		 		// 将$where转化成sql语句
+		 		$sql = '';
+		 		foreach ($datas as $index => $dataVal) {
+		 			// 逐条组合成sql
+		 			if(!isset($dataVal['where']) || !isset($dataVal['where'])) \BYS\Report::error('数据缺少参数');
+			 		$whereString = '';
+		 			foreach ($dataVal['where'] as $whereAttr => $whereVal) {
+		 				$whereString .= is_string($whereVal) ? " `{$whereAttr}` = '{$whereVal}' AND" : " `{$whereAttr}` = {$whereVal} AND";
+		 			}
+			 		$whereString = rtrim($whereString, 'AND');
+			 		$this->where($whereString);
+			 		$sql .= $this->update($dataVal['value'], true).';';
+		 		}
+		 		$this->sql = $sql;
+	 		}else{
+	 			\BYS\Report::error('数据为空');
+	 		}
+
+	 		$this->prepare($this->sql);
+	 		$this->execute();
+	 		return $this->prepare->rowCount();
+	 	}
+
+	 
+
+	 	/**
 		 * 更新多条数据
 		 * $where的索引对应着$data二维数组的索引
+		 * 多个 update 一个 where
 		 * @return mix 结果
 		 */	 	
 	 	public function updateAll($where = array(), $data = array()){
@@ -480,7 +517,5 @@
 	 		return $this->select(implode($select, ','));
 	 	}
 
-	 }
-
-
+	}
 ?>
