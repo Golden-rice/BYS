@@ -726,6 +726,10 @@ class EtermController extends Controller {
     $this->searchRoutingByOneStay();
   }
 
+  // 查询YY中有哪些可用航空公司
+  public function searchAircompanyFromYy(){
+
+  }
 
   // 查询某航空公司下一次中转的目的地
   public function searchRoutingByOneStay(){
@@ -749,11 +753,11 @@ class EtermController extends Controller {
   			ob_flush();
   			flush();
   		}
-  		echo json_encode(array('msg'=>\BYS\Report::printLog(), 'result_direct'=>$result_end, 'result_stay'=>$result_stay));
+  		echo json_encode(array('msg'=>\BYS\Report::printLog(), 'result_direct'=>$result_end, 'result_stay'=>$result_stay, 'status'=>1));
 
   	}else{
-  		echo '没有该航空公司数据';
-  		var_dump($result_end, $m_result->testSql());
+  		\BYS\Report::log('没有该航空公司数据');
+  		echo json_encode(array('msg'=>\BYS\Report::printLog(), 'status'=>0));
   	}
   }
 

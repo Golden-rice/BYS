@@ -119,10 +119,14 @@ var setCommend = function(command){
 		url: eterm.const.Controller + 'searchRoutingByOneStay',
 		clk: function(res){
 			console.log(res)
-			if(res.msg)
-				console.log(res.msg)
-			command.progress.complete();
-			mkRoutingTable(buildArray(res.result_direct, res.result_stay), '#content')
+			if(res.msg){
+
+				alert(res.msg)
+			}
+			if(res.status){
+				command.progress.complete();
+				mkRoutingTable(buildArray(res.result_direct, res.result_stay), '#content')
+			}
 
 		}
 	})
