@@ -93,12 +93,12 @@ var eterm = {
 			type: 'POST',
 			data: query,
 			success: function(msg){
+				// console.log(msg)
 				if(typeof callback === 'function'){
-					if( that.isString (msg)) msg = eval('['+msg+']')[0]
+					if( eterm.isString (msg)) msg = eval('['+msg+']')[0]
 					that.data = msg;
-					callback(that.msg);
+					callback(that.data);
 				}
-
 			},
 			error: function(msg){
 				console.log(msg);
