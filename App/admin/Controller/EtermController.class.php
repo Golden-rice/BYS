@@ -699,12 +699,26 @@ class EtermController extends Controller {
 
 	// ------------------------ YY ------------------------
 	// 设置基础YY 
-  public function setYyArea($return = false){
+  public function setYyArea($all = false){
   	// 按照区域跑，省去只跑某航空公司
     $_POST['start'] = 'CN';
-    $_POST['end']   = 'US';
-    // $_POST['aircompany'] = 'UA';
-    $this->searchYyByInput($return);
+    $countrys       = array('US','FR','NL','AE');
+    if($all){
+	    // 预先跑好中国出发到达的国家Yy数据
+	    $m_country        = model('country');
+	    $m_country_result =$m_country->distinct("`Ctr_Code` AS country")->select();
+
+	    foreach ($m_country_result as $row) {
+	    	if(!in_array($row['country'], $countrys) && $row['country'] !== 'CN')
+		    	array_push($countrys, $row['country']);
+	    }
+    }
+
+    foreach ($countrys as $country) {
+    	$_POST['end'] = $country;
+    	var_dump($_POST);
+	    $this->searchYyByInput();
+    }
   }
 
   public function test(){
@@ -748,6 +762,12 @@ class EtermController extends Controller {
 		import('vender/eterm/app.php');
 		$yy      = new \Yy($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
 		$config  = array('start'=>$_POST['start']); 
+
+		if(isset($_POST['end'])) 
+			$config['end'] = $_POST['end'];
+
+		if(isset($_POST['aircompany'])) 
+			$config['aircompany'] = $_POST['aircompany'];
 
 		$command = $yy->set($config)->rtCommand();
 		$result  = $this->hasCmdSource(array('command'=>$command, 'office'=>$_SESSION['resource']), 'yy');

@@ -17,18 +17,17 @@ class Yy extends Eterm{
 			return;
 		}
 
-		// 保存
-		$this->config  = $config;
-
 		// 发送请求
 		$command  = "YY/{$config['start']}";
 
-		if(isset($_POST['end']) && $config['end'] = $_POST['end'])
+		if(isset($config['end']))
 			$command  .= $config['end'];
 		
-		if(isset($_POST['aircompany']) && $config['aircompany'] = $_POST['aircompany'])
+		if(isset($config['aircompany']))
 			$command  .= "/{$config['aircompany']}";
 
+		// 保存
+		$this->config  = $config;
 		$this->command = $command;
 
 		return $this;
@@ -63,7 +62,7 @@ class Yy extends Eterm{
 		}
 		$result = array();
 		$array  = explode(" ", trim(preg_replace('/\+|\-/', "", $string)));
-		if(!isset($config['end'])){
+		if(!isset($this->config['end'])){
 			foreach ($array as $key => $value) {
 				$result[] = array(
 					'start'     => $this->config['start'],

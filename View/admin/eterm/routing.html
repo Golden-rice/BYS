@@ -127,8 +127,13 @@ var setCommend = function(command){
 		}
 	})
 
-
 	// 查看部分使用规则
+	$('#dosubmit').click(function(){
+		command.progress.create('#content-progress');
+		searchRouting.execute({'aircompany': $('#airCompany').val()})
+	})
+
+	// 测试
 	$('#test').click(function(){
 		// $('#start').val('BJS')
 		// $('#end').val('SFO')
@@ -181,8 +186,8 @@ function mkRoutingTable(array, wrap){
 	var title = {
 		'Yy_Aircompany'    : '航空公司',
 		'Yy_Start'         : '出发',
-		'Yy_End'           : '到达',
-		'Arrive'           : '中转',
+		'Yy_End'           : '中转城市',
+		'Arrive'           : '目的地',
 		'Yy_Start_Input'   : '出发区域',
 		'Yy_End_Input'     : '到达区域',
 		'Yy_IsCommon'      : '是否为共享',
