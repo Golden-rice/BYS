@@ -336,8 +336,6 @@
 	 		return $this->prepare->rowCount();
 	 	}
 
-	 
-
 	 	/**
 		 * 更新多条数据
 		 * $where的索引对应着$data二维数组的索引

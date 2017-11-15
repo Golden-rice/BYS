@@ -217,6 +217,10 @@ $a->build('yy', array(
 	'Office'        => 'char(10) DEFAULT NULL',
 	// source id
 	'Sid'           => 'bigint(20) NOT NULL',
+	// 出发区域
+	'Yy_Start_Input'=> 'varchar(3) NOT NULL',
+	// 到达区域
+	'Yy_End_Input'  => 'varchar(3) DEFAULT NULL',
 	// 出发
 	'Yy_Start'      => 'char(3) NOT NULL',
 	// 到达

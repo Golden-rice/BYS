@@ -25,8 +25,13 @@ class Sk extends Eterm{
 
 		// 发送请求
 		$command = "SK:/{$config['start']}{$config['end']}/{$config['aircompany']}";
-		$this->command($command);
+		
 
+		return $this;
+	}
+
+	public function run(){
+		$this->command($command);
 		return $this;
 	}
 

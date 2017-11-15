@@ -12,7 +12,7 @@ class Yy extends Eterm{
 		}
 		
 		// 必填项
-		if(!isset($config['start']) || !isset($config['end'])){
+		if(!isset($config['start']) ){
 			\BYS\Report::error('请输入正确数据！');
 			return;
 		}
@@ -21,9 +21,32 @@ class Yy extends Eterm{
 		$this->config  = $config;
 
 		// 发送请求
-		$this->command = isset($config['aircompany'])? "YY/{$config['start']}{$config['end']}/{$config['aircompany']}" : "YY/{$config['start']}{$config['end']}";
-		$this->command($this->command);
+		$command  = "YY/{$config['start']}";
 
+		if(isset($_POST['end']) && $config['end'] = $_POST['end'])
+			$command  .= $config['end'];
+		
+		if(isset($_POST['aircompany']) && $config['aircompany'] = $_POST['aircompany'])
+			$command  .= "/{$config['aircompany']}";
+
+		$this->command = $command;
+
+		return $this;
+	}
+
+	public function run(){
+		$this->command($this->command);
+		return $this;
+	}
+
+	// 一直读到 THE END ，存到 this->tmp中
+	public function getToEnd(){
+		$src = $this->tmp;
+		if(!preg_match("/THE\sEND|NO\sROUTING/", $src)){
+			do{
+				$addResult = parent::addCommand('PN','a');
+			}while(!preg_match("/THE\sEND/", $addResult));
+		}
 		return $this;
 	}
 
@@ -38,17 +61,26 @@ class Yy extends Eterm{
 		}else{
 			$isCommon = 0;
 		}
-		$string = trim($string);
-
-		$array  = explode(" ", $string);
 		$result = array();
-		foreach ($array as $key => $value) {
-			$result[] = array(
-				'start'     => substr($value, 0,3),
-				'end'       => substr($value, 3,3),
-				'aircompany'=> $aircompany,
-				'isCommon'  => $isCommon
-			);
+		$array  = explode(" ", trim(preg_replace('/\+|\-/', "", $string)));
+		if(!isset($config['end'])){
+			foreach ($array as $key => $value) {
+				$result[] = array(
+					'start'     => $this->config['start'],
+					'end'       => $value,
+					'aircompany'=> $aircompany,
+					'isCommon'  => $isCommon
+				);
+			}
+		}else{
+			foreach ($array as $key => $value) {
+				$result[] = array(
+					'start'     => substr($value, 0,3),
+					'end'       => substr($value, 3,3),
+					'aircompany'=> $aircompany,
+					'isCommon'  => $isCommon
+				);
+			}
 		}
 		return $result;
 	}
@@ -56,11 +88,19 @@ class Yy extends Eterm{
 
 	// 解析返回结果
 	public function parseDetail($config = array()){
+
 		// 保存
 		if(!empty($config)){
 			$this->config = $config;
 		}
-		$resArray   = parent::fromToArray($this->tmp, 1, 2);
+		$resArray   = parent::fromToArray($this->tmp, 1, 1);
+		if(empty($resArray)) return array('result' =>array(), 'command'=>$this->command);
+
+		// 去除最后的结束标识
+		if(preg_match("/THE\sEND/", $resArray[count($resArray)-1])){
+			unset($resArray[count($resArray)-1]);
+		}
+
 		$srcString  = ''; // 出发到达 组成的字符串
 		$isCommon   = ''; // 每个航段的航空公司是否是共享航班
 		$aircompany = ''; // 每个航段的航空公司
@@ -75,8 +115,10 @@ class Yy extends Eterm{
 				}
 			}
 			if(preg_match("/^(\*|\s)?([0-9A-Z]{2})\*?\s/", $value, $match)){
-				// 提交上一次
+
+					// 提交上一次
 				$parseData  = $this->parseData($isCommon.$srcString, $aircompany);
+				
 				if($parseData)
 					$result[] = $parseData;
 
@@ -99,4 +141,6 @@ class Yy extends Eterm{
 		}
 		return array('result' =>$result, 'command'=>$this->command);
 	}
+
+
 }

@@ -21,23 +21,11 @@ class EtermController extends Controller {
   }
 
   // fsl 航程 前台展示
-  public function fsl(){
+  public function routing(){
   	$this->display();
   }
 
-  // 临时的一些操作
-  public function tmp(){
-  	$filename = '~Runtime/new 1.txt';
-  	$handle = fopen($filename, 'r');
-  	$contents = fread($handle, filesize ($filename));
-  	import('vender/eterm/app.php');
-  	$xfsd = new \Xfsd($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
-  	$xfsd->wtTmp($contents);
-  	$result = $xfsd->toArray();
-  	// var_dump($contents);
-  	// var_dump($result);
-  	echo json_encode(array('array'=>$result));
-  }
+	// ------------------------ COMMON ------------------------
 
   // 获取汇率
   public function toCNY(){
@@ -47,79 +35,6 @@ class EtermController extends Controller {
 		$xfsd->command($_POST['command'],"w", false);
 		$rate = $xfsd->changePrice();
 		echo json_encode(array('rate'=>$rate));
-  }
-
-
-  public function returnEnd(){
-  	return array(
-				// 'SAV,ATL,ZUH,ZTH,AGS,ZRH,ZQN,ZNZ,ZLO,ZIH,ZHA,ZCO,ZCL,ZBF,ZAL',
-				// 'ZAG,ZAD,YZV,YZR,YZF,YYY,YYT,YYR,YYJ,YYF,YYD,YYC,YYB,YXY,YXX',
-				// 'YXU,YXT,YXS,YXJ,YXH,YXE,YXC,YWL,YWK,YWG,YVR,YVO,YUY,SLC,YMQ',
-				// 'YTS,YTM,YSJ,YSB,YQZ,YQX,YQU,YQT,YQR,YQQ,YQM,YQL,YQG,YQB,YOW',
-				// 'YNZ,YNT,YNJ,YMM,YLW,YKF,YKA,YIW,YIN,YIH,YHZ,YTO,YGP,YGK,YGJ',
-				// 'YFC,YEA,YDF,YCU,YCG,YCD,YBP,YBL,YBG,YBC,YAM,XUZ,XNN,SGU,XMN',
-				// 'SIA,XIL,XIC,XFN,WXN,WUX,WUS,WUH,WRO,SBN,WNZ,WLG,WKJ,WEH,WDH',
-				// 'WAW,SRZ,VVC,VUP,VTE,VSA,VRN,VRA,VQS,IND,VOL,VNO,VLN,VLC,VIX',
-				// 'VIJ,VIE,VGO,VER,VCE,VAR,VAA,UYN,URC,UME,ULN,UIO,UIB,UDI,UBJ',
-				// 'FWA,EVV,TYN,TXN,BER,SPI,PIA,CHI,TUN,MLI,TTJ,TSR,TSN,TSJ,TSE',
-				// 'TRU,TRS,TRN,CMI,TRD,TRC,TPQ,TPP,TPE,BMI,TOY,TOS,YUM,TNH,TNA',
-				// 'TMP,TLV,TLS,TLL,TUS,TKS,TIV,TIA,THE,TGU,TGO,TGD,TCQ,TCO,TCB',
-				// 'TBS,TAP,TAO,TAM,TAK,TAG,TAE,TAC,SZX,SZG,SYX,PHX,SYO,SYD,SXB',
-				// 'PGA,SWA,SVQ,SVG,GCN,SUF,SUB,STR,STM,MOB,STI,SSH,SSA,MGM,SRG',
-				// 'SPU,HSV,BHM,SOF,SNN,AIY,SMR,SMI,HOB,SLZ,SLP,ABQ,SLA,SKP,SKG',
-				// 'SKB,SJW,SJU,MHT,SJP,SJO,SJJ,SJD,OGG,SIN,LNY,LIH,SHP,SHE,SHB',
-				// 'KOA,ITO,SFT,HNL,CRW,SDJ,CKB,SCY,SCN,SCL,MSN,SBZ,MKE,LSE,GRB',
-				// 'EAU,AUW,ATW,SAP,TYS,SAL,RZE,RUH,RTM,RTB,TRI,MEM,ROV,ROT,ROS',
-				// 'CHA,MLW,BNA,SYR,RMF,RLG,RJK,RIX,RIS,SWF,RHO,RGN,RGL,REX,REP',
-				// 'REC,ROC,NYC,RCH,RBR,RAR,ITH,RAO,RAK,QRO,PXO,PXM,ISP,PVR,PVK',
-				// 'PVH,HPN,PUY,PUS,ELM,PTY,BUF,PSO,BGM,PRN,PRG,ART,PPS,PPN,POZ',
-				// 'POA,ALB,PNQ,PNH,PNA,PMW,PMO,PMI,PMC,PLZ,RNO,PIU,LAS,OMA,LNK',
-				// 'EAR,MYR,GSP,PHC,FLO,PFB,PER,PEN,PEM,PEI,PEG,CHS,PCL,CAE,PBC',
-				// 'PAZ,PAP,RAP,PAD,OVD,OUL,OUA,BUH,PIR,OSL,ORK,FSD,RST,OPO,DLH',
-				// 'ONJ,PWM,OKJ,BGR,OKA,OIT,OIM,TVC,ODS,OCC,OBO,OAX,MQT,NVT,NVA',
-				// 'NUE,NTQ,NTG,YAO,NNG,NKG,NGS,NGO,NGB,NEV,NDG,NCL,NCE,NBO,NAT',
-				// 'NAS,NAP,NAN,MZT,MZL,MKG,MYJ,MUC,MTY,MTT,MTR,MBS,LAN,MSQ,GRR',
-				// 'FNT,DTT,MRS,CMX,MPM,MPH,AZO,LUL,MNL,MMY,MMB,JAN,MLM,GPT,MLE',
-				// 'STL,MLA,SGF,MKC,MIG,MID,JLN,COU,MSO,HLN,MGA,GTF,MFM,FCA,MEX',
-				// 'BZN,MEL,BIL,MEC,MDZ,BOS,MDG,MDE,MCZ,MCT,MCP,ACK,SBY,BWI,PVD',
-				// 'SHV,MBJ,MBE,MBA,MAZ,MAR,MAO,MAN,MAM,MAJ,MSY,MAD,MAB,MAA,LZO',
-				// 'LZH,LZC,LYS,LXA,LWO,LVI,LUX,LUN,LUM,LUG,MLU,LSC,LRM,LFT,LPB',
-				// 'LOS,LNZ,LCH,BTR,LMM,LLW,LLA,LJU,LJG,AEX,LIS,LIR,MIL,LIM,SDF',
-				// 'LHW,LGG,PAH,LFW,LEX,CVG,LET,LEJ,LED,LDE,LDB,LON,MTJ,LCG,LCE',
-				// 'LCA,SBS,GUC,LBA,EGE,DRO,DEN,LAO,COS,LAD,KWL,KWI,KWE,KWA,KVA',
-				// 'KUL,KUH,KUF,KTW,KSD,KSC,KRY,KRT,KRS,KRR,KRL,KRK,KOW,KOJ,ASE',
-				// 'MES,KMQ,KMJ,KMI,KMG,KLX,KLU,KLO,KKJ,KIV,KIN,KIJ,KHN,KHI,KHH',
-				// 'KHG,KGS,REK,KCZ,KBV,IEV,JZH,JUZ,JUL,JTR,JSI,JOI,JOG,JNZ,JNG',
-				// 'JNB,JMU,HVN,JMK,HFD,JKH,JKG,JJN,JIU,JIB,JIA,JHG,JGS,MHK,JER',
-				// 'JED,JDZ,ICT,SNA,JAL,SMX,IWK,IWJ,SAC,OSA,SJC,IST,SFO,ISG,IQT',
-				// 'IQQ,IOS,INN,CSL,INC,IMP,IKI,THR,IGU,SBA,SAN,RDD,IBZ,IBE,IAS',
-				// 'PSP,ONT,HYN,HYD,OAK,HUX,HTN,HTA,MRY,HSG,LAX,HRK,HRG,HRE,HRB',
-				// 'FAT,CLD,BUR,HOG,BFL,ACV,TYO,SHR,HLH,HLD,HKT,HKG,HKD,HIJ,HGH',
-				// 'HFE,HET,HEL,JAC,HAV,HAU,HAN,HAM,HAJ,HAC,GYS,GYN,GYE,GWT,GVA',
-				// 'GUM,CPR,GUA,COD,SEA,PSC,GRZ,GEG,ROA,RIC,ORF,GPA,GOT,GOA,GLA',
-				// 'RIO,GIB,GHB,GGT,WAS,GEO,CHO,GDN,GDL,BTV,FUK,FUJ,FUG,FTE,FSZ',
-				// 'VPS,TPA,FSC,FRS,FRA,FPO,FOC,TLH,FNJ,FNC,FNA,FLR,SRQ,FLN,FMY',
-				// 'PNS,FLA,FKS,FIH,FDH,FDF,ROM,PBI,MLB,MIA,ORL,FAO,JAX,GNV,FLL',
-				// 'EYW,DAB,EVN,RDM,ANK,PDX,NQT,ELS,OTH,MFR,ELH,EJA,EUG,EDI,EBL',
-				// 'EBB,TUL,EAS,OKC,DYG,DXB,DVO,LAW,DUS,DUR,TOL,DUD,DUB,DAY,DTM',
-				// 'DSN,CMH,DRS,CLE,DPS,DOK,DOH,DNK,DNH,DMM,MOW,DLM,CAK,DLC,DLA',
-				// 'DKR,DGT,DGO,TYR,SJT,DEL,DDG,SAT,DBV,MFE,MAF,DAX,DAT,LRD,LBB',
-				// 'CZX,CZM,CYO,CWB,HRL,CVM,HOU,CUZ,CUU,CUN,CUE,CUC,CTU,SPK,CTG',
-				// 'CTA,CSX,ILE,GGG,CRD,CPX,CPT,ELP,CPO,CPH,CPE,DFW,COR,COO,CRP',
-				// 'CNX,CNS,BHZ,CLL,CAS,BRO,BPT,CME,CMB,CLY,AUS,CLQ,CLO,AMA,CLJ',
-				// 'ACT,ABI,CKY,CKG,SCE,CJU,CJC,CIX,CIH,CIF,PIT,PHL,CHQ,HAR,CHG',
-				// 'ERI,CGR,CGQ,CGO,CGN,SAO,CGB,AVP,CEN,CEB,ABE,PAR,CCU,CCS,CCP',
-				// 'CAP,RDU,CAI,CAG,GSO,FAY,BZG,BZE,EWN,BVB,CLT,AVL,BUD,MOT,FAR',
-				// 'BSL,BSB,BRU,BRS,BIS,BRN,BRI,BRE,BQN,IDA,BPS,BOI,BON,BOM,SUX',
-				// 'BOG,BOD,BNE,DSM,DBQ,BLZ,BLR,BLQ,BLL,BKK,BJX,BXN,BJM,BJL,CID',
-				// 'BIQ,ALO,BIA,BHY,BHX,FAI,ANC,BGO,FYV,BGI,BGA,BFS,TXK,BEY,BEL',
-				// 'BEG,BDS,LIT,BDA,BCN,BCD,BBA,BAV,BAQ,BAH,FSM,AYT,AXT,AXM,AXA',
-				// 'ILG,ZVE,ZTF,AUC,AUA,WRL,ATQ,SOW,ATH,ASU,PUB,ASB,PRC,STO,ARI',
-				// 'AQP,APW,AOK,AOJ,AOI,ANU,ANF,PKB,AMS,AMM,AMD,MEI,MCK,ALL,ALG',
-				// 'ALF,ALC,MCE,ALA,AKU,AKL,AKJ,AJU,LBL,AGU,AGT,JMS,AGP,AGA,IGM',
-				// 'AES,BUE,ADZ,ADL,ADD,IZM,HYS,HON,DVL,DUJ,ACC,ACA,ABZ,ABV,CEZ',
-				// 'CDR,AIA,AAR,AAL'
-				);
   }
 
   // 查询 cmd 的source 是否存在
@@ -199,82 +114,6 @@ class EtermController extends Controller {
 	}
 
 	// ------------------------ XFSD ------------------------
-
-  public function searchXfsdByDefault(){
-  	$defalut = array(
-			'end'   => $this->returnEnd()
-  	); 
-
-		foreach ($defalut['end'] as $end) {
-			$_POST = array(
-	  		'startDate'  => '15SEP',
-	  		'aircompany' => 'UA',
-	  		'start' => 'BJS',
-	  		'private' => '',
-	  		'tripType' => '',
-	  		'other' => '',
-	  		'end' => $end
-			);
-
-			$this->searchXfsdByInput(true);
-			echo $end."<br>";
-			ob_flush();
-			flush();
-			sleep(30);
-		}
-  }
-
-  public function insertAllXfsdResult(){
-    import('vender/eterm/app.php');
-
-  	$xfsd       = new \Xfsd($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
-  	$start      = 'BJS';
-  	$startDate  = '15SEP';
-  	$aircompany = 'UA';
-  	$tripType   = '';
-  	$code       = '';
-  	$other      = '';
-  	$ab_flag    = '';
-  	 
-  	$endListArr = $this->returnEnd();
-
-  	foreach ( $endListArr as $endList) {
-  		$endArr   = explode(',', rtrim($endList,','));
-  		$array    = array(); 
-  		foreach ($endArr as $end) {
-				$command = $this->toXfsdCommand($start, $end, $startDate, $aircompany, $tripType, $code, $other );
-	  		$result  = $this->hasCmdSource(array('command'=>$command, 'office'=>$_SESSION['resource']), 'xfsd');
-	  		echo $end."<br>";
-
-	  		if( is_array($result) && isset($result['Id']) ){ 
-
-					$xfsd->wtTmp($result['Detail']);
-					$resultArr                 = $ab_flag ? $xfsd->analysis(array(2,3,4)) : $xfsd->analysis(array(2,3));
-					$array[$end]               = $resultArr;
-					$id                        = $result['Id'];
-					$array[$end]['id']         = $result['Id'];
-		  		$array[$end]['from']       = $code==''?'':$code;
-					$array[$end]['aircompany'] = $aircompany;
-					$array[$end]['startDate']  = $startDate;
-					$array[$end]['length']     = count($resultArr);
-					$array[$end]['command']    = $command;
-					$array[$end]['other']      = $other;
-					// var_dump($array[$end])
-					// $this->updateCmdResult($array[$end], $id, $command, 'xfsd');
-					// 声明
-	  		}else{
-		  		var_dump($result);
-		  		echo "<br>";
-	  		}
-
-  		}
-  		$this->saveXfsdResult($array);
-  		echo $endList." <font color='red'> time:".date('H:i:s',time())."</font><br>";
-  		ob_flush();
-			flush();
-			sleep(3);
-  	}
-  }
 
   public function searchXfsdResult(){
   	$result = $this->searchCmdResult($_POST['sid'], 'xfsd');
@@ -749,7 +588,8 @@ class EtermController extends Controller {
 		$sk       = new \Sk($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
 		$config   = array('start'=>$_POST['start'], 'end'=>$_POST['end'], 'aircompany'=>$_POST['aircompany']);
 
-		$command  = "SK:/{$config['start']}{$config['end']}/{$config['aircompany']}";
+		// $command  = "SK:/{$config['start']}{$config['end']}/{$config['aircompany']}";
+		$command  = $sk->set($config)->rtCommand();
 		$result   = $this->hasCmdSource(array('command'=>$command, 'office'=>$_SESSION['resource']), 'sk');
 
 		// 有，根据result 中的 date 日期已过期
@@ -768,7 +608,7 @@ class EtermController extends Controller {
 			}
 			// 有，但是日期过期
 			if($switchNew){
-				$result_eterm = $sk->set($config)->parseDetail();
+				$result_eterm = $sk->run()->set($config)->parseDetail();
 				// 更新 source 
 				$this->updateCmdSource(array('GmtModified' => time(), 'command' => $command), 'sk');
 				// 更新 result
@@ -783,7 +623,7 @@ class EtermController extends Controller {
 		}
 		// 无，从新查询，并临时保存 source 及 result 
 		else{
-			$result_eterm = $sk->set($config)->parseDetail();
+			$result_eterm = $sk->run()->parseDetail();
 			$id           = $this->saveCmdSource(array('source' => preg_replace("/(')/", "\\\\$1", $sk->rtTmp()), 'command' => $command), 'sk'); // 储存至数据库
 			$this->saveSkResult($result_eterm, $id, $command);
 		}
@@ -858,26 +698,59 @@ class EtermController extends Controller {
 	}
 
 	// ------------------------ YY ------------------------
-	// 设置YY 
-  public function setYY($return = false){
+	// 设置基础YY 
+  public function setYyArea($return = false){
+  	// 按照区域跑，省去只跑某航空公司
     $_POST['start'] = 'CN';
-    $_POST['end'] = 'US';
+    $_POST['end']   = 'US';
     // $_POST['aircompany'] = 'UA';
     $this->searchYyByInput($return);
+  }
+
+  public function test(){
+    $_POST['aircompany'] = 'UA';
+    $this->searchRoutingByOneStay();
+  }
+
+
+  // 查询某航空公司下一次中转的目的地
+  public function searchRoutingByOneStay(){
+  	$m_result   = model('yy_result');
+  	// $result_end = $m_result->distinct('Yy_End AS end, Yy_End_Input AS end_area')->where("Yy_Aircompany='{$_POST['aircompany']}' AND Yy_IsCommon=0 AND Yy_Start_Input = 'CN'")->select();
+  	$result_end = $m_result->where("Yy_Aircompany='{$_POST['aircompany']}' AND Yy_IsCommon=0 AND Yy_Start_Input = 'CN'")->select();
+
+  	if($result_end){
+  		// 将中转点作为出发地
+  		$endArray = array();
+  		foreach ($result_end as $eKey => $eVal) {
+  			if(!in_array($eVal['Yy_End'], $endArray)) array_push($endArray, $eVal['Yy_End']);
+  		}
+
+  		// 批量获得中转城市
+  		$_POST['aircompany'] = $result_end[0]['Yy_End_Input'];
+  		$result_stay = array();
+  		foreach ($endArray as $end) {
+  			$_POST['start'] = $end;
+  			$result_stay[$end] = $this->searchYyByInput(true);
+  			ob_flush();
+  			flush();
+  		}
+  		echo json_encode(array('msg'=>\BYS\Report::printLog(), 'result_direct'=>$result_end, 'result_stay'=>$result_stay));
+
+  	}else{
+  		echo '没有该航空公司数据';
+  		var_dump($result_end, $m_result->testSql());
+  	}
   }
 
 	// 查询航班时刻
 	public function searchYyByInput($return = false){
 		import('vender/eterm/app.php');
-		$yy       = new \Yy($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
-		$config   = array('start'=>$_POST['start'], 'end'=>$_POST['end']);
+		$yy      = new \Yy($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
+		$config  = array('start'=>$_POST['start']); 
 
-		if(isset($_POST['aircompany']) && $config['aircompany'] = $_POST['aircompany'])
-			$command  = "YY/{$config['start']}{$config['end']}/{$config['aircompany']}";
-		else
-			$command  = "YY/{$config['start']}{$config['end']}";
-			
-		$result   = $this->hasCmdSource(array('command'=>$command, 'office'=>$_SESSION['resource']), 'yy');
+		$command = $yy->set($config)->rtCommand();
+		$result  = $this->hasCmdSource(array('command'=>$command, 'office'=>$_SESSION['resource']), 'yy');
 
 		// 有，根据result 中的 date 日期已过期
 		if ( $result ){ 
@@ -887,7 +760,8 @@ class EtermController extends Controller {
 		}
 		// 无，从新查询，并临时保存 source 及 result 
 		else{
-			$result_eterm = $yy->set($config)->parseDetail();
+			// 查询出发到达 返回结果是 出发到达
+			$result_eterm = $yy->run()->getToEnd()->parseDetail();
 			$id           = $this->saveCmdSource(array('source' =>  $yy->rtTmp(), 'command' => $result_eterm['command']), 'yy'); // 储存至数据库
 			$this->saveYyResult($result_eterm['result'], $id, $result_eterm['command']);
 		}
@@ -905,6 +779,19 @@ class EtermController extends Controller {
 
   	$m      = model('yy_result');
   	$addAll = array();
+  	if(preg_match('/[Yy]+\/(\w+)/', $command, $match) && isset($match[1])){
+  		$startInput = '';
+  		$endInput   = '';
+  		if(strlen($match[1]) === 4){
+  			$startInput = substr($match[1],0,2);
+  			$endInput   = substr($match[1],2,2);
+  		}elseif(strlen($match[1]) === 6){
+  			$startInput = substr($match[1],0,3);
+  			$endInput   = substr($match[1],3,3);
+  		}else{
+  			$startInput = $match[1];
+  		}
+  	}
   	foreach ($array as $rkey => $rVal) { // 不同的行程
   		foreach ($rVal as $key => $value) { // 行程
   			$addAll[] = array(
@@ -916,6 +803,10 @@ class EtermController extends Controller {
 					'Office'        => $_SESSION['resource'],
 					// source id
 					'Sid'           => $id,
+					// 出发区域
+					'Yy_Start_Input'=> $startInput,
+					// 到达区域
+					'Yy_End_Input'  => $endInput,
 					// 出发
 					'Yy_Start'      => $value['start'],
 					// 到达
@@ -1390,4 +1281,153 @@ class EtermController extends Controller {
 		return $array;
 	}
 
+	// ------------------------ 其他 ------------------------
+
+  public function returnEnd(){
+  	return array(
+				// 'SAV,ATL,ZUH,ZTH,AGS,ZRH,ZQN,ZNZ,ZLO,ZIH,ZHA,ZCO,ZCL,ZBF,ZAL',
+				// 'ZAG,ZAD,YZV,YZR,YZF,YYY,YYT,YYR,YYJ,YYF,YYD,YYC,YYB,YXY,YXX',
+				// 'YXU,YXT,YXS,YXJ,YXH,YXE,YXC,YWL,YWK,YWG,YVR,YVO,YUY,SLC,YMQ',
+				// 'YTS,YTM,YSJ,YSB,YQZ,YQX,YQU,YQT,YQR,YQQ,YQM,YQL,YQG,YQB,YOW',
+				// 'YNZ,YNT,YNJ,YMM,YLW,YKF,YKA,YIW,YIN,YIH,YHZ,YTO,YGP,YGK,YGJ',
+				// 'YFC,YEA,YDF,YCU,YCG,YCD,YBP,YBL,YBG,YBC,YAM,XUZ,XNN,SGU,XMN',
+				// 'SIA,XIL,XIC,XFN,WXN,WUX,WUS,WUH,WRO,SBN,WNZ,WLG,WKJ,WEH,WDH',
+				// 'WAW,SRZ,VVC,VUP,VTE,VSA,VRN,VRA,VQS,IND,VOL,VNO,VLN,VLC,VIX',
+				// 'VIJ,VIE,VGO,VER,VCE,VAR,VAA,UYN,URC,UME,ULN,UIO,UIB,UDI,UBJ',
+				// 'FWA,EVV,TYN,TXN,BER,SPI,PIA,CHI,TUN,MLI,TTJ,TSR,TSN,TSJ,TSE',
+				// 'TRU,TRS,TRN,CMI,TRD,TRC,TPQ,TPP,TPE,BMI,TOY,TOS,YUM,TNH,TNA',
+				// 'TMP,TLV,TLS,TLL,TUS,TKS,TIV,TIA,THE,TGU,TGO,TGD,TCQ,TCO,TCB',
+				// 'TBS,TAP,TAO,TAM,TAK,TAG,TAE,TAC,SZX,SZG,SYX,PHX,SYO,SYD,SXB',
+				// 'PGA,SWA,SVQ,SVG,GCN,SUF,SUB,STR,STM,MOB,STI,SSH,SSA,MGM,SRG',
+				// 'SPU,HSV,BHM,SOF,SNN,AIY,SMR,SMI,HOB,SLZ,SLP,ABQ,SLA,SKP,SKG',
+				// 'SKB,SJW,SJU,MHT,SJP,SJO,SJJ,SJD,OGG,SIN,LNY,LIH,SHP,SHE,SHB',
+				// 'KOA,ITO,SFT,HNL,CRW,SDJ,CKB,SCY,SCN,SCL,MSN,SBZ,MKE,LSE,GRB',
+				// 'EAU,AUW,ATW,SAP,TYS,SAL,RZE,RUH,RTM,RTB,TRI,MEM,ROV,ROT,ROS',
+				// 'CHA,MLW,BNA,SYR,RMF,RLG,RJK,RIX,RIS,SWF,RHO,RGN,RGL,REX,REP',
+				// 'REC,ROC,NYC,RCH,RBR,RAR,ITH,RAO,RAK,QRO,PXO,PXM,ISP,PVR,PVK',
+				// 'PVH,HPN,PUY,PUS,ELM,PTY,BUF,PSO,BGM,PRN,PRG,ART,PPS,PPN,POZ',
+				// 'POA,ALB,PNQ,PNH,PNA,PMW,PMO,PMI,PMC,PLZ,RNO,PIU,LAS,OMA,LNK',
+				// 'EAR,MYR,GSP,PHC,FLO,PFB,PER,PEN,PEM,PEI,PEG,CHS,PCL,CAE,PBC',
+				// 'PAZ,PAP,RAP,PAD,OVD,OUL,OUA,BUH,PIR,OSL,ORK,FSD,RST,OPO,DLH',
+				// 'ONJ,PWM,OKJ,BGR,OKA,OIT,OIM,TVC,ODS,OCC,OBO,OAX,MQT,NVT,NVA',
+				// 'NUE,NTQ,NTG,YAO,NNG,NKG,NGS,NGO,NGB,NEV,NDG,NCL,NCE,NBO,NAT',
+				// 'NAS,NAP,NAN,MZT,MZL,MKG,MYJ,MUC,MTY,MTT,MTR,MBS,LAN,MSQ,GRR',
+				// 'FNT,DTT,MRS,CMX,MPM,MPH,AZO,LUL,MNL,MMY,MMB,JAN,MLM,GPT,MLE',
+				// 'STL,MLA,SGF,MKC,MIG,MID,JLN,COU,MSO,HLN,MGA,GTF,MFM,FCA,MEX',
+				// 'BZN,MEL,BIL,MEC,MDZ,BOS,MDG,MDE,MCZ,MCT,MCP,ACK,SBY,BWI,PVD',
+				// 'SHV,MBJ,MBE,MBA,MAZ,MAR,MAO,MAN,MAM,MAJ,MSY,MAD,MAB,MAA,LZO',
+				// 'LZH,LZC,LYS,LXA,LWO,LVI,LUX,LUN,LUM,LUG,MLU,LSC,LRM,LFT,LPB',
+				// 'LOS,LNZ,LCH,BTR,LMM,LLW,LLA,LJU,LJG,AEX,LIS,LIR,MIL,LIM,SDF',
+				// 'LHW,LGG,PAH,LFW,LEX,CVG,LET,LEJ,LED,LDE,LDB,LON,MTJ,LCG,LCE',
+				// 'LCA,SBS,GUC,LBA,EGE,DRO,DEN,LAO,COS,LAD,KWL,KWI,KWE,KWA,KVA',
+				// 'KUL,KUH,KUF,KTW,KSD,KSC,KRY,KRT,KRS,KRR,KRL,KRK,KOW,KOJ,ASE',
+				// 'MES,KMQ,KMJ,KMI,KMG,KLX,KLU,KLO,KKJ,KIV,KIN,KIJ,KHN,KHI,KHH',
+				// 'KHG,KGS,REK,KCZ,KBV,IEV,JZH,JUZ,JUL,JTR,JSI,JOI,JOG,JNZ,JNG',
+				// 'JNB,JMU,HVN,JMK,HFD,JKH,JKG,JJN,JIU,JIB,JIA,JHG,JGS,MHK,JER',
+				// 'JED,JDZ,ICT,SNA,JAL,SMX,IWK,IWJ,SAC,OSA,SJC,IST,SFO,ISG,IQT',
+				// 'IQQ,IOS,INN,CSL,INC,IMP,IKI,THR,IGU,SBA,SAN,RDD,IBZ,IBE,IAS',
+				// 'PSP,ONT,HYN,HYD,OAK,HUX,HTN,HTA,MRY,HSG,LAX,HRK,HRG,HRE,HRB',
+				// 'FAT,CLD,BUR,HOG,BFL,ACV,TYO,SHR,HLH,HLD,HKT,HKG,HKD,HIJ,HGH',
+				// 'HFE,HET,HEL,JAC,HAV,HAU,HAN,HAM,HAJ,HAC,GYS,GYN,GYE,GWT,GVA',
+				// 'GUM,CPR,GUA,COD,SEA,PSC,GRZ,GEG,ROA,RIC,ORF,GPA,GOT,GOA,GLA',
+				// 'RIO,GIB,GHB,GGT,WAS,GEO,CHO,GDN,GDL,BTV,FUK,FUJ,FUG,FTE,FSZ',
+				// 'VPS,TPA,FSC,FRS,FRA,FPO,FOC,TLH,FNJ,FNC,FNA,FLR,SRQ,FLN,FMY',
+				// 'PNS,FLA,FKS,FIH,FDH,FDF,ROM,PBI,MLB,MIA,ORL,FAO,JAX,GNV,FLL',
+				// 'EYW,DAB,EVN,RDM,ANK,PDX,NQT,ELS,OTH,MFR,ELH,EJA,EUG,EDI,EBL',
+				// 'EBB,TUL,EAS,OKC,DYG,DXB,DVO,LAW,DUS,DUR,TOL,DUD,DUB,DAY,DTM',
+				// 'DSN,CMH,DRS,CLE,DPS,DOK,DOH,DNK,DNH,DMM,MOW,DLM,CAK,DLC,DLA',
+				// 'DKR,DGT,DGO,TYR,SJT,DEL,DDG,SAT,DBV,MFE,MAF,DAX,DAT,LRD,LBB',
+				// 'CZX,CZM,CYO,CWB,HRL,CVM,HOU,CUZ,CUU,CUN,CUE,CUC,CTU,SPK,CTG',
+				// 'CTA,CSX,ILE,GGG,CRD,CPX,CPT,ELP,CPO,CPH,CPE,DFW,COR,COO,CRP',
+				// 'CNX,CNS,BHZ,CLL,CAS,BRO,BPT,CME,CMB,CLY,AUS,CLQ,CLO,AMA,CLJ',
+				// 'ACT,ABI,CKY,CKG,SCE,CJU,CJC,CIX,CIH,CIF,PIT,PHL,CHQ,HAR,CHG',
+				// 'ERI,CGR,CGQ,CGO,CGN,SAO,CGB,AVP,CEN,CEB,ABE,PAR,CCU,CCS,CCP',
+				// 'CAP,RDU,CAI,CAG,GSO,FAY,BZG,BZE,EWN,BVB,CLT,AVL,BUD,MOT,FAR',
+				// 'BSL,BSB,BRU,BRS,BIS,BRN,BRI,BRE,BQN,IDA,BPS,BOI,BON,BOM,SUX',
+				// 'BOG,BOD,BNE,DSM,DBQ,BLZ,BLR,BLQ,BLL,BKK,BJX,BXN,BJM,BJL,CID',
+				// 'BIQ,ALO,BIA,BHY,BHX,FAI,ANC,BGO,FYV,BGI,BGA,BFS,TXK,BEY,BEL',
+				// 'BEG,BDS,LIT,BDA,BCN,BCD,BBA,BAV,BAQ,BAH,FSM,AYT,AXT,AXM,AXA',
+				// 'ILG,ZVE,ZTF,AUC,AUA,WRL,ATQ,SOW,ATH,ASU,PUB,ASB,PRC,STO,ARI',
+				// 'AQP,APW,AOK,AOJ,AOI,ANU,ANF,PKB,AMS,AMM,AMD,MEI,MCK,ALL,ALG',
+				// 'ALF,ALC,MCE,ALA,AKU,AKL,AKJ,AJU,LBL,AGU,AGT,JMS,AGP,AGA,IGM',
+				// 'AES,BUE,ADZ,ADL,ADD,IZM,HYS,HON,DVL,DUJ,ACC,ACA,ABZ,ABV,CEZ',
+				// 'CDR,AIA,AAR,AAL'
+				);
+  }
+
+  public function searchXfsdByDefault(){
+  	$defalut = array(
+			'end'   => $this->returnEnd()
+  	); 
+
+		foreach ($defalut['end'] as $end) {
+			$_POST = array(
+	  		'startDate'  => '15SEP',
+	  		'aircompany' => 'UA',
+	  		'start' => 'BJS',
+	  		'private' => '',
+	  		'tripType' => '',
+	  		'other' => '',
+	  		'end' => $end
+			);
+
+			$this->searchXfsdByInput(true);
+			echo $end."<br>";
+			ob_flush();
+			flush();
+			sleep(30);
+		}
+  }
+
+  public function insertAllXfsdResult(){
+    import('vender/eterm/app.php');
+
+  	$xfsd       = new \Xfsd($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
+  	$start      = 'BJS';
+  	$startDate  = '15SEP';
+  	$aircompany = 'UA';
+  	$tripType   = '';
+  	$code       = '';
+  	$other      = '';
+  	$ab_flag    = '';
+  	 
+  	$endListArr = $this->returnEnd();
+
+  	foreach ( $endListArr as $endList) {
+  		$endArr   = explode(',', rtrim($endList,','));
+  		$array    = array(); 
+  		foreach ($endArr as $end) {
+				$command = $this->toXfsdCommand($start, $end, $startDate, $aircompany, $tripType, $code, $other );
+	  		$result  = $this->hasCmdSource(array('command'=>$command, 'office'=>$_SESSION['resource']), 'xfsd');
+	  		echo $end."<br>";
+
+	  		if( is_array($result) && isset($result['Id']) ){ 
+
+					$xfsd->wtTmp($result['Detail']);
+					$resultArr                 = $ab_flag ? $xfsd->analysis(array(2,3,4)) : $xfsd->analysis(array(2,3));
+					$array[$end]               = $resultArr;
+					$id                        = $result['Id'];
+					$array[$end]['id']         = $result['Id'];
+		  		$array[$end]['from']       = $code==''?'':$code;
+					$array[$end]['aircompany'] = $aircompany;
+					$array[$end]['startDate']  = $startDate;
+					$array[$end]['length']     = count($resultArr);
+					$array[$end]['command']    = $command;
+					$array[$end]['other']      = $other;
+					// var_dump($array[$end])
+					// $this->updateCmdResult($array[$end], $id, $command, 'xfsd');
+					// 声明
+	  		}else{
+		  		var_dump($result);
+		  		echo "<br>";
+	  		}
+
+  		}
+  		$this->saveXfsdResult($array);
+  		echo $endList." <font color='red'> time:".date('H:i:s',time())."</font><br>";
+  		ob_flush();
+			flush();
+			sleep(3);
+  	}
+  }
 }

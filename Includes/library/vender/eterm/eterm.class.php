@@ -60,12 +60,18 @@ class Eterm{
 	  }
 	  // 读 this->tmp
     public function rtTmp(){
-        return $this->tmp;
+      return $this->tmp;
     }
     // 写 this->tmp
     public function wtTmp($str = ''){
         if ($str != '') $this->tmp = $str;
     }
+    // 返回 command 
+    public function rtCommand(){
+    	return $this->command;
+    }
+
+    // 根据 page 页数获得所有页数
 	  protected function getAllPage($dataFrom, $command, $type = 'a'){
 			// 获取除了第一页的其他页数据
 	    $f = $this->initFile($dataFrom, 0, 1);
@@ -105,7 +111,6 @@ class Eterm{
 			}
 			*/
 
-
 	 		$requestURL='http://eterm.cctba.com:8350/COMMAND?USER='.$this->name.'&PASSWORD='.$this->password.'&RESOURCEETERM-SHARE-'.$this->resource.$commandURL;
 	 	 	try{
 		 	 	$file = file_get_contents($requestURL);
@@ -121,11 +126,12 @@ class Eterm{
 	    return time();
 	  }
 
-	  public function addCommand($command, $type){
+	  public function addCommand($command, $type = 'a'){
 	    // 追加命令，能重叠发送命令至eterm 并回填至同一个文件
 	    $requestURL = 'http://eterm.cctba.com:8350/COMMAND?USER='.$this->name.'&PASSWORD='.$this->password.'&RESOURCEETERM-SHARE-BJS248&COMMAND='.urlencode($command);
 		 	$file       = file_get_contents($requestURL);
 			$this->saveStr($file, $type);
+			return $file;
 	  }
 
 	  // $rangeStart 截取的起始位置， $rangeEnd 截取的结束位置
@@ -135,7 +141,6 @@ class Eterm{
 	    $file    = $dataFrom;
 			$arr_tmp = array();
 			preg_match_all("/\[CDATA\[(.*?)\]\]/is", $file, $newFile);
-
 			foreach ($newFile[1] as $pageNum => $Page) {
     		$pageArr = explode("\r",$Page);
     		$valDate = array_slice($pageArr, $rangeStart, count($pageArr)-$rangeStart-$rangeEnd); 

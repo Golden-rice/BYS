@@ -30,12 +30,12 @@ var Controller = /^\/(.)+\//.exec(window.location.pathname)[0],
 		Project    = /^\/\w*[-|_|.]?\w*\//.exec(window.location.pathname)[0];
 // eterm 解析，依赖jQuery
 var eterm = {
-	data: null,       // 数据
-	// target: '',       // 目标名
-	// content: '',      // 容器名
-	// query: '',        // 查询语句
-	progress: null,   // 进度条
-	// fareArray: null,  // 筛选fare后的xfsd，后面扩充属性
+	// data: null,         // 数据
+	// target: '',         // 目标名
+	// content: '',        // 容器名
+	// query: '',          // 查询语句
+	// progress: null,     // 进度条
+	// fareArray: null,    // 筛选fare后的xfsd，后面扩充属性
 	// fliterPolicy: null, // 筛选fare后的政策
 	// xfsd: null,         // xfsd 数据
 	// rate: 0,            // 汇率
@@ -43,20 +43,20 @@ var eterm = {
 
 		if(!url || url === ''){return;}
 		var that = this; // 绑定到对象上
-
 		return $.ajax({
 			url: url,
 			type: 'POST',
 			async: async === false ? false: true,
 			data: query,
 			success: function(msg){
-
-				that.data = eval('['+msg+']')[0];
-
 				if(typeof callback === 'function'){
+					if( eterm.isString (msg)){
+						msg = eval('['+msg+']')[0]
+					} 
+					that.data = msg;
+
 					callback(that.data);
 				}
-				// console.log(that.data);
 			},
 			error: function(msg, textStatus){ // XMLHttpRequest, textStatus, errorThrown
 				// console.log(textStatus);
@@ -93,10 +93,9 @@ var eterm = {
 			type: 'POST',
 			data: query,
 			success: function(msg){
-
-				that.msg = eval('['+msg+']')[0];
-
 				if(typeof callback === 'function'){
+					if( that.isString (msg)) msg = eval('['+msg+']')[0]
+					that.data = msg;
 					callback(that.msg);
 				}
 
@@ -2220,7 +2219,8 @@ return {
 	'rmTable': rmTable,
 	'createCommand': createCommand,
 	'eterm': eterm,
-	'extend': extend
+	'extend': extend,
+	'progress': progress,
 }
 
 })
