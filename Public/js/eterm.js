@@ -6,11 +6,12 @@ require.config({
 			'extend': "lib/extend",
 			'bootstrap': "lib/bootstrap.min",
 			'datetimepicker': "lib/datetimepicker/js/bootstrap-datetimepicker",
+			'polyfill': "lib/polyfill.min",
    }
 });
 
 
-define('eterm', ['jquery', 'progress', 'extend', 'bootstrap'], function ($, progress, extend, bootstrap){
+define('eterm', ['jquery', 'progress', 'extend', 'bootstrap','polyfill'], function ($, progress, extend, bootstrap, polyfill){
 
 // 重置函数	
 // var $        = $.jquery;
@@ -93,7 +94,6 @@ var eterm = {
 			type: 'POST',
 			data: query,
 			success: function(msg){
-				// console.log(msg)
 				if(typeof callback === 'function'){
 					if( eterm.isString (msg)) msg = eval('['+msg+']')[0]
 					that.data = msg;

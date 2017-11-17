@@ -30,11 +30,13 @@ class EtermController extends Controller {
   // 获取汇率
   public function toCNY(){
   	import('vender/eterm/app.php');
-
-  	$xfsd = new \Xfsd($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
-		$xfsd->command($_POST['command'],"w", false);
-		$rate = $xfsd->changePrice();
-		echo json_encode(array('rate'=>$rate));
+  	if(isset($_POST['command']))
+	  	$command = $_POST['command'];
+	  else
+	  	$command = 'XS FSC NUC/CNY';
+  	$xfsd = new \Xfsd();
+		$xfsd->command($command,"w", false);
+		echo json_encode(array('rate'=>$xfsd->changePrice()));
   }
 
   // 查询 cmd 的source 是否存在
@@ -117,6 +119,7 @@ class EtermController extends Controller {
 
   public function searchXfsdResult(){
   	$result = $this->searchCmdResult($_POST['sid'], 'xfsd');
+  	if(!$result) \BYS\Report::error('source 数据出错');
   	echo json_encode(array('result'=>$result));
   }
 
@@ -149,7 +152,7 @@ class EtermController extends Controller {
 			'tripType'  => $_POST['tripType'],
 			'other'     => $_POST['other']
 		);
-  	$xfsd       = new \Xfsd($_SESSION['name'], $_SESSION['password'], $_SESSION['resource'], $query);
+  	$xfsd       = new \Xfsd($query);
 		
 		foreach($endArr as $end){
 			// 生成命令
@@ -287,7 +290,7 @@ class EtermController extends Controller {
   // 通过command查询xfsd
   public function searchXfsdByCommand(){
   	import('vender/eterm/app.php');
-  	$xfsd = new \Xfsd($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
+  	$xfsd = new \Xfsd();
 
   	$command = strtoupper($_POST['command']);
 
@@ -325,7 +328,7 @@ class EtermController extends Controller {
 	// $return 是打印数据还是 返回数据
 	public function searchAvhByInput($return = false){
 		import('vender/eterm/app.php');
-		$avh = new \Avh($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
+		$avh = new \Avh();
 
 		// 读取avh数据
 		$start      = $_POST['start']; 
@@ -489,6 +492,7 @@ class EtermController extends Controller {
 
   public function searchAvhResult(){
   	$result = $this->searchCmdResult($_POST['sid'], 'avh');
+  	if(!$result) \BYS\Report::error('source 数据出错');
   	echo json_encode(array('result'=>$result));
   }
 
@@ -503,7 +507,7 @@ class EtermController extends Controller {
 		$array      = array();   // 最终航程结果
 
 		$command    = 'XS/FSD'.$start.$end.'/'.date('tM', time()+10*24*60*60 ).'/'.$aircompany.'/NEGO/X';
-		$fsl        = new \Fsl($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
+		$fsl        = new \Fsl();
 
 		$result = $this->hasCmdSource(array('command'=>$command, 'office'=>$_SESSION['resource']), 'fsl');
 		// 比default多个analysis 
@@ -558,7 +562,7 @@ class EtermController extends Controller {
 		// 		echo $d[0].'-'.$end."<br>";
 				$start      = $d[0];
 				$command    = 'XS/FSD'.$start.$end.'/'.date('tM', time()+10*24*60*60 ).'/'.$aircompany.'/NEGO/X';
-				$fsl        = new \Fsl($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
+				$fsl        = new \Fsl();
 				$result     = $this->hasCmdSource(array('command'=>$command, 'office'=>$_SESSION['resource']), 'fsl');
 
 				// 数据保留1个月
@@ -581,12 +585,25 @@ class EtermController extends Controller {
 	}
 
 	// ------------------------ SK ------------------------
+  public function test(){
+    $_POST['aircompany'] = 'UA';
+    $_POST['end'] = 'BJS';
+    $_POST['start'] = 'ABQ';
+    $_POST['stay'] = 'SFO';
+    $a = $this->searchSkByInput(true);
+    var_dump($a);
+  }
+
 
 	// 查询航班时刻
 	public function searchSkByInput($return = false){
 		import('vender/eterm/app.php');
-		$sk       = new \Sk($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
+		$sk       = new \Sk();
 		$config   = array('start'=>$_POST['start'], 'end'=>$_POST['end'], 'aircompany'=>$_POST['aircompany']);
+
+		if(isset($_POST['stay']) && !empty($_POST['stay']))
+			$config['stay'] = $_POST['stay'];
+
 
 		// $command  = "SK:/{$config['start']}{$config['end']}/{$config['aircompany']}";
 		$command  = $sk->set($config)->rtCommand();
@@ -599,6 +616,8 @@ class EtermController extends Controller {
 			$result_result = $this->searchCmdResult($id, 'sk');
 			$switchNew     = false;
 
+			if(!$result_result) \BYS\Report::error('source 数据出错');
+
 			foreach ($result_result as $rKey => $rVal) {
 				// result 中的 date 日期已过期
 				if($rVal['Sk_AllowEndDate'] !== "2099-12-31" && time($rVal['Sk_AllowEndDate']) < TIME ){
@@ -608,7 +627,7 @@ class EtermController extends Controller {
 			}
 			// 有，但是日期过期
 			if($switchNew){
-				$result_eterm = $sk->run()->set($config)->parseDetail();
+				$result_eterm = $sk->run()->getAll()->parseDetail();
 				// 更新 source 
 				$this->updateCmdSource(array('GmtModified' => time(), 'command' => $command), 'sk');
 				// 更新 result
@@ -623,16 +642,16 @@ class EtermController extends Controller {
 		}
 		// 无，从新查询，并临时保存 source 及 result 
 		else{
-			$result_eterm = $sk->run()->parseDetail();
+			$result_eterm = $sk->run()->getAll()->parseDetail();
 			$id           = $this->saveCmdSource(array('source' => preg_replace("/(')/", "\\\\$1", $sk->rtTmp()), 'command' => $command), 'sk'); // 储存至数据库
 			$this->saveSkResult($result_eterm, $id, $command);
 		}
 
 		if($return){
 			if(!isset($id)) $id = NULL; // 返回储存和更新的sid
-			return array('array'=>$result_eterm, 'msg'=> \BYS\Report::printLog(), 'id'=>$id);
+			return array('array'=>$result_eterm, 'msg'=> \BYS\Report::printLog(), 'id'=>$id, 'title'=>$sk->rtTitle());
 		}else{
-			echo json_encode(array('array'=>$result_eterm,  'id'=>$id));
+			echo json_encode(array('array'=>$result_eterm,  'id'=>$id, 'title'=>$sk->rtTitle()));
 		}
 	}
 
@@ -666,18 +685,22 @@ class EtermController extends Controller {
 					'Office'        => $_SESSION['resource'],
 					// source id
 					'Sid'           => $id,
+					// 查询日期
+					'FareDate'      => date('Y-m-d',strtotime($value['date'])),
+					// 是否为共享航班
+					'Sk_IsCommon'   => $value['isCommon'],
 					// 航班号
 					'Sk_Flight'     => $value['flight'], 
 					// 出发
-					'Sk_Dep'        => $value['start'],
+					'Sk_Dep'        => $value['depart'],
 					// 到达
-					'Sk_Arr'        => $value['end'],
+					'Sk_Arr'        => $value['arrive'],
 					// 航空公司
 					'Sk_Aircompany' => $value['aircompany'],
 					// 出发时间
-					'Sk_DepTime'    => $value['startTime'],
+					'Sk_DepTime'    => $value['departTime'],
 					// 到达时间
-					'Sk_ArrTime'    => $value['endTime'],
+					'Sk_ArrTime'    => $value['arriveTime'],
 					// 是否直达
 				  'Sk_IsDirect'   => $value['haveStay'],
 				  // 分组 Id-rkey-index
@@ -721,14 +744,8 @@ class EtermController extends Controller {
     }
   }
 
-  public function test(){
-    $_POST['aircompany'] = 'UA';
-    $this->searchRoutingByOneStay();
-  }
-
   // 查询YY中有哪些可用航空公司
   public function searchAircompanyFromYy(){
-
   }
 
   // 查询某航空公司下一次中转的目的地
@@ -764,7 +781,7 @@ class EtermController extends Controller {
 	// 查询航班时刻
 	public function searchYyByInput($return = false){
 		import('vender/eterm/app.php');
-		$yy      = new \Yy($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
+		$yy      = new \Yy();
 		$config  = array('start'=>$_POST['start']); 
 
 		if(isset($_POST['end'])) 
@@ -1156,7 +1173,7 @@ class EtermController extends Controller {
   public function searchFsd(){
   	import('vender/eterm/app.php');
 
-  	$fsd = new \Fsd($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
+  	$fsd = new \Fsd();
 
 		$fare       = str_replace(' ','', $_POST['fare']);
 		$start      = $_POST['start'];
@@ -1406,7 +1423,7 @@ class EtermController extends Controller {
   public function insertAllXfsdResult(){
     import('vender/eterm/app.php');
 
-  	$xfsd       = new \Xfsd($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);
+  	$xfsd       = new \Xfsd();
   	$start      = 'BJS';
   	$startDate  = '15SEP';
   	$aircompany = 'UA';

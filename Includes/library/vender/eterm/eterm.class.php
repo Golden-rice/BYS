@@ -16,10 +16,20 @@ class Eterm{
 		protected $source;        // 保存即将存入数据库的数据
 		public    $fileTime;      // 返回当前时间
 
-		function __construct( $name, $password, $resource, $query = array()){
-			$this->name     = $name;
-			$this->password = $password;
-			$this->resource = $resource;
+		function __construct( $name = '', $password = '', $resource = '', $query = array()){
+			if(isset($_SESSION['name'])) {
+				if(empty($name)){
+					$this->name     = $_SESSION['name'];
+					$this->password = $_SESSION['password'];
+					$this->resource = $_SESSION['resource'];
+				}else{
+					$this->name     = $name;
+					$this->password = $password;
+					$this->resource = $resource;
+				}
+			}else{
+				\BYS\Report::error('没设置账号');
+			}
 			$this->query    = $query;    
 		}		
 		
@@ -71,6 +81,13 @@ class Eterm{
     	return $this->command;
     }
 
+    // 返回 title
+    public function rtTitle(){
+    	if(isset($this->title))
+    		return $this->title;
+    	return false;
+    }
+
     // 根据 page 页数获得所有页数
 	  protected function getAllPage($dataFrom, $command, $type = 'a'){
 			// 获取除了第一页的其他页数据
@@ -85,6 +102,55 @@ class Eterm{
     		$this->addCommand($command, $type); // 回填tmp文件
     		$pageCur++;
     	}
+		}
+
+		// 解析文本的头部
+		protected function paresDetailTitle($title){
+			// SK 头： 15NOV(WED)/21NOV(TUE) BJSABQ VIA UA/SFO  
+			// AV 头： 06OCT(FRI) BJSORD VIA UA
+			if(preg_match("/^\s([1-9A-Z\/\(\)]+)+\s(\w+)\sVIA\s([A-Z\/]+)/",$title, $match))
+				$result = array(
+					'date' => explode('/', $match[1]),
+					'routing' => $match[2],
+					'other' => $match[3]
+				);
+			else
+				$result = false;
+
+			$this->title = $result;
+		}
+
+		// 根据 日期 获得所有页数
+		protected function getPageByDate($dataFrom, $command='PN', $type = 'a'){
+			// $f = $this->initFile($dataFrom, 0, 1);
+			// $title = $this->paresDetailTitle($f[0]);
+			$title = $this->paresDetailTitle(substr($dataFrom, 114, 80));
+
+			if($title){
+				do{
+					$curTmp  = $this->addCommand($command, $type, true);
+					$curF    = $this->initFile($curTmp, 0, 1); 
+					$curTitle= $this->paresDetailTitle($curF[0]);
+					// 如果日期一致，save tmp
+					if($curTitle['date'][0] === $title['date'][0])
+						$this->saveStr($curTmp, 'a');
+
+				}while($curTitle['date'][0] === $title['date'][0]);
+			}
+			return $title;
+		}
+
+		// 根据长度转换成数组
+		public function toArrayByLength($source = array(), $length = 80){
+			$change = array();
+			foreach ($source as $value) {
+				if(strlen($value)>80 && $round = strlen($value) / 80)
+					for ($i=0; $i < $round; $i++) { 
+						array_push($change, substr($value, $i*80, 80));
+					}
+
+			}
+			return $change;
 		}
 
 	  public function mixCommand($commandArr, $type = 'w', $p=false){
@@ -126,12 +192,15 @@ class Eterm{
 	    return time();
 	  }
 
-	  public function addCommand($command, $type = 'a'){
+	  public function addCommand($command, $type = 'a', $return = false){
 	    // 追加命令，能重叠发送命令至eterm 并回填至同一个文件
 	    $requestURL = 'http://eterm.cctba.com:8350/COMMAND?USER='.$this->name.'&PASSWORD='.$this->password.'&RESOURCEETERM-SHARE-BJS248&COMMAND='.urlencode($command);
 		 	$file       = file_get_contents($requestURL);
-			$this->saveStr($file, $type);
-			return $file;
+		 	
+		 	if($return)
+				return $file;
+			else
+				$this->saveStr($file, $type);
 	  }
 
 	  // $rangeStart 截取的起始位置， $rangeEnd 截取的结束位置

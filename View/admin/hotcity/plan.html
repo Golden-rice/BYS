@@ -17,10 +17,7 @@
       <!-- modal header -->
 
       <div class="modal-body">
-        <div id="modal-content">
-            
-
-        </div>
+        <div id="modal-content"></div>
       </div>
       <!-- modal body -->
 
@@ -123,7 +120,6 @@ var setCommand = function(command){
 				
 				var	allFareModal = new OtherModel("运价结果", xfsdTable(xfsdInGroup, 'xfsd-result-model'));
 					allFareModal.show();
-				
 			}
 		}
 	}) 
@@ -141,22 +137,7 @@ var setCommand = function(command){
 				xfsdInGroup    = res.inGroupResult
 				var	smpModal   = new OtherModel("精简运价结果", xfsdTable(xfsdSmpInGroup, 'xfsd-result-model'));
 				smpModal.show();
-				
 			}
-		}
-	}) 
-
-	// 查询政策基础数据规则
-	var reqPriceSourceRule = new command.ReqCommand({
-		url: eterm.const.Controller + 'searchPriceSourceRule',
-		clk: function(res){
-			if(res.status){
-				var a = new OtherModel("回填销售日期", mkSaleDateInsertTableFromPrice(res.result), `<button type="button" class="btn btn-primary" data-dismiss="modal" id='set-saleDate'>保存销售日期，并下一步</button><button type="button" class="btn btn-default hidden"  data-dismiss="modal">关闭</button>`);
-				a.show();
-			}
-				
-			if(res.msg)
-				alert(res.msg);
 		}
 	}) 
 
@@ -183,21 +164,8 @@ var setCommand = function(command){
 			}
 		}
 	}) 
-
-	// 选择混舱模板
-	var selectMixCabinTpl = new command.ReqCommand({
-		url: eterm.const.Controller + 'selectMixCabinTpl',
-		clk: function(res){
-			if(res.msg)
-				alert(res.msg)
-
-			if(res.status){
-				console.log(res)
-			}
-		}
-	}) 
  
-	// 设置航班限制
+	// 根据测试数据回填规则
 	var setPriceSourcePolicy = new command.ReqCommand({
 		url: eterm.const.Controller + 'searchPriceSource',
 		clk: function(res){
@@ -222,6 +190,62 @@ var setCommand = function(command){
 		}
 	}) 
 
+
+	// res 返回的结果， updateRely 更新的依据（ID，stay）
+	function parseCheckRes(res, updateRely, name){
+		// ES6 
+		"use strict";
+		console.log(res, updateRely);
+		// 找到存放更新信息的容器
+		let [id, wapper] = [updateRely.id, $("#check-"+name+"-1")]; 
+
+		// 成功结果
+		if(res.status){
+
+			if(res.priceDetail.allPrice){
+
+				// 返回的详细总价  具体运价
+				let [totalPrice, priceDetail, tooltipTitle] = [0, res.priceDetail, '']; 
+				priceDetail.farebasisPrice.map(i=>totalPrice += i.price-0);
+
+				// 取整
+				totalPrice = command.mkFarePrice( totalPrice, eterm.eterm.rate);
+				// 实际运价与混舱价格相等
+				if( totalPrice === command.mkFarePrice( updateRely.price, eterm.eterm.rate)){
+
+					priceDetail.farebasisPrice.map(i=>tooltipTitle += "&nbsp;"+i.farebasis+"&nbsp;|&nbsp;"+i.leg+"&nbsp;|&nbsp;"+i.price+"&nbsp;\r");
+
+					wapper.html('验证成功'+' <a class="tooltip-option" href="javascript:void(0)" data-toggle="tooltip" title="'+tooltipTitle+'" data-placement="left"><i class="fa fa-tag"></i></a>').next('input').val(1);
+
+					// 更新数据库
+					updatePriceSourceIsCheck.execute({
+						'update': { 'IsCheck': 1, 'CheckDetail': JSON.stringify({'farebasisPrice': priceDetail.farebasisPrice, 'allPrice': priceDetail.allPrice}) }, 
+						'where' : { 'Id' :  updateRely.id, },
+						'Hid'   : hid,
+					});
+					$('.tooltip-option').tooltip({ html: true });
+				}
+				// 实际运价与混舱价格不相等
+				else{
+					console.log('价格不一致', totalPrice, res.price, command.mkFarePrice( updateRely.price, eterm.eterm.rate), updateRely.price)
+				}
+			}else{
+				// 无详细价格，仅用qte 的价格 与 混舱的价格比较
+				console.log('无详细的QTE价格', priceDetail)
+			}
+		}
+		// 失败结果
+		else{
+			alert(res.msg);
+			wapper.html('<a href="javascript:void(0)" class="check-failed-click">隐藏</a>').closest('tr').after('<tr class="check-failed-tr"><td colspan=16><textarea class="form-control"  rows="16" style="background-color:black;color:green;">'+res.log+'</textarea></td></tr>');
+			updatePriceSourceIsCheck.execute({
+				'update': { 'IsCheck': -1 }, 
+				'where' : { 'Id' :  id, },
+				'Hid'   : hid,
+			});
+		}
+	}
+
 	// 检查fsi
 	var checkfsi = new command.ReqCommand({
 		url: eterm.const.Controller + 'checkfsi',
@@ -231,7 +255,7 @@ var setCommand = function(command){
 			var $data = $('#'+src.id).next('input');
 			if(res.msg){
 				alert(res.msg);
-				$('#'+src.id).html('<a href="javascript:void(0)" class="fsi-failed-click">隐藏</a>').closest('tr').after('<tr class="fsi-failed-tr"><td colspan=16><textarea class="form-control"  rows="16" style="background-color:black;color:green;">'+res.log+'</textarea></td></tr>')
+				$('#'+src.id).html('<a href="javascript:void(0)" class="check-failed-click">隐藏</a>').closest('tr').after('<tr class="check-failed-tr"><td colspan=16><textarea class="form-control"  rows="16" style="background-color:black;color:green;">'+res.log+'</textarea></td></tr>')
 			
 					updatePriceSourceIsCheck.execute({
 						'update': {
@@ -274,9 +298,7 @@ var setCommand = function(command){
 						},
 						'Hid': hid,
 					});
-					$('.tooltip-option').tooltip({
-            html: true
-         	});
+					$('.tooltip-option').tooltip({ html: true });
 				}else{
 					console.log('价格不一致', totalPrice, res.price, command.mkFarePrice( src.price, eterm.eterm.rate), src.price)
 				}
@@ -284,6 +306,15 @@ var setCommand = function(command){
 		}
 	}) 
 
+	var checkqte = new command.ReqCommand({
+		url: eterm.const.Controller + 'checkqte',
+		clk: function(res){
+			if(res.status) // 成功返回结果
+				parseCheckRes(res, checkqte.returnConfig().query, 'qte')
+			else // 返回的结果出错误了
+				alert(res.msg)
+		}
+	})
 
 	// 查看 xfsd
 	$("#content").on("click", ".xfsd-result", function(){
@@ -335,7 +366,6 @@ var setCommand = function(command){
 		}
 	})
 
-
 	// 混舱 xfsd 
 	$("#content").on('click', '.mix-cabin', function(){
 		// 全局点击的标识
@@ -375,11 +405,15 @@ var setCommand = function(command){
 
 	// 检查fsi
 	$('#otherModal').on('click', '.check-fsi', function(){
-		checkfsi.execute({fsi: $(this).data('fsi'), id: $(this).closest('span').attr('id'), price: $(this).data('price')})
+		checkfsi.execute({
+			'fsi': $(this).data('fsi'), 
+			'id': $(this).closest('span').attr('id'), 
+			'price': $(this).data('price')
+		})
 	})
 
 	// 隐藏 fsi返回的结果
-	$('#otherModal').on('click', '.fsi-failed-click', function(){
+	$('#otherModal').on('click', '.check-failed-click', function(){
 		var $fsi_failed_tr = $(this).closest('tr').next('tr');
 		if($fsi_failed_tr.css('display') === 'none'){
 			$fsi_failed_tr.show();
@@ -395,6 +429,23 @@ var setCommand = function(command){
 		command.mkOtherModel('otherModel-2', "", '#model-wrap')
 		var model = new command.OtherModel('fsi', '<textarea class="form-control"  rows="16" style="background-color:black;color:green;">'+$(this).data('fsi')+'</textarea>', '', 'otherModel-2');
 		model.show();
+	})
+
+	// 检查qte
+	$('#otherModal').on('click', '.check-qte', function(){
+
+		var data = $(this).data('qte')
+
+		checkqte.execute({
+			'start': data.start, 
+			'end': data.end, 
+			'stay': data.stay, 
+			'aircompany': data.aircompany, 
+			'cabin': data.cabin, 
+			'price': $(this).data('price'), 
+			'id': $(this).data('id')
+		})
+
 	})
 
 	// colName 更新属性名（一个）, whereName 更新条件名（一个）,clk展示回填面板的数据处理函数, fn 对回填结果的处理函数，mk${colName}InsertTableFromPrice 默认使用的展示回填面板函数
@@ -448,6 +499,7 @@ var setCommand = function(command){
 			
 		})
 	}
+	
 
 	// 混舱1.1：回填销售日期
 	command.mkSaleDateInsertTableFromPrice = function(array){
@@ -466,8 +518,8 @@ var setCommand = function(command){
 			html += `
 				<tr>
 					<td>${array[i].FareBasis}</td>
-					<td>XS/FSD${array[i].Dep}${array[i].Arr}//${array[i].Airline}/#*${array[i].FareBasis}/// -> XS FSN1//15（销售限制）, XS FSN1//4（航班限制）</td> 
-					<!-- XS/FSD${array[i].Dep}${array[i].Arr}//${array[i].Airline}/#*${array[i].FareBasis}/${array[i].Rule.replace(' ', '')}//# -->
+					<td>XS/FSD${array[i].Dep}${array[i].Arr}//${array[i].Airline}/#*${array[i].FareBasis}/// -> XS FSN1//15（销售限制）</td> 
+					<!-- XS/FSD${array[i].Dep}${array[i].Arr}//${array[i].Airline}/#*${array[i].FareBasis}/// -> XS FSN1//15（销售限制）, XS FSN1//4（航班限制） -->
 					<td><input type='text' class='form-control SaleDate' style='width:350px' data-Rule="${array[i].Rule}" value="${array[i].SaleDate}" placeholder='XXXX-XX-XX>XXXX-XX-XX，输入一条'></td>
 				</tr>
 			`
@@ -482,6 +534,8 @@ var setCommand = function(command){
 			<thead>
 				<tr>
 					<th>FareBasis</th>
+					<th>舱位</th>
+					<th>中转城市</th>
 					<th>命令</th>
 					<th>航班限制</th>
 				</tr>
@@ -492,8 +546,9 @@ var setCommand = function(command){
 			html += `
 				<tr>
 					<td>${array[i].FareBasis}</td>
-					<td>XS/FSD${array[i].Dep}${array[i].Arr}//${array[i].Airline}/#*${array[i].FareBasis}/// -> XS FSN1//15（销售限制）, XS FSN1//4（航班限制）</td> 
-					<!-- XS/FSD${array[i].Dep}${array[i].Arr}//${array[i].Airline}/#*${array[i].FareBasis}/${array[i].Rule.replace(' ', '')}//# -->
+					<td>${array[i].Cabin}</td>
+					<td>${array[i].Stay}</td>
+					<td>XS/FSD${array[i].Dep}${array[i].Arr}//${array[i].Airline}/#*${array[i].FareBasis}/// ->  XS FSN1//4（航班限制）</td> 
 					<td><input type='text' class='form-control Flight' value="${array[i].Flight}" placeholder='格式：' data-Farebasis='${array[i].FareBasis}'></td>
 				</tr>
 			`
@@ -547,6 +602,7 @@ var setCommand = function(command){
 		}
 		return source;
 	}
+
 
 }
 
@@ -757,21 +813,27 @@ function mkMixCabinTable(data){
 		})
 	}
 	columns.push(
-	// Routing
-	{
-		data: null,
-		title: '航路'
-	},
-	// input: 航班限制 Flight
-	{
-		data: null,
-		title: '航班限制'
-	},
-	// Fsi
-	{
-		data: null,
-		title: 'Fsi'
-	})
+		// Routing
+		{
+			data: null,
+			title: '航路'
+		},
+		// input: 航班限制 Flight
+		{
+			data: null,
+			title: '航班限制'
+		},
+		// Fsi
+		{
+			data: null,
+			title: 'Fsi'
+		},
+		// QTE
+		{
+			data: null,
+			title: 'QTE'
+		}
+	)
 
 	// Routing
 	// columns.push({
@@ -786,7 +848,23 @@ function mkMixCabinTable(data){
     iDisplayLength: 100,
     data: data,
     columns : columns,
-	  columnDefs: [{
+	  columnDefs: [
+    {
+        targets: 14, // 航路
+        render: function(data, type, row, meta) {
+          return row.Routing.allStay ? row.Routing.allStay : row.Routing.noStay;
+        }
+    },
+    {
+        targets: 15, // 航班限制
+        render: function(data, type, row, meta) {
+        	// farebasis一致
+        	// var html = "<input type='text' class='input-flight form-control' value='"+row.Flight+"' data-farebasis='"+row.FareBasis.split('/')[0]+"' onblur='upper(this)' placeholder='当运价与fsi结果不一致'>";
+        	var html = row.Flight;
+          return html
+        }
+    },
+		{
         targets: 16, // Fsi
         render: function(data, type, row, meta) {
         	// fsi 命令
@@ -815,38 +893,33 @@ function mkMixCabinTable(data){
 
           return html
         }
-    },
-    {
-        targets: 14, // 航路
+    },{
+        targets: 17, // QTE
         render: function(data, type, row, meta) {
-          return row.Routing.allStay ? row.Routing.allStay : row.Routing.noStay;
+        	if(row.IsCheck == 1){
+        		var tooltipTitle = '';
+        		if(row.CheckDetail){
+        			var checkDetail = JSON.parse(row.CheckDetail)
+							for(var i in checkDetail.farebasisPrice){
+								tooltipTitle += "&nbsp;"+checkDetail.farebasisPrice[i].farebasis+"&nbsp;|&nbsp;"+checkDetail.farebasisPrice[i].leg+"&nbsp;|&nbsp;"+checkDetail.farebasisPrice[i].price+"&nbsp;\r"
+							}
+        		}
+
+        		var html = '验证成功' + '&nbsp;<a class="tooltip-option" href="javascript:void(0)" data-toggle="tooltip" title="'+tooltipTitle+'" data-placement="left"><i class="fa fa-tag"></i></a>'
+        	}else if(row.IsCheck == -1){
+	        	var html = '指定的票价不符合运价规则' ; // + '&nbsp;<a class="look-fsi" href="javascript:void(0)" data-fsi="'+row.Fsi.allStay+'">查看fsi</a>'
+        	}else{
+	        	var html = '<span id="qte-'+row.index+'""><a href="javascript:void(0)" class="check-qte" data-qte='+JSON.stringify({start: row.Dep, end: row.Arr, aircompany: row.Airline, stay: row.Stay, cabin: row.Cabin.split('-')[0]})+' data-price="'+row.RoundFare+'" data-id='+row.Id+'>验证</a></span><input type="hidden" class="input-IsCheck" data-stay='+row.Stay+' data-id='+row.Id+'>'
+	        }
+          return html;
         }
-    },
-    {
-        targets: 15, // 航班限制
-        render: function(data, type, row, meta) {
-        	// farebasis一致
-        	// var html = "<input type='text' class='input-flight form-control' value='"+row.Flight+"' data-farebasis='"+row.FareBasis.split('/')[0]+"' onblur='upper(this)' placeholder='当运价与fsi结果不一致'>";
-        	var html = row.Flight;
-          return html
-        }
-    },
-    // {
-    //     targets: 14, // Routing
-    //     render: function(data, type, row, meta) {
-    //     	var html = ''
-    //     	for(var i in data.Routing){
-    //     		html += ""+data.Routing[i]+"<br>------------------------------<br>"
-    //     	}
-    //       return html
-    //     }
-    // }
+    }
     ]      
 	})
 
-					$('.tooltip-option').tooltip({
-            html: true
-         	});
+	$('.tooltip-option').tooltip({
+    html: true
+ 	});
 }
 
 

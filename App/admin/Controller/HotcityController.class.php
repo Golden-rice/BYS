@@ -339,6 +339,7 @@ class HotcityController extends Controller {
   // 更新 price_source 一条数据
   // 更新某条，多个where
   public function updatePriceSourceByOne(){
+
     $update         = $_POST['update'];
     $where          = $_POST['where'];
     $m              = model('price_source');
@@ -505,7 +506,7 @@ class HotcityController extends Controller {
     if($fsiInput){
       import('vender/eterm/app.php');
       $eterm   = reflect('eterm');
-      $fsi     = new \Fsi($_SESSION['name'], $_SESSION['password'], $_SESSION['resource']);      
+      $fsi     = new \Fsi();      
       // 获取汇率
       // 获取fsi 
       $result = $fsi->isTrueFareBasis($fsiInput);
@@ -514,6 +515,88 @@ class HotcityController extends Controller {
     }
   }
 
+  public function mkSS($sk){
+    // SS  AA180  O   15NOV  PEKLAX GK1/   1830 1515                                   
+    // SS  AA181  O   25NOV  LAXPEK GK1/   1055 1620+1 
+    $string = '';
+    // 去程
+    foreach ($sk as $val) {
+      $string .= "SS  {$val['flight']}  {$val['cabin']}    {$val['date']}  {$val['depart']}{$val['arrive']} GK1/   {$val['departTime']} {$val['arriveTime']}\r";
+    }
+    return $string;
+  }
+
+  // 取Sk 第一个行程正确的数据
+  public function rtTrueSk($sk){
+    $result = array();
+
+    foreach ($sk as $key => $val) {
+      if(count($val) === 2 ){
+        // 非共享航班
+        if($val[0]['isCommon'] === 0 && $val[1]['isCommon'] === 0){
+          $result = $val;
+          break;
+        }
+      }
+    }
+    return $result;
+  }
+
+  // 验证qte
+  public function checkqte(){
+    $query          = $_POST;
+    $eterm          = reflect('eterm');
+    // 去程
+    $outSk          = $eterm->searchSkByInput(true);
+    $outSkVal       = $this->rtTrueSk($outSk['array']);
+
+    // 回程
+    $_POST['start'] = $query['end'];
+    $_POST['end']   = $query['start'];
+    $inSk           = $eterm->searchSkByInput(true);
+    $inSkVal        = $this->rtTrueSk($inSk['array']);
+
+    // 更新回程日期
+    foreach ($outSkVal as $k => $val) {
+      if($outSkVal[$k]['date'] === $inSkVal[$k]['date']){
+        $inSkVal[$k]['date'] = strtoupper(date('dM',strtotime($inSkVal[$k]['date']) + 1*24*60*60));
+      }
+    }
+
+    // 默认第一个为需要的数据
+    if(isset($outSkVal) && isset($inSkVal) ){
+      $routing = array_merge($outSkVal, $inSkVal);
+      foreach ($routing as $key => $value) {
+        $routing[$key]['cabin'] = $query['cabin'];
+      }
+
+      // 发送 ss -> qte -> fsu1 ->ig
+      $qt  = new \Qt();
+      $fsi = new \Fsi();
+      $price = $qt->ss($this->mkSS($routing), $routing);
+      if(isset($price['price']['fareFee']) && !empty($price['price']['fareFee'])){
+        $priceArray = array();
+        // $rateResult = $eterm->toCNY();
+        // if(!empty($query['price']) && $price['price']['fareFee'] != $query['price']*$rateResult['rate']){ // 如果与原来价格不同，则读取具体价格
+          sleep(1);
+          $priceArray = $fsi->priceDetail();
+        // }
+        echo json_encode(array('status'=>1, 'price'=>$price['price'], 'priceDetail'=>$priceArray, 'log'=>$price['log'], 'msg'=>\BYS\Report::printLog(),));
+      }else{
+        echo json_encode(array('status'=>0, 'msg'=>'指定的票价不符合运价规则,'+\BYS\Report::printLog(), 'log'=>$price['log']));
+      }
+      ob_flush();
+      flush();
+      sleep(1);
+      $qt->command('IG');
+    }
+    else{
+      \BYS\Report::log('无使用SK数据');
+      return;
+    }
+
+
+  }
 
   // ----------------------------- 原方法 ---------------------------
   public function updateSaleDate(){

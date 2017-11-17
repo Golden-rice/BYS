@@ -176,6 +176,10 @@ $a->build('sk', array(
 	'Office'        => 'char(10) DEFAULT NULL',
 	// source id
 	'Sid'           => 'bigint(20) NOT NULL',
+	// 查询日期
+	'FareDate'      => 'date DEFAULT NULL',
+	// 是否为共享航班
+	'Sk_IsCommon'   => 'int(1) NOT NULL',
 	// 航班号
 	'Sk_Flight'     => 'varchar(5) NOT NULL', 
 	// 出发

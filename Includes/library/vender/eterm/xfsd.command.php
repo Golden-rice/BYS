@@ -9,6 +9,10 @@ class Xfsd extends Eterm{
     private $keyFeature  = array();  // xfsd中含有地点区域标识
     private $featureWord = '';       // 用于匹配keyFeature的字符
 
+    function __construct( $query = array()){
+        parent::__construct('','','',$query);
+    }
+
     public function toArray(){
         return $this->displayV2(explode("\r", $this->tmp));
     }
@@ -399,11 +403,13 @@ class Xfsd extends Eterm{
 
     }
 
-    // 汇率
+    // 返回汇率
     public function changePrice(){
         $f_page = parent::initFile($this->tmp, 0, 1);
-        preg_match('/1NUC=(.*)CNY/', $f_page[1], $str);
-        $rate = floatval($str[1]);
+        if(isset($f_page[1]) && preg_match('/1NUC=(.*)CNY/', $f_page[1], $str))
+            $rate = floatval($str[1]);
+        else
+            $rate = 0;
         return $rate;
     }
 

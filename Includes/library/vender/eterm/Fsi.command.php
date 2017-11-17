@@ -54,7 +54,7 @@ class Fsi extends Eterm{
 			$farebasisPriceArray = array();
 			$allPriceArray = array();
 			foreach ($priceDetailArray as $pdKey => $pdVal) {
-				if(preg_match("/\d+\s([A-Z0-9]+)\s[CNYUSD]+\s+([0-9\.]+)\s+([A-Z\-]+)/",$pdVal, $matchPdVal)){
+				if(preg_match("/\d+\s([A-Z0-9]+)\s+[CNYUSD]+\s+([0-9\.]+)\s+([A-Z\-]+)/",$pdVal, $matchPdVal)){
 					array_push($farebasisPriceArray, array(
 						'farebasis'=>$matchPdVal[1],
 						'price'    =>$matchPdVal[2],
@@ -67,10 +67,10 @@ class Fsi extends Eterm{
 					));
 				}
 			}
-			return array( 'farebasisPrice' => $farebasisPriceArray,  'allPrice' => $allPriceArray);
+			return array( 'farebasisPrice' => $farebasisPriceArray,  'allPrice' => $allPriceArray, 'log'=>$this->tmp);
 		}else{
-			var_dump($priceDetailSrcArray,$fkey);
-			echo '没解析出价格数据';
+			\BYS\Report::log('没解析出具体价格数据');
+			return array('status'=>0, 'msg'=>\BYS\Report::printLog(), 'log'=>$priceDetailSrcArray);
 		}
 		// --------------- SOLD IN  /--\s.*--\s+\n/
 		// -    TOTAL NUC   /TOTAL\sNUC/ 

@@ -58,6 +58,21 @@ class Qt extends Eterm{
 		parent::command('IG');
 	}
 
+	// 利用预定接口查询价格
+	public function ss($ssString = '', $note){
+		if(empty($ssString)) return;
+		$aircompany = $note[0]['aircompany'];
+
+		parent::mixCommand(array("{$ssString}", "QTE:/{$aircompany}"), 'w');  
+		if(!empty($this->tmp)){
+			$log   = $this->tmp;               // 原始数据
+			$price = $this->parsePrice($note); // 获得价格
+
+			return array('price'=>$price, 'log'=>$log);
+		}
+		return false;
+	}
+
 	// 解析价格
 	public function parsePrice($note){
 		if(empty($note)) return;
@@ -75,12 +90,14 @@ class Qt extends Eterm{
  				foreach ($note as $noteKey => $noteValue) {
  					if(isset($list[$key+$noteKey])){
 	 					$fsiPattern = "/S\s{$aircompany}\s{3}.*{$noteValue['cabin']}{$noteValue['date']}\s{$noteValue['depart']}{$noteValue['departTime']}[\s|>]".substr($noteValue['arriveTime'], 0, 4)."{$noteValue['arrive']}0(S|X)/";
-			 			preg_match($fsiPattern, $list[$key+$noteKey], $fsiArr);
-			 			if(isset($fsiArr[1])){
-			 				$fsiKey  = $key;
-		 					$note[$noteKey]['routingType'] = $fsiArr[1];
-			 			}else{
-			 				$note[$noteKey]['routingType'] = '';
+			 			if(preg_match($fsiPattern, $list[$key+$noteKey], $fsiArr)){
+				 			if(isset($fsiArr[1])){
+				 				$fsiKey  = $key;
+				 				// 扩展新属性
+			 					$note[$noteKey]['routingType'] = $fsiArr[1];
+				 			}else{
+				 				$note[$noteKey]['routingType'] = '';
+				 			}
 			 			}
  					}
  				}
