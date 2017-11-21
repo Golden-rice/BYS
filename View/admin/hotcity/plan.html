@@ -96,7 +96,7 @@ function uniqueXfsd(result){
 var setCommand = function(command){
 
 	command.showHotCityPlan();
-	
+
 	// 全局变量
 	var xfsdInGroup;    // xfsd 分组的全部数据
 	var xfsdSmpInGroup; // xfsd 分组的全部数据
@@ -239,8 +239,8 @@ var setCommand = function(command){
 		else if(res.status === 0){
 			if(res.msg) alert(res.msg);
 
-			// wapper.html('<a href="javascript:void(0)" class="check-failed-click">隐藏</a>')
-			// 			.closest('tr').after('<tr class="check-failed-tr"><td colspan=18><textarea class="form-control"  rows="18" style="background-color:black;color:green;">'+res.log+'</textarea></td></tr>');
+			wapper.html('<a href="javascript:void(0)" class="check-failed-click">隐藏</a>').closest('tr').after('<tr class="check-failed-tr"><td colspan=18><textarea class="form-control"  rows="18" cols="50" style="background-color:black;color:green;">'+res.log+'</textarea></td></tr>');
+
 			// updatePriceSourceIsCheck.execute({
 			// 	'update': { 'IsCheck': -1 }, 
 			// 	'where' : { 'Id' :  id, },
@@ -801,42 +801,15 @@ function mkMixCabinTable(data){
         render: function(data, type, row, meta) {
           return row.Routing.allStay ? row.Routing.allStay : row.Routing.noStay;
         }
-    },
-    {
+    },{
         targets: 15, // 航班限制
         render: function(data, type, row, meta) {
-        	// farebasis一致
-        	// var html = "<input type='text' class='input-flight form-control' value='"+row.Flight+"' data-farebasis='"+row.FareBasis.split('/')[0]+"' onblur='upper(this)' placeholder='当运价与fsi结果不一致'>";
         	var html = row.Flight;
           return html
         }
-    },
-		{
+    },{
         targets: 16, // 使用规则
         render: function(data, type, row, meta) {
-        	// fsi 命令
-        	// var html = "<textarea rows='3' cols='50' class='form-control' disabled>"
-        	// for(var i in data.Fsi){
-        	// 	html += data.Fsi[i]+"\r------------------------------\r"
-        	// }
-        	// html += '</textarea>'
-
-		       //  	// 检验按钮
-		       //  	if(row.IsCheck == 1){
-		       //  		var tooltipTitle = '';
-		       //  		if(row.CheckDetail){
-		       //  			var checkDetail = JSON.parse(row.CheckDetail)
-									// for(var i in checkDetail.farebasisPrice){
-									// 	tooltipTitle += "&nbsp;"+checkDetail.farebasisPrice[i].farebasis+"&nbsp;|&nbsp;"+checkDetail.farebasisPrice[i].leg+"&nbsp;|&nbsp;"+checkDetail.farebasisPrice[i].price+"&nbsp;\r"
-									// }
-		       //  		}
-
-		       //  		var html = '验证成功' + '&nbsp;<a class="tooltip-option" href="javascript:void(0)" data-toggle="tooltip" title="'+tooltipTitle+'" data-placement="left"><i class="fa fa-tag"></i></a>'
-		       //  	}else if(row.IsCheck == -1){
-			      //   	var html = '指定的票价不符合运价规则' ; // + '&nbsp;<a class="look-fsi" href="javascript:void(0)" data-fsi="'+row.Fsi.allStay+'">查看fsi</a>'
-		       //  	}else{
-			      //   	var html = '<span id="check-fsi-'+row.Id+'""><a href="javascript:void(0)" class="check-fsi" data-fsi='+JSON.stringify(data.Fsi.allStay ? data.Fsi.allStay : data.Fsi.noStay)+' data-price="'+row.RoundFare+'" data-id='+row.Id+'>验证</a></span><input type="hidden" class="input-IsCheck" data-stay='+row.Stay+' data-id='+row.Id+'>'
-		       //  	}
 		       let html = `<a href="__URL__admin/eterm/fare?fare=${data.FareBasis.split('/')[0]}&start=${data.Dep}&end=${data.Arr}&startDate=${data.FareDate}&aircompany=${data.Airline}" target="_blank"> 使用规则</a>` 
           return html
         }
@@ -856,7 +829,7 @@ function mkMixCabinTable(data){
         	}else if(row.IsCheck == -1){
 	        	var html = '指定的票价不符合运价规则' ; 
         	}else{
-	        	var html = '<span id="check-qte-'+row.Id+'""><a href="javascript:void(0)" class="check-qte" data-qte='+JSON.stringify({start: row.Dep, end: row.Arr, aircompany: row.Airline, stay: row.Stay, cabin: row.Cabin.split('-')[0]})+' data-price="'+row.RoundFare+'" data-id='+row.Id+'>验证</a></span><input type="hidden" class="input-IsCheck" data-stay='+row.Stay+' data-id='+row.Id+'>'
+	        	var html = '<span id="check-qte-'+row.Id+'""><a href="javascript:void(0)" class="check-qte" data-qte='+JSON.stringify({start: row.Dep, end: row.Arr, aircompany: row.Airline, stay: row.Stay, cabin: row.Cabin.split('-')[0]})+' data-price="'+row.RoundFare+'" data-id='+row.Id+'>验证</a></span><input type="hidden" class="input-IsCheck" data-stay='+row.Stay+' data-id='+row.Id+' >'
 	        }
           return html;
         }

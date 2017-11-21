@@ -99,42 +99,45 @@ class HotcityController extends Controller {
     	$_POST['endDate']    = $_POST['startDate']; 
     	$result_avh          = $eterm->searchAvhByInput(true);
 
-      // 查询中转城市 
       $routing             = array();
-      $res_air = $m_bsis_air->find(array('Air_Code'=>$col['HC_Aircompany']), array(), array('Air_Code', 'Air_ShortName', 'Air_Union', 'Air_Union_Type'));
-      if($res_air[0]['Air_Union_Type'] == 1){ // 星空联盟
-        // fsl
-      	$result_fsl        = $eterm->searchFslByInput(true);
-        $fslName           = "{$col['HC_Depart']}{$col['HC_Arrive']}/{$col['HC_Aircompany']}";
-        $routing           = isset($result_fsl['array'][$fslName]['result']) ? $result_fsl['array'][$fslName]['result'] : array();
-      }else{
-        // YY 
-        // 城市代码转化成机场代码
-        $cityToAirport     = $m_bsis_city->where("`ACC_CityCode` = '{$col['HC_Depart']}'")->select("ACC_Code, ACC_CityCode");
-        // 降维
-        $airport = array();
-        if($cityToAirport)
-          foreach ($cityToAirport as $cVal) {
-            $airport[] = $cVal['ACC_Code'];
-          }
-        else
-          var_dump('城市代码无法查找到机场代码');
-
-        // 查询yy（非共享）
-        $result_yy         = $m_yy->where("`Yy_Aircompany` = '{$col['HC_Aircompany']}' AND `Yy_IsCommon` = 0")->select('Yy_Start, Yy_End, Yy_Aircompany');
-        if(!$result_yy){
-          // 没有，发送YY请求 
-          $eterm->setYY(true);
-          $result_yy       = $m_yy->where("`Yy_Aircompany` = '{$col['HC_Aircompany']}' AND `Yy_IsCommon` = 0")->select('Yy_Start, Yy_End, Yy_Aircompany');
-        }
-        
-        // 查找在该机场的中转点
-        foreach ($result_yy as $rk => $rv) {
-          if(in_array($rv['Yy_Start'], $airport))
-            $routing[] = $rv['Yy_End'];
+      // CDG 戴高乐机场 PAR 城市代码<- 结果是城市代码 YY是机场代码
+      // 城市代码转化成机场代码
+      $arriveAirport       = $this->cityToAirport($col['HC_Arrive']);
+      // 查询yy（非共享）查询中转城市
+      $result_yy         = $m_yy->where("`Yy_Aircompany` = '{$col['HC_Aircompany']}' AND `Yy_IsCommon` = 0")->select('Yy_Start, Yy_End, Yy_Aircompany');
+      if(!$result_yy){
+        // 没有，发送YY请求 
+        $eterm->setYY(true);
+        $result_yy       = $m_yy->where("`Yy_Aircompany` = '{$col['HC_Aircompany']}' AND `Yy_IsCommon` = 0")->select('Yy_Start, Yy_End, Yy_Aircompany');
+      }
+      // 目的地为中转城市则不需要回填中转点
+      $noRouting = false;
+      foreach ($result_yy as $yyVal) {
+        if(in_array($yyVal['Yy_End'], $arriveAirport)){ // 目的地是中转机场
+          $noRouting = true;
+          break;
         }
       }
 
+      if(!$noRouting){
+        // 查询中转城市 
+        $res_air = $m_bsis_air->find(array('Air_Code'=>$col['HC_Aircompany']), array(), array('Air_Code', 'Air_ShortName', 'Air_Union', 'Air_Union_Type'));
+        if($res_air[0]['Air_Union_Type'] == 1){ // 星空联盟可以用FSL
+          // fsl
+          $result_fsl        = $eterm->searchFslByInput(true);
+          $fslName           = "{$col['HC_Depart']}{$col['HC_Arrive']}/{$col['HC_Aircompany']}";
+          $routing           = isset($result_fsl['array'][$fslName]['result']) ? $result_fsl['array'][$fslName]['result'] : array();
+        }else{
+
+          $departAirport     = $this->cityToAirport($col['HC_Depart']);
+
+          // 查找在该机场的中转点，默认中转点
+          foreach ($result_yy as $rk => $rv) {
+            if(in_array($rv['Yy_Start'], $departAirport))
+              $routing[] = $rv['Yy_End'];
+          }
+        }
+      }
       // 更新hotcity数据
     	$update = $this->savePlanResult($result_xfsd, $result_avh, $routing, $result_xfsd_continue);
       $result_update = $hotcity->where("`Id` = {$col['Id']}")->update($update);
@@ -169,6 +172,8 @@ class HotcityController extends Controller {
         if(!is_array($row)) break;
         // 排除无限的适用日期
         if($row['allowDateEnd'] === '2099-12-30' || $row['allowDateEnd'] === '') continue;
+        // $row['allowDateEnd'] 年份获取不到 起始日期>结束日期 = 跨年
+        if(strtotime($row['allowDateStart']) > strtotime($row['allowDateEnd']) ) $row['allowDateEnd'] .= date('Y',time()+365*24*60*60);
         if(!in_array($row['seat'], $tmpXfsd) && time() + 30*60*60 > strtotime($row['allowDateEnd']) ){
           $tmpXfsd[$row['seat']] = $row;
         }
@@ -178,6 +183,8 @@ class HotcityController extends Controller {
         if(!is_array($row)) break;
          // 排除无限的适用日期
         if($row['allowDateEnd'] === '2099-12-30' || $row['allowDateEnd'] === '') continue;
+        // $row['allowDateEnd'] 年份获取不到 起始日期>结束日期 = 跨年
+        if(strtotime($row['allowDateStart']) > strtotime($row['allowDateEnd']) ) $row['allowDateEnd'] .= date('Y',time()+365*24*60*60);
         if( (!in_array($row['seat'], $tmpXfsd) && in_array($row['seat'], $hc_cabin)) && time() + 30*60*60 > strtotime($row['allowDateEnd']) ){
           $tmpXfsd[$row['seat']] = $row;
         }
@@ -291,6 +298,21 @@ class HotcityController extends Controller {
       return;
     }
     echo json_encode(array('status'=>0, 'msg'=>'无可用数据'));
+  }
+
+  // 城市转化成机场代码
+  public function cityToAirport($city){
+    $m_bsis_city = model('airport_city_code');  // 机场与城市对照表
+    $cityToAirport     = $m_bsis_city->where("`ACC_CityCode` = '{$city}'")->select("ACC_Code, ACC_CityCode");
+    $result = array();
+    if($cityToAirport)
+      foreach ($cityToAirport as $cVal) {
+        $result[] = $cVal['ACC_Code'];
+      }
+    else
+      \BYS\Report::log('城市代码无法查找到机场代码');
+
+    return $result;
   }
 
   public function appendHCAndPS(){
@@ -546,13 +568,18 @@ class HotcityController extends Controller {
   }
 
   // 取Sk 第一个行程正确的数据
-  public function rtTrueSk($sk){
+  public function rtTrueSk($sk, $noStay){
     // AF KL 不需要过滤共享航班
     $aircompany    = $sk[0][0]['aircompany']; 
     $needCommonAir = array('AF','KL');
     $result        = array();
     if(in_array($aircompany, $needCommonAir)){
       foreach ($sk as $key => $val) {
+        if($noStay){
+            $result = $val;
+            break;        
+        }
+
         if(count($val) === 2 ){
             $result = $val;
             break;
@@ -560,6 +587,14 @@ class HotcityController extends Controller {
       }
     }else{
       foreach ($sk as $key => $val) {
+        if($noStay){
+          // 非共享航班过滤
+          if($val[0]['isCommon'] === 0 && $val[1]['isCommon'] === 0){
+            $result = $val;
+            break;    
+          }    
+        }
+
         if(count($val) === 2 ){
           // 非共享航班过滤
           if($val[0]['isCommon'] === 0 && $val[1]['isCommon'] === 0){
@@ -580,21 +615,21 @@ class HotcityController extends Controller {
     // 去程
     $outSk          = $eterm->searchSkByInput(true);
     if($outSk)
-      $outSkVal     = $this->rtTrueSk($outSk['array']);
+      $outSkVal     = $this->rtTrueSk($outSk['array'], $query['stay'] === '');
 
     // 回程
     $_POST['start'] = $query['end'];
     $_POST['end']   = $query['start'];
     $inSk           = $eterm->searchSkByInput(true);
     if($inSk)
-      $inSkVal      = $this->rtTrueSk($inSk['array']);
+      $inSkVal      = $this->rtTrueSk($inSk['array'], $query['stay'] === '');
 
     // 默认第一个为需要的数据
     if(isset($outSkVal) && isset($inSkVal) ){
       // 更新回程日期
       foreach ($outSkVal as $k => $val) {
         if($outSkVal[$k]['date'] === $inSkVal[$k]['date']){
-          $inSkVal[$k]['date'] = strtoupper(date('dM',strtotime($inSkVal[$k]['date']) + 1*24*60*60));
+          $inSkVal[$k]['date'] = strtoupper(date('dM',strtotime($inSkVal[$k]['date']) + 3*24*60*60));
         }
       }
       // 扩展字段
@@ -608,6 +643,7 @@ class HotcityController extends Controller {
       $fsi = new \Fsi();
 
       $ssString = $this->mkSS($routing);
+
       if(empty($ssString)){
         echo json_encode(array('status'=>-1, 'msg'=>"无适用航班\r".\BYS\Report::printLog(), 'log'=>json_encode(array_merge($outSk, $inSk)) ));
         return;        
@@ -637,72 +673,6 @@ class HotcityController extends Controller {
   }
 
   // ----------------------------- 原方法 ---------------------------
-  public function updateSaleDate(){
-    $hid    = $_POST['hid'];
-    $m      = model('price_source');
-    $m->prepare("SELECT FareBasis, Rule AS xfsd_Rule, Dep AS xfsd_Dep, Arr AS xfsd_Arr, Airline AS xfsd_Owner, ValidBegin AS xfsd_DateStart, SaleDate, COUNT(FareBasis) AS count FROM e_cmd_price_source WHERE `Hid` = {$hid}  GROUP BY Rule");
-    $result = $m->execute();
-    if($result){
-      echo json_encode(array('result'=>$result, 'status'=>1));
-    }
-    else
-      echo json_encode(array('msg'=>'出现错误', 'status'=>0));
-  }
-
-  public function setSaleDate(){
-    $start         = $_POST['start'];
-    $end           = $_POST['end'];
-    $aircompany    = $_POST['aircompany'];
-    $departureDate = $_POST['departureDate'];
-    // 利用精简后的数据 根据sid 获得 result
-    $xfsd_model    = model('xfsd_result');
-        // 根据舱位筛选运价结果
-    $hotcity_model = model('hot_city');
-    $hotcity_result= $hotcity_model->where("`HC_Depart` = '{$start}' AND `HC_Arrive` = '{$end}' AND `HC_Aircompany` = '{$aircompany}'")->select();
-
-    if(!empty($hotcity_result[0]['HC_Cabin'])){
-      $where_cabin_array = explode(',', $hotcity_result[0]['HC_Cabin']);
-      $where_cabin = '(';
-      foreach ($where_cabin_array as $cabin) {
-        $where_cabin .= "'{$cabin}',";
-      }
-      $where_cabin = rtrim($where_cabin, ',').')';
-    }
-
-    $where = '';
-    // 必填
-    if($start != '')
-      $where = "xfsd_Dep = '{$start}'";
-    
-    if($end != '')
-      $where .= " AND xfsd_Arr = '{$end}'";
-    
-    if($aircompany != '')
-      $where .= " AND xfsd_Owner = '{$aircompany}'";
-    
-    // 去程日期
-    if($departureDate != ''){
-      $where .= "AND xfsd_DateEnd > '{$departureDate}'";
-    }else{
-      $where .= "AND xfsd_DateEnd > '".date('Y-m-d',time())."'";
-    }
-    if(isset($where_cabin))
-      $where .= " AND `xfsd_Cabin` IN {$where_cabin}";
-    
-    $xfsd_model->prepare("SELECT
-          FareBasis, xfsd_Rule, xfsd_Dep, xfsd_Arr, xfsd_Owner, xfsd_DateStart, COUNT(FareBasis) AS count
-        FROM
-          e_cmd_xfsd_result
-        WHERE {$where} AND  
-          xfsd_SingleFee = 0
-        GROUP BY
-          xfsd_Rule");
-
-    $xfsd_result =  $xfsd_model->execute();
-
-    echo json_encode(array('result'=>$xfsd_result));
-
-  }
 
   // 根据xfsd查询政策
   public function searchPriceByXfsd(){

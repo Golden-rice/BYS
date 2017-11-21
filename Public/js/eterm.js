@@ -1196,7 +1196,6 @@ var createCommand = function(recevier, tpl, set){
 
 	var searchCabinRule = function(query){
 		recevier.link( Controller + 'searchCabinRule', query , function(data){
-			console.log(data)
 			mkSelectCabin({
 				cabin_rule: data.cabin_rule
 			})

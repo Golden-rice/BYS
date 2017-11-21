@@ -92,17 +92,16 @@ class Eterm{
 	  protected function getAllPage($dataFrom, $command, $type = 'a'){
 			// 获取除了第一页的其他页数据
 	    $f = $this->initFile($dataFrom, 0, 1);
-			preg_match_all('/PAGE[\s]*(\w+)\/(\w+)/', end($f), $str); // 获取页码
 
-			if(!isset($str[2][0])) return;
-			$pageTotal = intval($str[2][0]);   // 总页码
-	    $pageCur   = intval($str[1][0]);   // 当前页码
+			if(preg_match_all('/PAGE[\s]*(\w+)\/(\w+)/', end($f), $str)){
+				$pageTotal = intval($str[2][0]);   // 总页码
+		    $pageCur   = intval($str[1][0]);   // 当前页码
 
-    	while($pageCur < $pageTotal){
-    		$this->addCommand($command, $type); // 回填tmp文件
-    		$pageCur++;
-    	}
-
+	    	while($pageCur < $pageTotal){
+	    		$this->addCommand($command, $type); // 回填tmp文件
+	    		$pageCur++;
+	    	}
+			}
 		}
 
 		// 解析文本的头部

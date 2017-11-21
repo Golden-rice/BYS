@@ -32,12 +32,11 @@ class Fsd extends Eterm{
 			}
 		}
 
-	    if(!empty($this->arr)){
-	        return $this->arr;
-	    }else{
-	        // 无数据
-	        return false;
-	    }
+    if(!empty($this->arr))
+       return $this->arr;
+    else // 无数据
+       return false;
+
 	}
 
 	private function fsn1($index){
@@ -53,14 +52,15 @@ class Fsd extends Eterm{
     parent::mixCommand($commandArr,'w');	
     
     // 只保留有用部分
-    if(preg_match_all("/\[CDATA\[(.*?)\]\]/is", $this->tmp, $tmpMatch)){
-      $this->tmp = $tmpMatch[1][1];
-    }
+    // if(preg_match_all("/\[CDATA\[(.*?)\]\]/is", $this->tmp, $tmpMatch)){
+    //   $this->tmp = $tmpMatch[1][1];
+    // }
 
   }
 
   private function f_fliter_useless($fileName){
   	$arr          = parent::initFile($fileName, 0, 1);
+
     $arr_tmp      = $arr;
     $fliter_str_1 = '/PAGE[\s]*(\w+)\/(\w+)/';               // 匹配页所在行
     $fliter_str_2 = '/\<\</';                                // 匹配<<

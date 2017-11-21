@@ -198,7 +198,6 @@ function mkSelectCabin(data){
 			cabinInRule.default = searchAllCabin;
 		}
 
-
 		// 没有舱位等级区分时
 		if(cabinInRule.default){
 			for(var c in cabinInRule.default){
@@ -216,7 +215,7 @@ function mkSelectCabin(data){
 
 			html += ` <label>超级经济舱：</label>`;
 			if( cabinInRule.S.length>0  ){
-				for(var c in cabinInRule.Y){
+				for(var c in cabinInRule.S){
 					html += cabinInRuleHtml(cabinInRule.S[c].cabin);
 				}
 			}
