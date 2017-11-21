@@ -3,6 +3,10 @@ namespace admin\Controller;
 use BYS\Controller;
 class HotcityController extends Controller {
 
+  public function test(){
+    $this->display();
+  }
+
   public function plan(){
   	$this->display();
   }
@@ -519,23 +523,49 @@ class HotcityController extends Controller {
     // SS  AA180  O   15NOV  PEKLAX GK1/   1830 1515                                   
     // SS  AA181  O   25NOV  LAXPEK GK1/   1055 1620+1 
     $string = '';
-    // 去程
+    $aircompany    = $sk[0]['aircompany']; 
+    $needCommonAir = array('AF','KL');
+    // AF KL 内陆匹配舱位需要更改
+    if(in_array($aircompany, $needCommonAir) && count($sk) === 4){
+      $m_cabin = model('cabin_rule');
+
+      // $MatchInnerCabin[0]['Cab_Code']
+      $m_cabin->prepare("SELECT Cab_Code FROM basis_cabin_rule,(SELECT MatchInnerId AS Id FROM basis_cabin_rule WHERE Cab_AircompanyCode = '{$aircompany}' AND Cab_Code = '{$sk[1]['cabin']}' AND IsMatchInner = 1) AS A WHERE Cab_Id = A.Id");
+      $OutboundMatchInnerCabin = $m_cabin->execute();
+      $sk[1]['cabin'] = $OutboundMatchInnerCabin ? $OutboundMatchInnerCabin[0]['Cab_Code'] : $sk[2]['cabin'];
+      $m_cabin->prepare("SELECT Cab_Code FROM basis_cabin_rule,(SELECT MatchInnerId AS Id FROM basis_cabin_rule WHERE Cab_AircompanyCode = '{$aircompany}' AND Cab_Code = '{$sk[2]['cabin']}' AND IsMatchInner = 1) AS A WHERE Cab_Id = A.Id");
+      $inboundMatchInnerCabin = $m_cabin->execute();
+      $sk[2]['cabin'] = $inboundMatchInnerCabin ? $inboundMatchInnerCabin[0]['Cab_Code'] : $sk[2]['cabin'];
+    }
+
     foreach ($sk as $val) {
       $string .= "SS  {$val['flight']}  {$val['cabin']}    {$val['date']}  {$val['depart']}{$val['arrive']} GK1/   {$val['departTime']} {$val['arriveTime']}\r";
     }
+    
     return $string;
   }
 
   // 取Sk 第一个行程正确的数据
   public function rtTrueSk($sk){
-    $result = array();
-
-    foreach ($sk as $key => $val) {
-      if(count($val) === 2 ){
-        // 非共享航班
-        if($val[0]['isCommon'] === 0 && $val[1]['isCommon'] === 0){
-          $result = $val;
-          break;
+    // AF KL 不需要过滤共享航班
+    $aircompany    = $sk[0][0]['aircompany']; 
+    $needCommonAir = array('AF','KL');
+    $result        = array();
+    if(in_array($aircompany, $needCommonAir)){
+      foreach ($sk as $key => $val) {
+        if(count($val) === 2 ){
+            $result = $val;
+            break;
+        }
+      }
+    }else{
+      foreach ($sk as $key => $val) {
+        if(count($val) === 2 ){
+          // 非共享航班过滤
+          if($val[0]['isCommon'] === 0 && $val[1]['isCommon'] === 0){
+            $result = $val;
+            break;
+          }
         }
       }
     }
@@ -544,27 +574,30 @@ class HotcityController extends Controller {
 
   // 验证qte
   public function checkqte(){
+
     $query          = $_POST;
     $eterm          = reflect('eterm');
     // 去程
     $outSk          = $eterm->searchSkByInput(true);
-    $outSkVal       = $this->rtTrueSk($outSk['array']);
+    if($outSk)
+      $outSkVal     = $this->rtTrueSk($outSk['array']);
 
     // 回程
     $_POST['start'] = $query['end'];
     $_POST['end']   = $query['start'];
     $inSk           = $eterm->searchSkByInput(true);
-    $inSkVal        = $this->rtTrueSk($inSk['array']);
-
-    // 更新回程日期
-    foreach ($outSkVal as $k => $val) {
-      if($outSkVal[$k]['date'] === $inSkVal[$k]['date']){
-        $inSkVal[$k]['date'] = strtoupper(date('dM',strtotime($inSkVal[$k]['date']) + 1*24*60*60));
-      }
-    }
+    if($inSk)
+      $inSkVal      = $this->rtTrueSk($inSk['array']);
 
     // 默认第一个为需要的数据
     if(isset($outSkVal) && isset($inSkVal) ){
+      // 更新回程日期
+      foreach ($outSkVal as $k => $val) {
+        if($outSkVal[$k]['date'] === $inSkVal[$k]['date']){
+          $inSkVal[$k]['date'] = strtoupper(date('dM',strtotime($inSkVal[$k]['date']) + 1*24*60*60));
+        }
+      }
+      // 扩展字段
       $routing = array_merge($outSkVal, $inSkVal);
       foreach ($routing as $key => $value) {
         $routing[$key]['cabin'] = $query['cabin'];
@@ -573,17 +606,23 @@ class HotcityController extends Controller {
       // 发送 ss -> qte -> fsu1 ->ig
       $qt  = new \Qt();
       $fsi = new \Fsi();
-      $price = $qt->ss($this->mkSS($routing), $routing);
-      if(isset($price['price']['fareFee']) && !empty($price['price']['fareFee'])){
+
+      $ssString = $this->mkSS($routing);
+      if(empty($ssString)){
+        echo json_encode(array('status'=>-1, 'msg'=>"无适用航班\r".\BYS\Report::printLog(), 'log'=>json_encode(array_merge($outSk, $inSk)) ));
+        return;        
+      }
+
+      $price = $qt->ss($ssString, $routing);
+      // 因为存在多个运价，所以改为用totel判断
+      if(isset($price['price']['totalFee']) && !empty($price['price']['totalFee'])){
         $priceArray = array();
-        // $rateResult = $eterm->toCNY();
-        // if(!empty($query['price']) && $price['price']['fareFee'] != $query['price']*$rateResult['rate']){ // 如果与原来价格不同，则读取具体价格
-          sleep(1);
-          $priceArray = $fsi->priceDetail();
-        // }
-        echo json_encode(array('status'=>1, 'price'=>$price['price'], 'priceDetail'=>$priceArray, 'log'=>$price['log'], 'msg'=>\BYS\Report::printLog(),));
+        // 延迟一秒发送
+        sleep(1);
+        $priceArray = $fsi->priceDetail($price['price']['index']);
+        echo json_encode(array('status'=>1, 'price'=>$price['price'], 'priceDetail'=>$priceArray, 'log'=>$price['log'], 'msg'=>\BYS\Report::printLog() ));
       }else{
-        echo json_encode(array('status'=>0, 'msg'=>'指定的票价不符合运价规则,'+\BYS\Report::printLog(), 'log'=>$price['log']));
+        echo json_encode(array('status'=>0, 'msg'=>"指定的票价不符合运价规则\r".\BYS\Report::printLog(), 'log'=>$price['log']));
       }
       ob_flush();
       flush();
@@ -592,9 +631,8 @@ class HotcityController extends Controller {
     }
     else{
       \BYS\Report::log('无使用SK数据');
-      return;
+      echo json_encode(array('status'=>0, 'msg'=>"指定的票价不符合运价规则\r".\BYS\Report::printLog()));
     }
-
 
   }
 

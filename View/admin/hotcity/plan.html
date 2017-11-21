@@ -96,6 +96,7 @@ function uniqueXfsd(result){
 var setCommand = function(command){
 
 	command.showHotCityPlan();
+	
 	// 全局变量
 	var xfsdInGroup;    // xfsd 分组的全部数据
 	var xfsdSmpInGroup; // xfsd 分组的全部数据
@@ -190,28 +191,27 @@ var setCommand = function(command){
 		}
 	}) 
 
-
 	// res 返回的结果， updateRely 更新的依据（ID，stay）
 	function parseCheckRes(res, updateRely, name){
 		// ES6 
 		"use strict";
 		console.log(res, updateRely);
 		// 找到存放更新信息的容器
-		let [id, wapper] = [updateRely.id, $("#check-"+name+"-1")]; 
-
-		// 成功结果
-		if(res.status){
+		let [id, wapper] = [updateRely.id, $("#check-"+name+"-"+updateRely.id)]; 
+		// 成功结果 1
+		if(res.status === 1){
 
 			if(res.priceDetail.allPrice){
 
 				// 返回的详细总价  具体运价
-				let [totalPrice, priceDetail, tooltipTitle] = [0, res.priceDetail, '']; 
-				priceDetail.farebasisPrice.map(i=>totalPrice += i.price-0);
+				let [totalFarePrice, totalPrice, priceDetail, tooltipTitle] = [0, 0,res.priceDetail, '']; 
+				// fareFee
+				priceDetail.farebasisPrice.map(i=>totalFarePrice += i.price-0);
+				// total
+				priceDetail.allPrice.map(i=>totalPrice += i.price-0);
 
-				// 取整
-				totalPrice = command.mkFarePrice( totalPrice, eterm.eterm.rate);
 				// 实际运价与混舱价格相等
-				if( totalPrice === command.mkFarePrice( updateRely.price, eterm.eterm.rate)){
+				if( totalFarePrice === updateRely.price){
 
 					priceDetail.farebasisPrice.map(i=>tooltipTitle += "&nbsp;"+i.farebasis+"&nbsp;|&nbsp;"+i.leg+"&nbsp;|&nbsp;"+i.price+"&nbsp;\r");
 
@@ -223,26 +223,34 @@ var setCommand = function(command){
 						'where' : { 'Id' :  updateRely.id, },
 						'Hid'   : hid,
 					});
+
 					$('.tooltip-option').tooltip({ html: true });
 				}
 				// 实际运价与混舱价格不相等
 				else{
-					console.log('价格不一致', totalPrice, res.price, command.mkFarePrice( updateRely.price, eterm.eterm.rate), updateRely.price)
+					console.log('价格不一致', 'detail的fare总价',totalFarePrice, 'detail的总价', totalPrice, 'fsu结果',res.priceDetail, '汇率后原价格和未汇率的原价格',command.mkFarePrice( updateRely.price, eterm.eterm.rate), updateRely.price)
 				}
 			}else{
 				// 无详细价格，仅用qte 的价格 与 混舱的价格比较
 				console.log('无详细的QTE价格', priceDetail)
 			}
 		}
-		// 失败结果
+		// 失败结果 0
+		else if(res.status === 0){
+			if(res.msg) alert(res.msg);
+
+			// wapper.html('<a href="javascript:void(0)" class="check-failed-click">隐藏</a>')
+			// 			.closest('tr').after('<tr class="check-failed-tr"><td colspan=18><textarea class="form-control"  rows="18" style="background-color:black;color:green;">'+res.log+'</textarea></td></tr>');
+			// updatePriceSourceIsCheck.execute({
+			// 	'update': { 'IsCheck': -1 }, 
+			// 	'where' : { 'Id' :  id, },
+			// 	'Hid'   : hid,
+			// });
+		}
+		// 发生错误 -1
 		else{
-			alert(res.msg);
-			wapper.html('<a href="javascript:void(0)" class="check-failed-click">隐藏</a>').closest('tr').after('<tr class="check-failed-tr"><td colspan=16><textarea class="form-control"  rows="16" style="background-color:black;color:green;">'+res.log+'</textarea></td></tr>');
-			updatePriceSourceIsCheck.execute({
-				'update': { 'IsCheck': -1 }, 
-				'where' : { 'Id' :  id, },
-				'Hid'   : hid,
-			});
+			if(res.msg) alert(res.msg);
+			wapper.html('<a href="javascript:void(0)" class="check-failed-click">隐藏</a>').closest('tr').after('<tr class="check-failed-tr"><td colspan=18><textarea class="form-control"  rows="16" style="background-color:black;color:green;">'+res.log+'</textarea></td></tr>');
 		}
 	}
 
@@ -250,69 +258,14 @@ var setCommand = function(command){
 	var checkfsi = new command.ReqCommand({
 		url: eterm.const.Controller + 'checkfsi',
 		clk: function(res){
-			console.log(res)
-			var src = checkfsi.returnConfig().query;
-			var $data = $('#'+src.id).next('input');
-			if(res.msg){
-				alert(res.msg);
-				$('#'+src.id).html('<a href="javascript:void(0)" class="check-failed-click">隐藏</a>').closest('tr').after('<tr class="check-failed-tr"><td colspan=16><textarea class="form-control"  rows="16" style="background-color:black;color:green;">'+res.log+'</textarea></td></tr>')
-			
-					updatePriceSourceIsCheck.execute({
-						'update': {
-							'IsCheck': -1
-						}, 
-						'where' : {
-							'Stay': $data.data('stay'),
-							'Id' :  $data.data('id'),
-						},
-						'Hid': hid,
-					});
-			}
-
-			if(res.status){
-				var totalPrice = 0;
-				var priceDetail = res.priceDetail;
-				for(var i in priceDetail.farebasisPrice){
-					totalPrice += priceDetail.farebasisPrice[i].price - 0;
-				}
-				// 判断价格是否一致，防止有附加值 totalPrice 替换 res.price 
-				totalPrice = command.mkFarePrice( totalPrice, eterm.eterm.rate)
-				if( totalPrice == command.mkFarePrice( src.price, eterm.eterm.rate)){
-					var tooltipTitle = '';
-					for(var i in priceDetail.farebasisPrice){
-						tooltipTitle += "&nbsp;"+priceDetail.farebasisPrice[i].farebasis+"&nbsp;|&nbsp;"+priceDetail.farebasisPrice[i].leg+"&nbsp;|&nbsp;"+priceDetail.farebasisPrice[i].price+"&nbsp;\r"
-					}
-
-					$('#'+src.id).html('验证成功'+' <a class="tooltip-option" href="javascript:void(0)" data-toggle="tooltip" title="'+tooltipTitle+'" data-placement="left"><i class="fa fa-tag"></i></a>').next('input').val(1);
-
-
-					// 更新数据库
-					updatePriceSourceIsCheck.execute({
-						'update': {
-							'IsCheck': 1,
-							'CheckDetail': JSON.stringify(priceDetail)
-						}, 
-						'where' : {
-							'Stay': $data.data('stay'),
-							'Id' :  $data.data('id'),
-						},
-						'Hid': hid,
-					});
-					$('.tooltip-option').tooltip({ html: true });
-				}else{
-					console.log('价格不一致', totalPrice, res.price, command.mkFarePrice( src.price, eterm.eterm.rate), src.price)
-				}
-			}
+			parseCheckRes(res, checkfsi.returnConfig().query, 'fsi')
 		}
 	}) 
 
 	var checkqte = new command.ReqCommand({
 		url: eterm.const.Controller + 'checkqte',
 		clk: function(res){
-			if(res.status) // 成功返回结果
-				parseCheckRes(res, checkqte.returnConfig().query, 'qte')
-			else // 返回的结果出错误了
-				alert(res.msg)
+			parseCheckRes(res, checkqte.returnConfig().query, 'qte')
 		}
 	})
 
@@ -407,29 +360,23 @@ var setCommand = function(command){
 	$('#otherModal').on('click', '.check-fsi', function(){
 		checkfsi.execute({
 			'fsi': $(this).data('fsi'), 
-			'id': $(this).closest('span').attr('id'), 
+			'id': $(this).data('id'), 
 			'price': $(this).data('price')
 		})
 	})
 
-	// 隐藏 fsi返回的结果
+	// 隐藏 检查返回的结果
 	$('#otherModal').on('click', '.check-failed-click', function(){
-		var $fsi_failed_tr = $(this).closest('tr').next('tr');
-		if($fsi_failed_tr.css('display') === 'none'){
-			$fsi_failed_tr.show();
+		var $check_failed_tr = $(this).closest('tr').next('tr');
+		if($check_failed_tr.css('display') === 'none'){
+			$check_failed_tr.show();
 			$(this).text('隐藏')
 		}else{
-			$fsi_failed_tr.hide();
+			$check_failed_tr.hide();
 			$(this).text('显示')
 		}
 	})
 
-	// 查看无适用运价的fsi
-	$('#otherModal').on('click', '.look-fsi', function(){
-		command.mkOtherModel('otherModel-2', "", '#model-wrap')
-		var model = new command.OtherModel('fsi', '<textarea class="form-control"  rows="16" style="background-color:black;color:green;">'+$(this).data('fsi')+'</textarea>', '', 'otherModel-2');
-		model.show();
-	})
 
 	// 检查qte
 	$('#otherModal').on('click', '.check-qte', function(){
@@ -823,10 +770,10 @@ function mkMixCabinTable(data){
 			data: null,
 			title: '航班限制'
 		},
-		// Fsi
+		// 使用规则
 		{
 			data: null,
-			title: 'Fsi'
+			title: '使用规则'
 		},
 		// QTE
 		{
@@ -865,7 +812,7 @@ function mkMixCabinTable(data){
         }
     },
 		{
-        targets: 16, // Fsi
+        targets: 16, // 使用规则
         render: function(data, type, row, meta) {
         	// fsi 命令
         	// var html = "<textarea rows='3' cols='50' class='form-control' disabled>"
@@ -874,23 +821,23 @@ function mkMixCabinTable(data){
         	// }
         	// html += '</textarea>'
 
-        	// 检验按钮
-        	if(row.IsCheck == 1){
-        		var tooltipTitle = '';
-        		if(row.CheckDetail){
-        			var checkDetail = JSON.parse(row.CheckDetail)
-							for(var i in checkDetail.farebasisPrice){
-								tooltipTitle += "&nbsp;"+checkDetail.farebasisPrice[i].farebasis+"&nbsp;|&nbsp;"+checkDetail.farebasisPrice[i].leg+"&nbsp;|&nbsp;"+checkDetail.farebasisPrice[i].price+"&nbsp;\r"
-							}
-        		}
+		       //  	// 检验按钮
+		       //  	if(row.IsCheck == 1){
+		       //  		var tooltipTitle = '';
+		       //  		if(row.CheckDetail){
+		       //  			var checkDetail = JSON.parse(row.CheckDetail)
+									// for(var i in checkDetail.farebasisPrice){
+									// 	tooltipTitle += "&nbsp;"+checkDetail.farebasisPrice[i].farebasis+"&nbsp;|&nbsp;"+checkDetail.farebasisPrice[i].leg+"&nbsp;|&nbsp;"+checkDetail.farebasisPrice[i].price+"&nbsp;\r"
+									// }
+		       //  		}
 
-        		var html = '验证成功' + '&nbsp;<a class="tooltip-option" href="javascript:void(0)" data-toggle="tooltip" title="'+tooltipTitle+'" data-placement="left"><i class="fa fa-tag"></i></a>'
-        	}else if(row.IsCheck == -1){
-	        	var html = '指定的票价不符合运价规则' ; // + '&nbsp;<a class="look-fsi" href="javascript:void(0)" data-fsi="'+row.Fsi.allStay+'">查看fsi</a>'
-        	}else{
-	        	var html = '<span id="fsi-'+row.index+'""><a href="javascript:void(0)" class="check-fsi" data-fsi='+JSON.stringify(data.Fsi.allStay ? data.Fsi.allStay : data.Fsi.noStay)+' data-price="'+row.RoundFare+'">验证</a></span><input type="hidden" class="input-IsCheck" data-stay='+row.Stay+' data-id='+row.Id+'>'
-        	}
-
+		       //  		var html = '验证成功' + '&nbsp;<a class="tooltip-option" href="javascript:void(0)" data-toggle="tooltip" title="'+tooltipTitle+'" data-placement="left"><i class="fa fa-tag"></i></a>'
+		       //  	}else if(row.IsCheck == -1){
+			      //   	var html = '指定的票价不符合运价规则' ; // + '&nbsp;<a class="look-fsi" href="javascript:void(0)" data-fsi="'+row.Fsi.allStay+'">查看fsi</a>'
+		       //  	}else{
+			      //   	var html = '<span id="check-fsi-'+row.Id+'""><a href="javascript:void(0)" class="check-fsi" data-fsi='+JSON.stringify(data.Fsi.allStay ? data.Fsi.allStay : data.Fsi.noStay)+' data-price="'+row.RoundFare+'" data-id='+row.Id+'>验证</a></span><input type="hidden" class="input-IsCheck" data-stay='+row.Stay+' data-id='+row.Id+'>'
+		       //  	}
+		       let html = `<a href="__URL__admin/eterm/fare?fare=${data.FareBasis.split('/')[0]}&start=${data.Dep}&end=${data.Arr}&startDate=${data.FareDate}&aircompany=${data.Airline}" target="_blank"> 使用规则</a>` 
           return html
         }
     },{
@@ -907,9 +854,9 @@ function mkMixCabinTable(data){
 
         		var html = '验证成功' + '&nbsp;<a class="tooltip-option" href="javascript:void(0)" data-toggle="tooltip" title="'+tooltipTitle+'" data-placement="left"><i class="fa fa-tag"></i></a>'
         	}else if(row.IsCheck == -1){
-	        	var html = '指定的票价不符合运价规则' ; // + '&nbsp;<a class="look-fsi" href="javascript:void(0)" data-fsi="'+row.Fsi.allStay+'">查看fsi</a>'
+	        	var html = '指定的票价不符合运价规则' ; 
         	}else{
-	        	var html = '<span id="qte-'+row.index+'""><a href="javascript:void(0)" class="check-qte" data-qte='+JSON.stringify({start: row.Dep, end: row.Arr, aircompany: row.Airline, stay: row.Stay, cabin: row.Cabin.split('-')[0]})+' data-price="'+row.RoundFare+'" data-id='+row.Id+'>验证</a></span><input type="hidden" class="input-IsCheck" data-stay='+row.Stay+' data-id='+row.Id+'>'
+	        	var html = '<span id="check-qte-'+row.Id+'""><a href="javascript:void(0)" class="check-qte" data-qte='+JSON.stringify({start: row.Dep, end: row.Arr, aircompany: row.Airline, stay: row.Stay, cabin: row.Cabin.split('-')[0]})+' data-price="'+row.RoundFare+'" data-id='+row.Id+'>验证</a></span><input type="hidden" class="input-IsCheck" data-stay='+row.Stay+' data-id='+row.Id+'>'
 	        }
           return html;
         }

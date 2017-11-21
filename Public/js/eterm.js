@@ -587,6 +587,7 @@ var createCommand = function(recevier, tpl, set){
 
 		recevier.link(Project + 'index.php/admin/eterm/toCNY', {toCNY: "", command: "XS FSC NUC/CNY"}, function(msg){
 			recevier.rate =  msg.rate - 0;
+			if(recevier.rate === 0) alert('汇率获取失败，请刷新!');
 			console.log('当前汇率:'+recevier.rate)
 			recevier.cnyLab.html("当前汇率："+msg.rate+'<br>');
 			delete recevier.cnyLab;
@@ -1390,7 +1391,9 @@ var createCommand = function(recevier, tpl, set){
 
 				_self.req(_self.url, _self.query).done(function(result){
 					if( config.clk && recevier.isFunction(config.clk) ){
-						if( recevier.isString (result)) result = eval('['+result+']')[0]
+						if( recevier.isString (result)) 
+							result = eval('['+result+']')[0]
+						_self.data = result;
 						return _self.clk(result);
 					}
 				})
@@ -1537,6 +1540,8 @@ var createCommand = function(recevier, tpl, set){
 					'Rule'          : outboundData['Rule']+'/'+inboundData['Rule'],
 					'Dep'           : outboundData['Dep'],
 					'Arr'           : outboundData['Arr'],
+					// 查询日期
+					'FareDate'      : outboundData['FareDate'],
 					// 新增字段：中转城市
 					'Stay'          : outboundData['Stay'] ? outboundData['Stay'] : '', 
 					'Airline'       : outboundData['Airline'],

@@ -1,0 +1,70 @@
+<{extends file='../layout.html'}>
+
+<{block name="title"}>THIS IS TEST<{/block}>
+<{block name="content"}>
+
+<div id="content"></div>
+
+<script>
+require(['eterm', 'dt'], function (eterm, dt){
+var setCommand  = function(command){
+// command.
+// ajax 
+// eterm.const.Controller + 'searchXfsdResultByHotcity',
+// eterm.const.Project + 'index.php/admin/hotcity/test'
+console.log(eterm, command)
+
+var searchMF = new command.ReqCommand({ // jquery ajax 
+	url: '',
+	clk: function (res){
+		console.log(res)
+	}
+})
+...
+// ajax 
+
+// ...
+$('#submit').click(function(){
+	searchMF.execute({
+		a: 'a',
+		b: 'b'
+	})
+})
+
+
+$('#display').click(function(){
+	console.log(searchMF.data)
+})
+
+// searchXfsdByInput
+// searchAvhByInput
+// searchFsd
+// searchSkByInput
+// searchYyByInput
+// searchFslByInput
+
+// ...
+// eterm.js :597
+// var fare = function(query){
+}
+setCommand(eterm.createCommand(eterm.eterm,tpl));
+/*
+	url: index.php/admin/eterm/searchFsd
+	import('vender/eterm/app.php');
+
+  $fsd = new \Fsd();
+  $command = 'XFSD出发地到达地/日期/航空公司/序号/大客户编码'
+  $fsd->fare(配置，POST的相关数据，command)
+  		// $this->command 
+  		// $this->tmp
+
+  		$this->fsn1($switch[$flags]);
+  		parent::getAllPage($this->tmp, 'xs/fspn');
+  		$this->f_fliter_useless($this->tmp);   		// $this->arr;
+		
+*/
+
+
+})
+<{/block}>
+

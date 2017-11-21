@@ -26,8 +26,8 @@ class Fsi extends Eterm{
 	}
 
 	// 获得具体运价
-	public function priceDetail(){
-		$this->command('XS FSU1');
+	public function priceDetail($index = '01'){
+		$this->command("XS FSU{$index}");
 		$priceDetailSrcArray = parent::fromToArray($this->tmp);
 		$fkey = 0; 
 		$ekey = 0;

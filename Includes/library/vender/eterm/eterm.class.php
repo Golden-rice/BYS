@@ -102,6 +102,7 @@ class Eterm{
     		$this->addCommand($command, $type); // 回填tmp文件
     		$pageCur++;
     	}
+
 		}
 
 		// 解析文本的头部

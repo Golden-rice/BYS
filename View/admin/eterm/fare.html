@@ -57,31 +57,48 @@ function parseURL(url) {
 
 	// 查看部分使用规则
 	$('#select').click(function(){
-		command.fare({
-			dosubmit: 'select',
-			index: $('#index').val(),  // 
-			fare: getQuery.fare,
-			start: getQuery.start,
-			end: getQuery.end,
-			startDate: getQuery.startDate,
-			aircompany: getQuery.aircompany,
-			from: decodeURI(getQuery.from)
-		})
+		// 扩充 getQuery 对象 
+		var query = getQuery;
+		if(query.from) 
+			query.from = decodeURI(query.from)
+
+		if($('#index').val())
+			query.index = $('#index').val();
+
+		query.dosubmit = 'select';
+		command.fare(query);
+		// command.fare({
+		// 	dosubmit: 'select',
+		// 	index: $('#index').val(),  // 
+		// 	fare: getQuery.fare,
+		// 	start: getQuery.start,
+		// 	end: getQuery.end,
+		// 	startDate: getQuery.startDate,
+		// 	aircompany: getQuery.aircompany,
+		// 	from: decodeURI(getQuery.from)
+		// })
 	})
 
 	// 查看全部
 	$('#all').click(function(){
-		command.fare({
-			dosubmit: 'all',
-			index: '',
-			fare: getQuery.fare,
-			start: getQuery.start,
-			end: getQuery.end,
-			startDate: getQuery.startDate,
-			aircompany: getQuery.aircompany,
-			from: decodeURI(getQuery.from),
-			// remove: '1'
-		})
+		var query = getQuery;
+		if(query.from) 
+			query.from = decodeURI(query.from)
+
+		query.dosubmit = 'all';
+		command.fare(query);
+
+		// command.fare({
+		// 	dosubmit: 'all',
+		// 	index: '',
+		// 	fare: getQuery.fare,
+		// 	start: getQuery.start,
+		// 	end: getQuery.end,
+		// 	startDate: getQuery.startDate,
+		// 	aircompany: getQuery.aircompany,
+		// 	from: decodeURI(getQuery.from),
+		// 	// remove: '1'
+		// })
 	})
 
 }

@@ -239,6 +239,13 @@ class EtermController extends Controller {
   	$m_xfsd = model('xfsd_result');
   	$addAll = array();
   	foreach ($array as $num => $value) {
+  		// 匹配适用日期跨年时
+  		if(!(empty($value['allowDateEnd']) && empty($value['allowDateStart'])) && date('m', strtotime($value['allowDateStart'])) > date('m', strtotime($value['allowDateEnd']))){
+		  		$allowDateEndStamp = strtotime($value['allowDateEnd'])+365*24*60*60;
+  		}else{
+  			$allowDateEndStamp = strtotime($value['allowDateEnd']);
+  		}
+
     	$addAll[] = array(
     		//  fareKey 关键字：dep_city/arr_city/airline/pax_type/source/source_office/source_agreement/other(其他字段)/fare_date
 				'FareKey'        => "{$value['start']}/{$value['end']}/{$value['aircompany']}/ADT/{$_SESSION['resource']}/{$value['from']}/{$value['other']}/".date('Ymd',strtotime($value['startDate'])), 
@@ -257,9 +264,9 @@ class EtermController extends Controller {
 				// advp 提前出票
 				'xfsd_Advp'      => $value['ADVPDay'],
 				// allowDateStart 适用日期起始
-				'xfsd_DateStart' => empty($value['allowDateStart'])? '1970-01-01' : date('Y-m-d',strtotime($value['allowDateStart'])),
+				'xfsd_DateStart' => empty($value['allowDateStart'])? '1970-01-01' : date('Y-m-d', strtotime($value['allowDateStart'])),
 				// allowDateEnd 适用日期结束
-				'xfsd_DateEnd'   => empty($value['allowDateEnd'])  ? '2099-12-31' : date('Y-m-d',strtotime($value['allowDateEnd'])),
+				'xfsd_DateEnd'   => empty($value['allowDateEnd'])  ? '2099-12-31' : date('Y-m-d', $allowDateEndStamp),
 				// backLineFee 往返费用
 				'xfsd_RoundFee'  => $value['backLineFee'],
 				// singleLineFee 单程费用
@@ -284,6 +291,7 @@ class EtermController extends Controller {
 			 	'xfsd_Rule'      => $value['reTicket'],
     	);
   	}
+
   	$m_xfsd->addAll($addAll);
   }
 
@@ -586,14 +594,16 @@ class EtermController extends Controller {
 
 	// ------------------------ SK ------------------------
   public function test(){
-    $_POST['aircompany'] = 'UA';
+    $_POST['aircompany'] = 'AF';
     $_POST['end'] = 'BJS';
-    $_POST['start'] = 'ABQ';
-    $_POST['stay'] = 'SFO';
-    $a = $this->searchSkByInput(true);
-    var_dump($a);
+    $_POST['start']      = 'AJA';
+    $_POST['startDate']  = '01DEC';
+    $_POST['private']    = ''; // 扩展
+  	$_POST['tripType']   = '*RT';
+  	$_POST['other']      = '';
+    $a = $this->searchXfsdByInput(true);
+    // var_dump($a);
   }
-
 
 	// 查询航班时刻
 	public function searchSkByInput($return = false){
@@ -603,7 +613,6 @@ class EtermController extends Controller {
 
 		if(isset($_POST['stay']) && !empty($_POST['stay']))
 			$config['stay'] = $_POST['stay'];
-
 
 		// $command  = "SK:/{$config['start']}{$config['end']}/{$config['aircompany']}";
 		$command  = $sk->set($config)->rtCommand();
@@ -616,7 +625,10 @@ class EtermController extends Controller {
 			$result_result = $this->searchCmdResult($id, 'sk');
 			$switchNew     = false;
 
-			if(!$result_result) \BYS\Report::error('source 数据出错');
+			if(!$result_result){
+				\BYS\Report::log('NO ROUTING, 该航路无航班【source 数据出错】');
+				return;
+			} 
 
 			foreach ($result_result as $rKey => $rVal) {
 				// result 中的 date 日期已过期
@@ -667,6 +679,7 @@ class EtermController extends Controller {
   			// 作用点
   			if(substr($value['allowWeek'],0,1) === 'X' ){
 	  			$allWeek   = array(1,2,3,4,5,6,7);
+	  			$allowWeek = '';
 	  			foreach ($allWeek as $day) {
 	  				if(!preg_match("/{$day}/", $value['allowWeek'])){
 	  					$allowWeek .= $day;
@@ -1175,18 +1188,28 @@ class EtermController extends Controller {
 
   	$fsd = new \Fsd();
 
-		$fare       = str_replace(' ','', $_POST['fare']);
+		$fare       = trim($_POST['fare']);
 		$start      = $_POST['start'];
 		$end        = $_POST['end'];
-		$startDate  = $_POST['startDate'];
 		$aircompany = $_POST['aircompany'];
-		$from       = $_POST['from'];
-		$identity   = $_POST['index'];
+		$startDate  = ''; // date('dM', time()) 为空是取当天的
+		$from       = '///';
+		$identity   = '';
 
-		// 扩展命令
+		// 扩展命令：日期
+		if(isset($_POST['startDate']))
+			$startDate  = $_POST['startDate'];
+
+		// 扩展命令：大客户代码
+		if(isset($_POST['from']))
+			$from     = $_POST['from'] != '公布运价' ? '///#'.$_POST['from'] : '///';
+		
+		// 扩展命令：序号
 	 	if(isset($_POST['index'])){
-	 		$identity = '<'.$identity;
+	 		$index    = $_POST['index'];
+			// $identity = '<'.$index; // 待用
 	 	}
+	 	
 
 		$date = array( 
 			'fare'=> $fare,
@@ -1196,9 +1219,12 @@ class EtermController extends Controller {
 			'aircompany'=> $aircompany,
 			'from'=> $from
 		);
+		// XS/FSDBJSANE/01DEC/AF/#*RLRDCN<4
+		// XS/FSDBJSANE//AF/#*RLRDCN
+		// XS/FSDBJSANE//AF/#*VLP9CN/// 
+		$command = strtoupper('XS/FSD'.$start.$end.'/'.$startDate .'/'.$aircompany.'/'.'#*'.$fare.$identity.$from);
 
-		$command = strtoupper('XS/FSD'.$start.$end.'/'.$startDate .'/'.$aircompany.'/'.'#*'.$fare.$identity.($from != '公布运价' ? '///#'.$from : ''));
-		$array  = $_POST['index'] === '' ? $fsd->fare(array(0,1,2), $date, $command) : $fsd->fare(array(0=>$_POST['index'],1,2), $date, $command); 	
+		$array  = !isset($index) ? $fsd->fare(array(0,1,2), $date, $command) : $fsd->fare(array(0=>$index,1,2), $date, $command); 	
 		$log = $fsd->rtTmp();
 
 		echo json_encode(array('command'=> $command,'aircompany'=> $aircompany, 'fare'=> $fare, 'array'=>$this->assignItem($array), 'data'=>$array, 'log'=>$log) ); 

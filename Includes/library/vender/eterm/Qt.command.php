@@ -81,6 +81,7 @@ class Qt extends Eterm{
 		$routingLen = count($note);
 		$totalFee   = 0;  // 总价
 	 	$fareFee    = 0;  // 票面
+	 	$lowestTotalPrice = 0; // 当有多个fare时，最低的价格
 	 	$routing    = array(); // routing 航路
  		$fsiKey     = -1; // 匹配结果中能组合到fsi的最新位置
 
@@ -105,8 +106,17 @@ class Qt extends Eterm{
 
  			// 当有多个运价导致匹配不到价格时
 	 		if($totalFee === 0 && $fsiKey >=0){
-	 			if(preg_match("/\d\s\w+\+\*\s+(\d+)\s(CNY)?\s+INCL\s+TAX/", $line, $curFareTotalFeeMatch)){
-	 				$curFareTotal = $curFareTotalFeeMatch[1];
+	 			if(preg_match("/(\d+)\s\w+\+\w+?\*\s+(\d+)\s(CNY)?\s+INCL\s+TAX/", $line, $curFareTotalFeeMatch)){
+	 				// 序号2 为匹配的价格，比较出最小的，其key对应的序号为1的值
+	 				if($lowestTotalPrice > 0 && $lowestTotalPrice > $curFareTotalFeeMatch[2]){
+	 					$lowestTotalPrice = $curFareTotalFeeMatch[2];
+		 				$index            = $curFareTotalFeeMatch[1];
+	 				}
+
+ 					// 初始化
+	 				if($lowestTotalPrice === 0 )
+	 					$lowestTotalPrice = $curFareTotalFeeMatch[2];
+
 	 			}
 	 		}
 
@@ -147,8 +157,9 @@ class Qt extends Eterm{
  		}
 
 		return array(
+			'index'   => isset($index) ? $index : '01',
 			'fareFee' => $fareFee,
-			'totalFee'=> $totalFee === 0 && isset($curFareTotal) ? $curFareTotal : $totalFee,
+			'totalFee'=> $totalFee === 0 && isset($lowestTotalPrice) ? $lowestTotalPrice : $totalFee,
 			'routing' => $routing,
 			'currency'=> isset($currency) ? $currency : 'CNY',
 			'note'    => $note

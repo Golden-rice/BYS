@@ -51,13 +51,17 @@ class Fsd extends Eterm{
     // $commandArr = array($command_1=>0, $command_2=>1);
     $commandArr = array($command_1, $command_2);
     parent::mixCommand($commandArr,'w');	
-    // var_dump($this->tmp);
+    
+    // 只保留有用部分
+    if(preg_match_all("/\[CDATA\[(.*?)\]\]/is", $this->tmp, $tmpMatch)){
+      $this->tmp = $tmpMatch[1][1];
+    }
+
   }
 
   private function f_fliter_useless($fileName){
-  	$arr = parent::initFile($fileName, 0, 1);
-    $arr_tmp = $arr;
-
+  	$arr          = parent::initFile($fileName, 0, 1);
+    $arr_tmp      = $arr;
     $fliter_str_1 = '/PAGE[\s]*(\w+)\/(\w+)/';               // 匹配页所在行
     $fliter_str_2 = '/\<\</';                                // 匹配<<
     $fliter_str_3 = "/FSN.*{$this->date['startDate']}/i";    // 匹配分页前缀
