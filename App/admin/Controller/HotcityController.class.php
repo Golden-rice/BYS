@@ -627,9 +627,19 @@ class HotcityController extends Controller {
     // 默认第一个为需要的数据
     if(isset($outSkVal) && isset($inSkVal) ){
       // 更新回程日期
+      // 如果为AF，则改为6天或是周中周末
       foreach ($outSkVal as $k => $val) {
-        if($outSkVal[$k]['date'] === $inSkVal[$k]['date']){
-          $inSkVal[$k]['date'] = strtoupper(date('dM',strtotime($inSkVal[$k]['date']) + 3*24*60*60));
+        if(isset($inSkVal[$k]) && $outSkVal[$k]['date'] === $inSkVal[$k]['date']){
+          $curInSkValDateStamp = strtotime($inSkVal[$k]['date']);
+          // 如果回程日期在周中周末，
+          if(isset($query['aircompany']) && in_array($query['aircompany'], array('AF','KL')) ){
+            if(in_array(date('N', $curInSkValDateStamp + 3*24*60*60), array(7,1)))
+              $inSkVal[$k]['date'] = strtoupper(date('dM', $curInSkValDateStamp + 3*24*60*60));
+            else
+              $inSkVal[$k]['date'] = strtoupper(date('dM', $curInSkValDateStamp + 6*24*60*60));
+          }else{
+            $inSkVal[$k]['date'] = strtoupper(date('dM', $curInSkValDateStamp + 3*24*60*60));
+          }
         }
       }
       // 扩展字段

@@ -9,7 +9,9 @@
 			'TPL_VAR' => array(
 				'__PUBLIC__' => URL.'public/',
 				'__URL__' => URL.'index.php/',
-				'__VERSION__' => date('YmdHis',time()) //年月日小时
+				'__VERSION__' => date('YmdHis',time()), //年月日小时
+				'__CONTROLLER__' => URL.'index.php/'.self::$_GLOBAL['con'], // 当前控制器
+				'__ACTION__' => URL.'index.php/'.self::$_GLOBAL['con'].'/'.self::$_GLOBAL['act'] // 当前控制器
 			),
 
 			// 数据库设置

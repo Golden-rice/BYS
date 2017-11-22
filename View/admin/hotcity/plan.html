@@ -239,7 +239,7 @@ var setCommand = function(command){
 		else if(res.status === 0){
 			if(res.msg) alert(res.msg);
 
-			wapper.html('<a href="javascript:void(0)" class="check-failed-click">隐藏</a>').closest('tr').after('<tr class="check-failed-tr"><td colspan=18><textarea class="form-control"  rows="18" cols="50" style="background-color:black;color:green;">'+res.log+'</textarea></td></tr>');
+			wapper.html('<a href="javascript:void(0)" class="check-failed-click">隐藏</a>').closest('tr').after('<tr class="check-failed-tr"><td colspan=18><textarea class="form-control"  rows="18" cols="500" style="background-color:black;color:green;">'+res.log+'</textarea></td></tr>');
 
 			// updatePriceSourceIsCheck.execute({
 			// 	'update': { 'IsCheck': -1 }, 
