@@ -1,27 +1,14 @@
 ## 目录结构
 
-```
+``` html
 /includes                  # 框架库
 	set.php                  # 框架设置
 	default.php              # 框架配置
 	/common                       
 		function.php           # 系统函数
 	/library                 # 框架依赖  
-		/vender  
-			/smarty              # smarty 框架
-			/eterm               # 编写 eterm 命令
-				app.php            # 启动程序
-				av.command.php   
+		/vender  							 # 第三方类库
 		/core                  # 框架核心
-			App.class.php        # App 启动
-	    BYS.class.php        # 初始化
-	    Cache.class.php      # 框架缓存
-			Controller.class.php # 控制器
-			Dispatcher.class.php # 路由
-			Drive.class.php      # 各应用驱动
-			Model.class.php      # 数据模型
-			Report.class.php     # 报告
-	/api                     # 前台调用接口
 	/config
 		config.php             # 默认应用配置
 		smarty.config.php      # smarty应用配置
@@ -35,62 +22,11 @@
 	/admin                   # 后台
 		/model                 # Model 数据库模型
 		/views					       # 模板
-		/ctroller              # 控制器
-	/home                  * # 前台
+		/controller            # 控制器
+	/home                    # 前台
 /View                      # 模板
-/webpage                 * # 生成前台模板
 index.php                  # 入口文件
 ```
-
-## 说明
-
-* 目前仅支持将所有的模板放至统一的`View`文件夹汇总
-* 自定义配置文件`Includes/config/config.php`
-
-	* 替换模板中的变量，通常用大写和__组合使用
-	* 使用其他类型的模板引擎，例如smarty，配置文件用类名和.config.php组合，并在 `Includes/default.php` 增加相关配置
-
-* `Includes/default.php` 是本框架的相关设置
-* 根据app名称生成相应目录及文件，例如admin
-
-===
-
-## 服务器
-* /data/ 不识别 .php 文件，必须显式书写index.php  -> url 解析问题，有可能存在nginx缓存？
-* 项目大小写问题，在linux下会区分，导致读不出文件
-
-## 系统架构
-* 矫正SK：对于无routing的支持
-* GK： 新增的航班限制如何反应到GK中
-* 实战：AF KL 部分舱位 ,
-* 政策优化：SK+YY组合
-* XFSD优化：CN 与 US ，舱位等级，计划任务类型 -> 方便做政策（调整PLAN）
-* AVH 优化: 舱位筛选-预读舱等至
-* 修改交互：统一在一个界面回填政策：销售日期、旅行日期、航班限制、提前出票
-* QTE查询运价：SS GK 
-* 返点策略：根据大客户，返点设置底价，上传政策以销售价为准
-* 用户系统：每个人设置的政策独立保留
-* 直接从xfsd段进入混舱流程
-* 一个好的成熟的界面
-* xfsd 精简不够准确：增加适用日期不相同的区分->精细化日期包含；最短/最长停留、提前开票的不同，影响fsi
-* 不同回程的组合（携程不允许非单点往返，但是可作为线下使用，shopping系统）
-* 追位系统：批量差中转点后段的目标舱位，废除后段后，获得目标舱位。
-* 混舱后的价格会保留至另外一个数据表中（上传到携程上的政策数据保留 ctrip_private_rt_policy）
-* 营销策略：设置成本返点、投放返点
-* BUG:
-	* 同一个主机会共享session?
-* OTA政策比对，分出优势政策、劣势政策
-* 劣势政策的功能模块：降舱、赌退改
-* 线下政策：投放返点
-
-目标：能作为一个做政策的系统（自己可以独立做政策），丰富的创造利润功能，降舱、组合航路降低运价
-
-## 系统优化
-* 优化 
-	* fsd check：不在以命令作为录入标准，而是用 result ：先command 再 地点 日期等查询
-	* 当录入格式不合理是，直接屏蔽不用再查数据库
-* 长时间请求：查询199 aa 单程 request fail，大批量 request 是否会导致 plan 失败？利用守护进程，开启两台服务器运行？
-* 报错的时候会吧，数据库密码等暴露出来。warning 警告 隐藏
 
 ## 框架功能：
 * 内置一套UI框架
