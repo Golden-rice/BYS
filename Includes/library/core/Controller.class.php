@@ -82,7 +82,6 @@ abstract class Controller {
   public function assignAction(){
     // 判断提交方法的方式 POST ? GET ?
     if(REQUEST_METHOD == 'GET' && isset($_GET['action'])){
-
       $action = $_GET['action'];
     }
     elseif(REQUEST_METHOD == 'POST' && isset($_POST['action'])){
@@ -92,7 +91,7 @@ abstract class Controller {
       Report::error('请求方法错误，缺少必要参数');
     }
     // 执行该方法
-    $this->$action();
+    $this->$action($query);
   }
 
   /**

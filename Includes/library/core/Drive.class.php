@@ -192,7 +192,6 @@ class Drive {
  * @return array
  */
 	private function parseInclude($matches) {
-
 	   return preg_replace('/[\'|\"]/', '', $matches);
   }
 

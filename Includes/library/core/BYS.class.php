@@ -201,7 +201,7 @@ class BYS {
 	 * 自动生成应用
 	 * @access private 
 	 * @param $appMap    应用地图
-   * @return void
+     * @return void
 	 */
 	static private function autoMakeApp($appMap){
 		
