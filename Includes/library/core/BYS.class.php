@@ -43,6 +43,9 @@ class BYS {
 		// 加载系统函数
 		include COMMON_PATH.'function.php';
 
+		// 版本号
+		define('__VERSION__',  '0.1');
+
 		// 加载用户配置
 		self::autoReadClass( $default["config"] );
 
@@ -54,8 +57,6 @@ class BYS {
 			// 读取smarty核心类库
 			self::autoReadClass( $default['vender']['smarty'] );
 		}	
-
-		// Report::p(self::$map);
 
 		// 初始化文件存储方式
 
