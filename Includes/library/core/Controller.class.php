@@ -73,7 +73,28 @@ abstract class Controller {
     // }
   }
 
-
+  /*
+    语法（隐式）：
+    "query":
+    {
+      "conditions":{  
+        "dep": "BJS",
+        "arr": "MIA",
+        "airline": "UA"
+      }, 
+      "select": ['dep', 'arr'],
+      "orderby":[{"column":"gmtCreate","asc":"true"}]
+    }
+    语法（显式）：
+    action: "query",
+    "conditions":{  
+      "dep": "BJS",
+      "arr": "MIA",
+      "airline": "UA"
+    }, 
+    "select": ['dep', 'arr'],
+    "orderby":[{"column":"gmtCreate","asc":"true"}]
+  */
   /**
    * 控制器方法分派
    * 根据传递的参数，将参数传递给某方法
@@ -97,9 +118,14 @@ abstract class Controller {
       if(count($var) === 1 && current($var)){
         $action     = key($var);
         $controller = BYS::$_GLOBAL['app']."\\Controller\\".BYS::$_GLOBAL['con'].'Controller';
-        if(class_exists($controller) ){
+        $args       = $var[$action];
+        if(class_exists($controller)){
           if(method_exists($controller, $action)){
-            App::invokeControllerAction(new $controller,  $action);
+            if(!empty($args)){
+              $controller = new $controller;
+              $method =   new \ReflectionMethod($controller, $action);
+              $method->invokeArgs($controller, $args);
+            }
           }
           else
             Report::error("{$_GLOBAL['con']}无{$action}方法");
@@ -113,35 +139,10 @@ abstract class Controller {
   }
 
 
-
-
   /**
    * 数据查询
    * @access public
    */
-    /*
-      语法（隐式）：
-      "query":
-      {
-        "conditions":{  
-          "dep": "BJS",
-          "arr": "MIA",
-          "airline": "UA"
-        }, 
-        "select": ['dep', 'arr'],
-        "orderby":[{"column":"gmtCreate","asc":"true"}]
-      }
-      语法（显式）：
-      action: "query",
-      "conditions":{  
-        "dep": "BJS",
-        "arr": "MIA",
-        "airline": "UA"
-      }, 
-      "select": ['dep', 'arr'],
-      "orderby":[{"column":"gmtCreate","asc":"true"}]
-      
-    */
   public function query($modelName = '', $config = array()){
     $m = model($modelName);
 
