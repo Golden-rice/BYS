@@ -75,31 +75,52 @@ abstract class Controller {
 
 
   /**
-   * 数据库控制器方法分派
+   * 控制器方法分派
    * 根据传递的参数，将参数传递给某方法
    * @access public
    */
   public function assignAction(){
     // 判断提交方法的方式 POST ? GET ?
-    if(REQUEST_METHOD == 'GET' && isset($_GET['action'])){
-      $action = $_GET['action'];
-    }
-    elseif(REQUEST_METHOD == 'POST' && isset($_POST['action'])){
-      $action = $_POST['action'];
-    }
-    else{
+    if(REQUEST_METHOD == 'GET')
+      $var = $_GET;    
+    elseif(REQUEST_METHOD == 'POST')
+      $var = $_POST;
+    else
       Report::error('请求方法错误，缺少必要参数');
+    
+    // 显示执行方法
+    if(isset($var['action']) && $action = $var['action']){
+      $this->$action();
     }
-    // 执行该方法
-    $this->$action($query);
+    // 隐式执行方法
+    else{
+      if(count($var) === 1 && current($var)){
+        $action     = key($var);
+        $controller = BYS::$_GLOBAL['app']."\\Controller\\".BYS::$_GLOBAL['con'].'Controller';
+        if(class_exists($controller) ){
+          if(method_exists($controller, $action)){
+            App::invokeControllerAction(new $controller,  $action);
+          }
+          else
+            Report::error("{$_GLOBAL['con']}无{$action}方法");
+        }
+        else
+          Report::error("无{$_GLOBAL['con']}类");
+      }else
+        Report::error('请求方法错误，使用隐式请求时，参数必须为一个');
+    }
+
   }
+
+
+
 
   /**
    * 数据查询
    * @access public
    */
     /*
-      语法：
+      语法（隐式）：
       "query":
       {
         "conditions":{  
@@ -110,9 +131,20 @@ abstract class Controller {
         "select": ['dep', 'arr'],
         "orderby":[{"column":"gmtCreate","asc":"true"}]
       }
+      语法（显式）：
+      action: "query",
+      "conditions":{  
+        "dep": "BJS",
+        "arr": "MIA",
+        "airline": "UA"
+      }, 
+      "select": ['dep', 'arr'],
+      "orderby":[{"column":"gmtCreate","asc":"true"}]
+      
     */
   public function query($modelName = '', $config = array()){
     $m = model($modelName);
+
     // 必须
     if(isset($config['conditions']))
       // 反序列化
@@ -121,7 +153,8 @@ abstract class Controller {
       }else{
         $where = $config['conditions'];
       }
-    
+    else
+      $where = array();
 
     if(isset($config['select']))
       // 反序列化
@@ -142,7 +175,7 @@ abstract class Controller {
       }
     else
       $orderby = array();
-      
+
     return $m->find($where, $orderby, $select);
   }
 
@@ -200,6 +233,7 @@ abstract class Controller {
       \BYS\Report::error('数据为空');
       return;
     }
+
     // 反序列化
     if(is_string($config)){
       $datas = json_decode($config, true);

@@ -43,9 +43,6 @@ class BYS {
 		// 加载系统函数
 		include COMMON_PATH.'function.php';
 
-		// 版本号
-		define('__VERSION__',  '0.1');
-
 		// 加载用户配置
 		self::autoReadClass( $default["config"] );
 
@@ -57,6 +54,8 @@ class BYS {
 			// 读取smarty核心类库
 			self::autoReadClass( $default['vender']['smarty'] );
 		}	
+
+		// Report::p(self::$map);
 
 		// 初始化文件存储方式
 
@@ -201,7 +200,7 @@ class BYS {
 	 * 自动生成应用
 	 * @access private 
 	 * @param $appMap    应用地图
-     * @return void
+   * @return void
 	 */
 	static private function autoMakeApp($appMap){
 		

@@ -512,7 +512,8 @@
 	 			$orderString = rtrim($orderString, ',');
 	 			$this->order($orderString);
 	 		}
-	 		return $this->select(implode($select, ','));
+	 		// 默认限制再1000条数据
+	 		return $this->limit(1000)->select(implode($select, ','));
 	 	}
 
 	}
