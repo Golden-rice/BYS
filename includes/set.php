@@ -20,7 +20,6 @@ define('COMMON_PATH', INCLUDES.'common/');// 公共系统函数目录
 define('VIEW_TYPE', 'public');            // view 视图模式：public/private
 define('VIEW_EXD',  '.html');             // view 模板
 
-
 // 定义当前请求的系统常量
 define('TIME',      $_SERVER['REQUEST_TIME']);
 define('REQUEST_METHOD',$_SERVER['REQUEST_METHOD']);

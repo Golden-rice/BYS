@@ -254,7 +254,7 @@ class api{
 						      }
 				$xml .= '</RtFareInfoList>
 						</RtFareRequest>'; 
-						
+
 				break;
 			case 4://私有往返运价删除XML
 				$xml = '<?xml version="1.0"?>

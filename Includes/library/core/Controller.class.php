@@ -77,23 +77,19 @@ abstract class Controller {
     语法（隐式）：
     "query":
     {
-      "conditions":{  
-        "dep": "BJS",
-        "arr": "MIA",
-        "airline": "UA"
-      }, 
-      "select": ['dep', 'arr'],
-      "orderby":[{"column":"gmtCreate","asc":"true"}]
+      "modelName": 'table_name',
+      config: {
+        "conditions":{  
+          "dep": "BJS",
+          "arr": "MIA",
+          "airline": "UA"
+        }, 
+        "select": ['dep', 'arr'],
+        "orderby":[{"column":"gmtCreate","asc":"true"}]
+      }
     }
     语法（显式）：
-    action: "query",
-    "conditions":{  
-      "dep": "BJS",
-      "arr": "MIA",
-      "airline": "UA"
-    }, 
-    "select": ['dep', 'arr'],
-    "orderby":[{"column":"gmtCreate","asc":"true"}]
+    action: "query"
   */
   /**
    * 控制器方法分派
@@ -115,6 +111,7 @@ abstract class Controller {
     }
     // 隐式执行方法
     else{
+
       if(count($var) === 1 && current($var)){
         $action     = key($var);
         $controller = BYS::$_GLOBAL['app']."\\Controller\\".BYS::$_GLOBAL['con'].'Controller';
@@ -143,7 +140,7 @@ abstract class Controller {
    * 数据查询
    * @access public
    */
-  public function query($modelName = '', $config = array()){
+  public function query($modelName = '', $config = array(), $return = false){
     $m = model($modelName);
 
     // 必须
@@ -177,32 +174,79 @@ abstract class Controller {
     else
       $orderby = array();
 
-    return $m->find($where, $orderby, $select);
+    $result = $m->find($where, $orderby, $select);
+    if($return)
+      return $result;
+    else{
+      if($result)
+        echo json_encode(array('result'=>$result, 'status'=>1, 'msg'=>Report::printLog()));
+      else
+        echo json_encode(array('result'=>$result, 'status'=>0, 'msg'=>Report::printLog()));
+    }
+    
   }
 
 
   /**
-   * 逐条更新数据
+   * 更新数据
    * @access public
    */
     /*
-      语法：
+      语法（隐式）：
       "update":
       {
-        "value":{  
-          "dep": "BJS",
-          "arr": "MIA",
-          "airline": "UA"
-        }, 
-        "where": ['dep', 'arr']
+        "model": "",
+        "config": {
+          "where": {
+            "Id": 1
+          }
+          "value":{  
+            "dep": "BJS",
+            "arr": "MIA",
+            "airline": "UA"
+          }, 
+        }
       }
     */
-  public function update($modelName = '', $config = array()){
+  public function update($modelName = '', $config = array(), $return = false){
+    $m = model($modelName);
 
+    // 必须
+    if(isset($config['conditions']))
+      // 反序列化
+      if(is_string($config['conditions'])){
+        $where = json_decode($config['conditions'], true);
+      }else{
+        $where = $config['conditions'];
+      }
+    else
+      Report::error('缺少条件');
+
+    if(isset($config['values']))
+      // 反序列化
+      if(is_string($config['values'])){
+        $values = json_decode($config['values'], true);
+      }else{
+        $values = $config['values'];
+      }
+    else
+      Report::error('缺少更新数据');
+
+              $m->setWhere($where);
+    $result = $m->update($values);
+
+    if($return)
+      return $result;
+    else{
+      if($result)
+        echo json_encode(array('result'=>$result, 'status'=>1, 'msg'=>Report::printLog()));
+      else
+        echo json_encode(array('result'=>$result, 'status'=>0, 'msg'=>Report::printLog()));
+    }
   }
 
   /**
-   * 批量更新数据
+   * 批量更新多条条件的数据
    * @access public
    */
     /*
@@ -226,7 +270,6 @@ abstract class Controller {
           "arr": "MIA",
         }
       }]
-
     */
   public function updates($modelName = '', $config = array()){
     $m = model($modelName);
@@ -244,4 +287,95 @@ abstract class Controller {
 
     return $m->updates($datas);
   }
+
+  /**
+   * 删除数据
+   * @access public
+   */
+    /*
+      语法（隐式）：
+      "delete":
+      {
+        "model": "",
+        "config": {
+          "where": {
+            "Id": 1
+          }
+        }
+      }
+    */
+  public function delete($modelName = '', $config = array(), $return = false){
+    $m = model($modelName);
+
+    // 必须
+    if(isset($config['conditions']))
+      // 反序列化
+      if(is_string($config['conditions'])){
+        $where = json_decode($config['conditions'], true);
+      }else{
+        $where = $config['conditions'];
+      }
+    else
+      Report::error('缺少条件');
+
+              $m->setWhere($where);
+    $result = $m->delete();
+
+    if($return)
+      return $result;
+    else{
+      if($result)
+        echo json_encode(array('result'=>$result, 'status'=>1, 'msg'=>Report::printLog()));
+      else
+        echo json_encode(array('result'=>$result, 'status'=>0, 'msg'=>Report::printLog()));
+    }
+  }
+
+  /**
+   * 新增数据
+   * @access public
+   */
+    /*
+      语法（隐式）：
+      "add":
+      {
+        "model": "",
+        "config": {
+          "values": [{
+            "Id": 1,
+            "Name": 'ZS'
+          },
+          {
+            "Id": 2,
+            "Name": 'LS'
+          }]
+        }
+      }
+    */
+  public function add($modelName = '', $config = array(), $return = false){
+    $m = model($modelName);
+
+    // 必须
+    if(isset($config['values']))
+      // 反序列化
+      if(is_string($config['values'])){
+        $values = json_decode($config['values'], true);
+      }else{
+        $values = $config['values'];
+      }
+    else
+      Report::error('缺少新增的数据');
+
+    $result = $m->addAll($values);
+
+    if($return)
+      return $result;
+    else{
+      if($result)
+        echo json_encode(array('result'=>$result, 'status'=>1, 'msg'=>Report::printLog()));
+      else
+        echo json_encode(array('result'=>$result, 'status'=>0, 'msg'=>Report::printLog()));
+    }
+  }
+
 }

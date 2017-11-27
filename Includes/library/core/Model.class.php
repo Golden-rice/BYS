@@ -171,6 +171,24 @@
 			return $this;
 	 	}
 
+	 	/**
+		 * 生成数据的筛选条件
+		 * @param  array $where 封装好的where数组
+		 * @return thisObject
+		 */	
+	 	public function setWhere($where){
+	 		if(!empty($where)){
+		 		// 将$where转化成sql语句
+		 		$whereString = '';
+		 		foreach ($where as $whereAttr => $whereVal) {
+		 			$whereString .= is_string($whereVal) ? " `{$whereAttr}` = '{$whereVal}' AND" : " `{$whereAttr}` = {$whereVal} AND";
+		 		}
+		 		$whereString = rtrim($whereString, 'AND');
+		 		$this->where($whereString);
+	 		} 
+	 		return $this;
+	 	}
+
 	 	public function join($type, $sql){
 	 		if(!is_string($type) || !is_string($sql)) return $this;
 
@@ -235,6 +253,23 @@
 		  else 
 		  	$this->order = '';
 	  	return $this;
+	  }
+
+	  /**
+		 * 生成排序
+		 * @param $orderbys 生成的Order的数组
+		 * @return object
+		 */	 	
+	  public function setOrder($orderbys){
+	 		if(!empty($orderbys)){
+	 			// 将$orderby转换成sql语句
+	 			$orderString = '';
+	 			foreach ($orderbys as $orderbyKey => $orderby) {
+	 				$orderString .= " {$orderby['column']} ".($orderby['asc'] == true ?'ASC':'DESC').',';
+	 			}
+	 			$orderString = rtrim($orderString, ',');
+	 			$this->order($orderString);
+	 		}
 	  }
 
 	  /* 限制 */
@@ -493,25 +528,12 @@
 	 		// 清空
 	 		$this->reset();
 	 		
-	 		if(!empty($where)){
-		 		// 将$where转化成sql语句
-		 		$whereString = '';
-		 		foreach ($where as $whereAttr => $whereVal) {
-		 			$whereString .= is_string($whereVal) ? " `{$whereAttr}` = '{$whereVal}' AND" : " `{$whereAttr}` = {$whereVal} AND";
-		 		}
-		 		$whereString = rtrim($whereString, 'AND');
-		 		$this->where($whereString);
-	 		} 
-
-	 		if(!empty($orderbys)){
-	 			// 将$orderby转换成sql语句
-	 			$orderString = '';
-	 			foreach ($orderbys as $orderbyKey => $orderby) {
-	 				$orderString .= " {$orderby['column']} ".($orderby['asc'] == true ?'ASC':'DESC').',';
-	 			}
-	 			$orderString = rtrim($orderString, ',');
-	 			$this->order($orderString);
-	 		}
+	 		// 生成条件
+		 	$this->setWhere($where);
+	 		
+		 	// 生成排序
+		 	$this->setOrder($orderbys);
+		 	
 	 		// 默认限制再1000条数据
 	 		return $this->limit(1000)->select(implode($select, ','));
 	 	}

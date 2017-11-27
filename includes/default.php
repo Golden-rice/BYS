@@ -38,9 +38,15 @@
 
 		// 应用默认值
 		'default' => array(
-			'controller' => 'index',
-			'action'     => 'index',
+			'controller' => 'user',
+			'action'     => 'login',
 			'app'        => 'admin'
 		),
 
+		// 前端
+		'fontEnd' => array(
+			'config'  => array(
+				'AMD'  => 'require',
+				)
+		)
 	);

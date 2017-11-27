@@ -28,13 +28,13 @@ class [MODEL]Model extends Model {
 	public function __construct($app){
 		// 文件夹
 		$defaultMap = array(
-					$app['name'] =>APP_PATH.$app['name']."/",
-					"Model"      =>APP_PATH.$app['name']."/Model/",
-					"View"       =>APP_PATH.$app['name']."/View/",
-					"Controller" =>APP_PATH.$app['name']."/Controller/",
-					"runtime"    =>ROOT.'~Runtime/',
-					'view'       =>ROOT.'View/'
-				);
+			$app['name'] =>APP_PATH.$app['name']."/",
+			"Model"      =>APP_PATH.$app['name']."/Model/",
+			"View"       =>APP_PATH.$app['name']."/View/",
+			"Controller" =>APP_PATH.$app['name']."/Controller/",
+			"runtime"    =>ROOT.'~Runtime/',
+			'view'       =>ROOT.'View/'
+		);
 
 		switch ($app['type']) {
 			case 0: 
@@ -124,9 +124,10 @@ class [MODEL]Model extends Model {
 		include_once BYS::$_GLOBAL['con_path'];
 		
 		$controller = BYS::$_GLOBAL['app']."\\Controller\\".BYS::$_GLOBAL['con'].'Controller';
+
 		// 方法
 		if(class_exists($controller)) self::invokeControllerAction(new $controller, BYS::$_GLOBAL['act']);
-
+		else Report::error('没有该控制器');
 	}
 
 	/** 
