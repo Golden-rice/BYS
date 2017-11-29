@@ -136,6 +136,7 @@
 	 			}		
 	 			$sql = rtrim($sql, ',').') '.rtrim($val, ',').'); '; 			
  			}
+
  			$this->sql = $sql;
  			$this->prepare($this->sql);
  			$this->execute();

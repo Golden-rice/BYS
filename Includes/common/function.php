@@ -25,7 +25,6 @@ function model($name='', $level = 1) {
         $model      =   new $class($className);
     }else {
         BYS\Report::error('无该模型');
-        $model      =   false;
     }
     return $model;
 }

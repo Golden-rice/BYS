@@ -44,13 +44,58 @@ index.php                # 入口文件
 ## 前端请求优化
 * 所有的数据库操作可以用json控制，访问任意控制下的 `assignAction` 传递的参数action指向方法名即可访问对应的方法。目前已经支持的方法有 `query` 查询, `updates` 批量更新
 ```
-{
-	action: 'query',
-	where: { id : 1}
-	update: [{
-		name: 'zz'
-	}]
-}
+    语法（隐式）：
+    "query":
+    {
+      "modelName": 'table_name',
+      config: {
+        "conditions":{  
+          "dep": "BJS",
+          "arr": "MIA",
+          "airline": "UA"
+        }, 
+        "select": ['dep', 'arr'],
+        "orderby":[{"column":"gmtCreate","asc":"true"}]
+      }
+    }
+    语法（显式）：
+    action: "query"
+
+	// 更新
+	{
+		'update':{
+			'model': 'sale_policy',
+			'config': {
+				'conditions':{'Id':1},
+				'value': {
+					'Name': 'zzz'
+				}
+			}
+		}
+	}
+
+
+	// 删除
+	{
+		'delete':{
+			'model': 'sale_policy',
+			'config': {
+				'conditions':{'Id':1}
+			}
+		}
+	}
+
+
+	// 新增
+	{
+		'add':{
+			'model': 'sale_policy',
+			'config': {
+				'values':[{'Id':1}]
+			}
+		}
+	}
+
 
 ```
 

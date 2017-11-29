@@ -197,7 +197,7 @@ abstract class Controller {
       {
         "model": "",
         "config": {
-          "where": {
+          "conditions": {
             "Id": 1
           }
           "value":{  
@@ -222,9 +222,9 @@ abstract class Controller {
     else
       Report::error('缺少条件');
 
-    if(isset($config['values']))
+    if(isset($config['value']))
       // 反序列化
-      if(is_string($config['values'])){
+      if(is_string($config['value'])){
         $values = json_decode($config['values'], true);
       }else{
         $values = $config['values'];
@@ -251,8 +251,9 @@ abstract class Controller {
    */
     /*
       语法：
-      "updates":[
-      {
+      "updates":{
+        "model": '',
+        "config": [{
         "value":{  
           "dep": "BJS",
           "arr": "MIA",          
@@ -270,6 +271,8 @@ abstract class Controller {
           "arr": "MIA",
         }
       }]
+      }
+
     */
   public function updates($modelName = '', $config = array()){
     $m = model($modelName);
