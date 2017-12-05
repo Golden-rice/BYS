@@ -2,6 +2,7 @@
 namespace BYS;
 
 class App {
+	static public $COOKIE = array();
 	public $siteMap = array();
 	static public 	$Controller   =   '<?php
 namespace [MODULE]\Controller;
@@ -115,6 +116,8 @@ class [MODEL]Model extends Model {
     // Hook::listen('url_dispatch'); 
 	}
 
+
+
 	/** 
 	 * 执行控制器方法
 	 * @access private 
@@ -139,16 +142,17 @@ class [MODEL]Model extends Model {
 	 */
 	static public function invokeControllerAction($controller, $action){
 		if(!preg_match('/^[A-Za-z](\w)*$/',$action)){
-    	// 非法操作
+    	// 非法方法名
     	throw new \ReflectionException();
     }
 
-    //执行当前操作
+    //执行控制器的方法
     $method =   new \ReflectionMethod($controller, $action);
     if($method->isPublic() && !$method->isStatic()) {
     	$class  =   new \ReflectionClass($controller);
 
-    	// 带参数
+
+    	// 参数
 	    if($method->getNumberOfParameters()>0){
 	    	$params =  $method->getParameters();
     	  foreach ($params as $param){
@@ -163,8 +167,15 @@ class [MODEL]Model extends Model {
   					Report::error('无参数:'.$name);
   				}   
   			}
+
+  			// 唤起 __invoke 函数
+		    $controller($args);
+		    // 执行方法
 	    	$method->invokeArgs($controller, $args);
 	    }else{
+	    	// 唤起 __invoke 函数
+		    $controller();
+		    // 执行方法
 	    	$method->invoke($controller);
 	    }
     }else{

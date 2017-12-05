@@ -19,6 +19,7 @@ define('VEND_PATH', LIB_PATH.'vender/');  // 第三方应用目录
 define('COMMON_PATH', INCLUDES.'common/');// 公共系统函数目录
 define('VIEW_TYPE', 'public');            // view 视图模式：public/private
 define('VIEW_EXD',  '.html');             // view 模板
+define('COOKIE_EXP',  3600);              // COOKIE 过期时间
 
 // 定义当前请求的系统常量
 define('TIME',      $_SERVER['REQUEST_TIME']);

@@ -1,7 +1,7 @@
 <?php
 namespace BYS;
 /**
- * 控制器基类 抽象类
+ * 控制器基类 
  */
 abstract class Controller {
 
@@ -14,10 +14,13 @@ abstract class Controller {
     // 实例化Smarty类
     $this->smarty = BYS::callVender( 'Smarty',  BYS::callConfig( 'smarty', 'vender' ) );
    
-    // 应用的驱动
+    // 装载应用的驱动
     $this->drive = BYS::callClass( 'Drive', BYS::callConfig() );
-    
+
   }
+
+  // 当尝试以调用函数的方式调用一个对象时
+  public function __invoke(){}
 
   /**
    * 扩展smarty的display方法: 为空则以当前方法位命名
@@ -39,7 +42,6 @@ abstract class Controller {
       $r = Cache::router();
       // 执行驱动
       $this->drive->support( $tpl.$ext );
-      
       $this->smarty->display( $r );
     }else{
       echo $tpl.$ext;
@@ -62,8 +64,7 @@ abstract class Controller {
    * @param  array  $args   参数
    */
   public function __call($method, $args) {
-    echo "无{$method}方法，其参数是:";
-    var_dump($args);
+    Report::error("无{$method}方法，其参数是:".var_dump($args));
     // if(method_exists($this,'_empty')) {
     //     // 如果定义了_empty操作 则调用
     //     $this->_empty($method,$args);
@@ -72,6 +73,7 @@ abstract class Controller {
     //     $this->display();
     // }
   }
+
 
   /*
     语法（隐式）：
@@ -120,7 +122,7 @@ abstract class Controller {
           if(method_exists($controller, $action)){
             if(!empty($args)){
               $controller = new $controller;
-              $method =   new \ReflectionMethod($controller, $action);
+              $method     = new \ReflectionMethod($controller, $action);
               $method->invokeArgs($controller, $args);
             }
           }
@@ -200,7 +202,7 @@ abstract class Controller {
           "conditions": {
             "Id": 1
           }
-          "value":{  
+          "values":{  
             "dep": "BJS",
             "arr": "MIA",
             "airline": "UA"
@@ -222,9 +224,9 @@ abstract class Controller {
     else
       Report::error('缺少条件');
 
-    if(isset($config['value']))
+    if(isset($config['values']))
       // 反序列化
-      if(is_string($config['value'])){
+      if(is_string($config['values'])){
         $values = json_decode($config['values'], true);
       }else{
         $values = $config['values'];

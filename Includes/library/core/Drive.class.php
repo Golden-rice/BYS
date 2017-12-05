@@ -27,12 +27,13 @@ class Drive {
 				$this->privating($set, $str[1] ? $str[1] : "");
 		}
 
-		// 驱动数据模块
-		if( isset($this->set['DB_CONFIG']) && Db::connect($this->set['DB_CONFIG']) ){
-			// var_dump( Db::$link );
+		// 数据库模块驱动
+		// 多个数据库连接
+		if( isset($this->set['DB_CONFIG_LIST']) && Db::connect($this->set['DB_CONFIG_LIST']['DEFAULT'])){
 			// 通过系统函数获得数据表对象实例
 
 			// 扩展数据表动作
+			// var_dump( Db::$link);
 		}
 	}
 
@@ -78,7 +79,6 @@ class Drive {
 		$replace = $this->set['TPL_VAR'];
 		return str_replace( array_keys($replace), array_values($replace), file_get_contents($filePath) );
 	}
-
 
 
 	/**
@@ -192,7 +192,6 @@ class Drive {
  * @return array
  */
 	private function parseInclude($matches) {
-
 	   return preg_replace('/[\'|\"]/', '', $matches);
   }
 
@@ -200,7 +199,7 @@ class Drive {
   /**
    * 分析XML属性
    * @access private
-   * @param string $attrs  XML属性字符串
+   * @param  string $attrs  XML属性字符串
    * @return array
    */
   private function parseXmlAttrs($attrs) {

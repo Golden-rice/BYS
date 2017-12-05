@@ -74,7 +74,18 @@ index.php                # 入口文件
 		}
 	}
 
-
+	// 批量更新：更新多个条件组合
+	{
+		'update':{
+			'model': 'sale_policy',
+			'config': [{
+				'where':{'Id':1},
+				'value': {
+					'Name': 'zzz'
+				}
+			}]
+		}
+	}
 	// 删除
 	{
 		'delete':{
@@ -97,6 +108,14 @@ index.php                # 入口文件
 	}
 
 
+```
+
+## 公共函数 function.php
+* 多个数据库连接，在 config/config.php 中的 DB_CONFIG_LIST 新增数组，key 为链接名
+```
+  connect('config_name'); // 链接新的数据库
+  echo json_encode(array('result'=>$this->query('table_name', array('conditions'=>array()), true )));
+  reset_connect(); // 恢复链接
 ```
 
 ## 日志

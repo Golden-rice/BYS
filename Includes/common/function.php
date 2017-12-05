@@ -29,6 +29,30 @@ function model($name='', $level = 1) {
     return $model;
 }
 
+/**
+ * 切换链接
+ * @param string $configName 连接的配置名
+ */
+function connect($configName){
+    $config = BYS\BYS::callConfig();
+    if(isset($config['COMMON']['DB_CONFIG_LIST'][$configName]) && $dbConfig = $config['COMMON']['DB_CONFIG_LIST'][$configName]){
+        BYS\Db::connect($dbConfig);
+    }else{
+        BYS\Report::error('无该数据库配置项');
+    }
+}
+
+/**
+ * 恢复原链接
+ */
+function reset_connect(){
+    $config = BYS\BYS::callConfig();
+    if(isset($config['COMMON']['DB_CONFIG_LIST']['DEFAULT']) && $dbConfig = $config['COMMON']['DB_CONFIG_LIST']['DEFAULT']){
+        BYS\Db::connect($dbConfig);
+    }else{
+        BYS\Report::error('无该数据库配置项');
+    }
+}
 
 /**
  * 引入库
@@ -72,6 +96,47 @@ function reflect($controller, $module = 'Controller'){
         echo 'no file reflect target;';
     $class = BYS\BYS::$_GLOBAL['app']."\\{$module}\\".ucfirst($controller).$module;
     return new $class;
+}
+
+/**
+ * 生成cookie，解决不同控制器无法共享cookie的问题
+ * @access public
+ * @param  string $name      cookie名
+ * @param  string $value     cookie值
+ * @param  mix    $options   配置
+ */
+function cookie($name = '', $value = '', $options = null){
+    // 设置cookie
+    // 默认设置
+    $config = array(
+        'expire'    =>  0,     // cookie 保存时间
+        'path'      =>  '/',   // cookie 保存路径
+        'domain'    =>  '',    // cookie 有效域名
+        'secure'    =>  false, // cookie 启用安全传输
+        'httponly'  =>  '',    // httponly设置
+    );
+
+    // 用新的设置覆盖
+    if(!is_null($options)){
+        if(is_numeric($options)) $config['expire'] = $options;
+        elseif (is_string($options)) parse_str($options, $options);
+        elseif (is_array($options)) $config = array_merge($config, array_change_key_case($options));
+        else BYS\Report::error('cookie的参数错误');
+
+        if(isset($options['httponly']) && !empty($options['httponly'])){
+            ini_set("session.cookie_httponly", 1);
+        }
+    }
+
+    // 返回值
+    if(empty($name)) return $_COOKIE;
+    if($value === '' && !empty($name)) return $_COOKIE[$name];
+
+    // 删除
+    if(is_null($value)  && !empty($name)) setcookie($name, $value, null);
+
+    // 设置
+    setcookie($name, $value, $config['expire'], $config['path'], $config['domain'], $config['secure'], $config['httponly']);
 }
 
 /**

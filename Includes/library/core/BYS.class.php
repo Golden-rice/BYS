@@ -25,6 +25,7 @@ class BYS {
    * @return void
 	 */	
 	static public function start(){
+
 		// 启用自动加载类库
 		spl_autoload_register('BYS\BYS::autoload');   
 

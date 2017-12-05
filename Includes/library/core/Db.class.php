@@ -37,7 +37,7 @@ class Db {
         self::$options[\PDO::ATTR_DEFAULT_FETCH_MODE]  = \PDO::FETCH_ASSOC;
         
         // 链接数据库，并将对象暴露至全局
-        self::$link = new \PDO( $dbConfig['dsn'], $dbConfig['username'], $dbConfig['password']);
+        self::$link = new \PDO($dbConfig['dsn'], $dbConfig['username'], $dbConfig['password']);
     }catch (\PDOException $e) {
         Report::error($e->getMessage());
     }
