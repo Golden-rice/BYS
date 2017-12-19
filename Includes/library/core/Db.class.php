@@ -24,28 +24,32 @@ class Db {
 		$dbConfig = self::parseConfig($config);
 		// 生成pdo的dsn 
 		$dbConfig['dsn'] = self::parseDsn( $dbConfig );
-		
+
     try{
-        if(empty($dbConfig['dsn'])) {
-            $dbConfig['dsn']  =   self::parseConfig($config);
-        }
-        // 当版本低于时，禁用模拟预处理语句
-        if(version_compare(PHP_VERSION,'5.3.6','<=')){
-            self::$options[\PDO::ATTR_EMULATE_PREPARES]  =   false;
-        }
-        // fetch 方式
-        self::$options[\PDO::ATTR_DEFAULT_FETCH_MODE]  = \PDO::FETCH_ASSOC;
-        
-        // 链接数据库，并将对象暴露至全局
-        self::$link = new \PDO($dbConfig['dsn'], $dbConfig['username'], $dbConfig['password']);
+      if(empty($dbConfig['dsn'])) {
+          $dbConfig['dsn']  =   self::parseConfig($config);
+      }
+      // 当版本低于时，禁用模拟预处理语句
+      if(version_compare(PHP_VERSION,'5.3.6','<=')){
+          self::$options[\PDO::ATTR_EMULATE_PREPARES]  =   false;
+      }
+      // 错误方式：抛出异常
+      self::$options[\PDO::ATTR_ERRMODE]             = \PDO::ERRMODE_EXCEPTION;
+      // 维持字段书写格式
+      self::$options[\PDO::ATTR_CASE]                = \PDO::CASE_NATURAL;
+      // fetch 方式
+      self::$options[\PDO::ATTR_DEFAULT_FETCH_MODE]  = \PDO::FETCH_ASSOC;
+      // 设置字符
+      self::$options[\PDO::MYSQL_ATTR_INIT_COMMAND]  = "SET NAMES '{$dbConfig['charset']}';";
+
+      // 链接数据库，并将对象暴露至全局
+      self::$link = new \PDO($dbConfig['dsn'], $dbConfig['username'], $dbConfig['password']);
     }catch (\PDOException $e) {
-        Report::error($e->getMessage());
+      Report::error($e->getMessage());
     }
 
 		return true;
 	}
-
-
 
   /**
    * 数据库连接参数解析

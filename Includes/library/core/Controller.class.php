@@ -145,7 +145,7 @@ abstract class Controller {
   public function query($modelName = '', $config = array(), $return = false){
     $m = model($modelName);
 
-    // 必须
+    // 条件
     if(isset($config['conditions']))
       // 反序列化
       if(is_string($config['conditions'])){
@@ -156,6 +156,18 @@ abstract class Controller {
     else
       $where = array();
 
+    // 去重字段
+    if(isset($config['distinct']))
+      // 反序列化
+      if(is_string($config['distinct'])){
+        $distinct = json_decode($config['distinct'], true);
+      }else{
+        $distinct = $config['distinct'];
+      }
+    else
+      $distinct = array();
+
+    // 查询字段
     if(isset($config['select']))
       // 反序列化
       if(is_string($config['select'])){
@@ -166,6 +178,7 @@ abstract class Controller {
     else
       $select = array();
 
+    // 排序
     if(isset($config['orderby']))
       // 反序列化
       if(is_string($config['orderby'])){
@@ -176,9 +189,20 @@ abstract class Controller {
     else
       $orderby = array();
 
-    $result = $m->find($where, $orderby, $select);
+    // 限制数据量
+    if(isset($config['limit']))
+      $limit = $config['limit'];
+    else
+      $limit = 1000;
+
+
+    $result = $m->find($where, $orderby, $select, $distinct, $limit);
+
     if($return)
-      return $result;
+      if($result)
+        return $result;
+      else
+        Report::log("{$modelName} 查询无数据");
     else{
       if($result)
         echo json_encode(array('result'=>$result, 'status'=>1, 'msg'=>Report::printLog()));
@@ -372,7 +396,7 @@ abstract class Controller {
       Report::error('缺少新增的数据');
 
     $result = $m->addAll($values);
-
+    
     if($return)
       return $result;
     else{
