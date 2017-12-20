@@ -197,17 +197,20 @@ abstract class Controller {
 
 
     $result = $m->find($where, $orderby, $select, $distinct, $limit);
-
-    if($return)
-      if($result)
-        return $result;
-      else
-        Report::log("{$modelName} 查询无数据");
+    if($return){
+      if($result) return $result;
+      // 当发生数据检查是，无数据则插入，这种时候总汇提示
+      // else Report::log("{$modelName} 查询无数据");
+    }
     else{
-      if($result)
+      if($result){
+
         echo json_encode(array('result'=>$result, 'status'=>1, 'msg'=>Report::printLog()));
-      else
+      }
+      else{
+
         echo json_encode(array('result'=>$result, 'status'=>0, 'msg'=>Report::printLog()));
+      }
     }
     
   }
@@ -258,8 +261,8 @@ abstract class Controller {
     else
       Report::error('缺少更新数据');
 
-              $m->setWhere($where);
-    $result = $m->update($values);
+
+    $result = $m->update($values, $where, false);
 
     if($return)
       return $result;

@@ -84,16 +84,48 @@
 			$this->limit            = '';
 			// 分组
 			$this->group            = '';
-			
+			// 最后插入的ID
+			$this->lastInsertId     = null;
+			// 最后受影响的属相
+			$this->rowCount         = null;
+			// 绑定参数
+			$this->value            = array();
 			return $this;
 	 	}
+
+	 	// public function add($data=array()){
+	 	// 	// 单条新增
+	 	// 		$sql = '';
+
+	 	// 		$sql = "INSERT INTO {$this->tableName} (";
+			//  	$val = 'VALUES(';
+	 	// 		foreach ($data as $key => $value) {
+	 	// 			$sql .= "`{$key}`,";
+	 	// 			$val .= is_string($value)? "'$value'," : $value.',';
+	 	// 		}
+	 	// 		if(count($this->_validate) >0){
+	 	// 			foreach ($this->_validate as $key => $value) {
+	 	// 				$sql .= "`{$key}`,";
+	 	// 				if($value == 'TIME'){
+	 	// 					$val .= time().',';
+	 	// 				}else{
+		 // 					$val .= is_string($value)? "'$value'," : $value.',';
+	 	// 				}
+	 	// 			}
+	 	// 		}
+	 	// 		$this->sql = rtrim($sql, ',').') '.rtrim($val, ',').')';
+			// 	$this->prepare($this->sql);
+			// 	$this->execute();
+
+			// 	return $this->lastInsertId;
+	 	// }
 
 	 	/**
 		 * 新增数据，返回最后添加的id
 		 * @param  array  $data 新增的数据
 		 * @return int    
 		 */	 	
-	 	public function add($data=array()){
+	 	public function add($data=array(), $return = false){
 	 		// 单条新增
 	 			$sql = '';
 
@@ -101,24 +133,39 @@
 			 	$val = 'VALUES(';
 	 			foreach ($data as $key => $value) {
 	 				$sql .= "`{$key}`,";
-	 				$val .= is_string($value)? "'$value'," : $value.',';
+
+	 				// sql 语句
+	 				// $val .= is_string($value)? "'$value'," : $value.',';
+
+	 				// PDO 设置相同数量的占位符
+		 			$val .= "?,"; // :{$value}
+		 			$this->addBindValue(array("?", $value, is_numeric($value) ? \PDO::PARAM_INT : \PDO::PARAM_STR)); // :{$value}
 	 			}
 	 			if(count($this->_validate) >0){
 	 				foreach ($this->_validate as $key => $value) {
 	 					$sql .= "`{$key}`,";
-	 					if($value == 'TIME'){
-	 						$val .= time().',';
-	 					}else{
-		 					$val .= is_string($value)? "'$value'," : $value.',';
-	 					}
+	 					// sql 语句
+	 					// if($value == 'TIME'){
+	 					// 	$val .= time().',';
+	 					// }else{
+		 				// 	$val .= is_string($value)? "'$value'," : $value.',';
+	 					// }
+
+						// PDO 设置相同数量的占位符
+				 		$val .= "?,"; // :{$value}
+				 		$this->addBindValue(array("?", $value === 'TIME' ? time() : $value, $value === 'TIME' || is_numeric($value) ? \PDO::PARAM_INT : \PDO::PARAM_STR)); // :{$value}
 	 				}
 	 			}
-	 			$this->sql = rtrim($sql, ',').') '.rtrim($val, ',').')';
+	 			$sql = rtrim($sql, ',').') '.rtrim($val, ',').');';
+	 			$this->sql = $sql;
+				if($return) return $sql;
+
 				$this->prepare($this->sql);
 				$this->execute();
 
 				return $this->lastInsertId;
 	 	}
+
 
 	 	/**
 		 * 新增多条数据
@@ -126,34 +173,26 @@
 		 * @return bool 
 		 */	 
 	 	public function addAll($data=array()){
+
 	 		if (count($data) <=0) return;
- 			$sql = '';
- 			foreach ($data as $index => $item) {
 
- 				$sql .= "INSERT INTO {$this->tableName} (";
- 				$val = 'VALUES(';
- 				foreach ($item as $key => $value) {
-	 				$sql .= "`{$key}`,";
-	 				$val .= is_string($value)? "'$value'," : (int)$value.',';
-	 			}
+ 			// sql 语句
+ 			// $sql = '';
+ 			// foreach ($data as $index => $item) {
+ 			// 	$sql .= $this->add($item, true);	
+ 			// }
 
-				if(count($this->_validate) >0){
-	 				foreach ($this->_validate as $key => $value) {
-	 					$sql .= "`{$key}`,";
-	 					if($value == 'TIME'){
-	 						$val .= time().',';
-	 					}else{
-		 					$val .= is_string($value)? "'$value'," : (int)$value.',';
-	 					}
-	 				}
-	 			}		
-	 			$sql = rtrim($sql, ',').') '.rtrim($val, ',').'); '; 			
- 			}
+ 			Db::$link->beginTransaction(); 
 
- 			$this->sql = $sql;
- 			$this->prepare($this->sql);
- 			$result = $this->execute();
-
+ 			// PDO 设置一次占位符
+	 		foreach ($data as $index => $item) {
+	 			$this->sql = $this->add($item, true);
+	 			$this->prepare($this->sql);
+	 			$this->setBindValue();
+	 			$this->prepare->execute();
+	 		}
+	 		$this->lastInsertId = Db::$link->lastInsertId();
+	 		Db::$link->commit();
  			return $this->lastInsertId;
 	 	}
 
@@ -188,10 +227,11 @@
 
 	 	/**
 		 * 生成数据的筛选条件
-		 * @param  array $where 封装好的where数组
+		 * @param  array $where        封装好的where数组
+		 * @param  bool  $setAttrName  是否已key值作为占位符
 		 * @return thisObject
 		 */	
-	 	public function setWhere($where){
+	 	public function setWhere($where, $setAttrName = false){
 	 		if(!empty($where)){
 		 		$whereString = '';
 
@@ -219,8 +259,13 @@
 
 		 				// 利用PDO绑定防止sql 注入
 		 				// 参数标识符 已取消
-		 				$whereString .= " `{$whereAttr}` = ? AND"; // :{$whereAttr}
-		 				$this->addBindValue(array("?", $whereVal, is_numeric($whereVal) ? \PDO::PARAM_INT : \PDO::PARAM_STR)); // :{$whereAttr}
+		 				if($setAttrName){
+			 				$whereString .= " `{$whereAttr}` = :{$whereAttr} AND"; 
+			 				$this->addBindValue(array(":{$whereAttr}", $whereVal, is_numeric($whereVal) ? \PDO::PARAM_INT : \PDO::PARAM_STR));
+		 				}else{
+			 				$whereString .= " `{$whereAttr}` = ? AND"; // :{$whereAttr}
+			 				$this->addBindValue(array("?", $whereVal, is_numeric($whereVal) ? \PDO::PARAM_INT : \PDO::PARAM_STR)); // :{$whereAttr}
+		 				}
 		 			}
 		 		}
 		 		$whereString = rtrim($whereString, 'AND');
@@ -384,24 +429,36 @@
 
 	 	/**
 		 * 更新一条数据
+		 * @param  array $data         待更新的字段及数据
+		 * @param  array $where        更新条件
+		 * @param  bool  $return       是否sql语句且停止执行
+		 * @param  bool  $setAttrName  是否已key值作为占位符
 		 * @return mix 结果
 		 */	 	
-	 	public function update($data = array(), $return = false){
+	 	public function update($data = array(),  $where = array(), $return = false, $setAttrName = false){
 	 		if (count($data) <=0) return;
  			$sql = "UPDATE {$this->tableName} SET ";
+
  			foreach ($data as $attr => $val) {
  				// SQL 书写
- 				$sql .= "`{$attr}` = ".(is_string($val)? "'{$val}'" : (int)$val).',';
+ 				// $sql .= "`{$attr}` = ".(is_string($val)? "'{$val}'" : (int)$val).',';
 
  				// PDO 绑定
- 				// $sql .= " `{$attr}` = ? ,"; 
-		 		// $this->addBindValue(array("?", $attr, is_numeric($val) ? \PDO::PARAM_INT : \PDO::PARAM_STR));
+ 				if($setAttrName){
+	 				$sql .= " `{$attr}` = :{$attr} ,"; 
+			 		$this->addBindValue(array(":{$attr}", $val, is_numeric($val) ? \PDO::PARAM_INT : \PDO::PARAM_STR));
+ 				}else{
+	 				$sql .= " `{$attr}` = ? ,"; 
+			 		$this->addBindValue(array("?", $val, is_numeric($val) ? \PDO::PARAM_INT : \PDO::PARAM_STR));
+ 				}
  			}
+	 		$this->setWhere($where, $setAttrName);
 	 		$sql = rtrim($sql, ',').$this->where;
+	 		$this->sql = $sql;
 
-	 		if($return) return $sql;
+	 		if($return) return $this->sql;
 
-	 		$this->prepare($sql);
+	 		$this->prepare($this->sql);
 	 		$this->execute();
 	 		return $this->rowCount;
 	 	}
@@ -413,43 +470,27 @@
 	 	public function updates($datas){
 	 		// 清空
 	 		$this->reset();
-	 		// 批量生成数据
-
 	 		if(!empty($datas)){
-		 		// 将$where转化成sql语句
 		 		$sql = '';
-		 		// $rowCount = 0;
-		 		// Db::$link->beginTransaction(); 
+
+	 			Db::$link->beginTransaction(); 
+	 			// PDO 设置一次占位符
 		 		foreach ($datas as $index => $dataVal) {
-		 			// 逐条组合成sql
 		 			if(!isset($dataVal['where']) || !isset($dataVal['where'])) \BYS\Report::error('数据缺少参数');
-			 		$whereString = '';
-		 			foreach ($dataVal['where'] as $whereAttr => $whereVal) {
-		 				// SQL 脚本
-		 				$whereString .= is_string($whereVal) ? " `{$whereAttr}` = '{$whereVal}' AND" : " `{$whereAttr}` = {$whereVal} AND";
+		 			// 先update 在where
+		 			$this->sql = $this->update($dataVal['value'], $dataVal['where'], true);
 
-		 				// PDO 绑定
-		 				// $whereString .= " `{$whereAttr}` = ? AND"; 
-		 				// $this->addBindValue(array("?", $whereVal, is_numeric($whereVal) ? \PDO::PARAM_INT : \PDO::PARAM_STR)); 
-		 			}
-			 		$whereString = rtrim($whereString, 'AND');
-			 		$this->where($whereString);
-			 		$sql .= $this->update($dataVal['value'], true).';';
+		 			$this->prepare($this->sql);
+		 			$this->setBindValue();
+		 			$this->prepare->execute();
 
-			 		// 批量事务处理
-			 		// $this->prepare($this->sql);
-			 		// $this->setBindValue();
-			 		// $this->prepare->execute();
 		 		}
-		 		// Db::$link->commit();
-		 		$this->sql = $sql;
-		 		// return $rowCount;
+		 		$this->rowCount  += $this->prepare->rowCount();
+		 		Db::$link->commit();
+
 	 		}else{
 	 			\BYS\Report::error('数据为空');
 	 		}
-
-	 		$this->prepare($this->sql);
-	 		$this->execute();
 
 	 		return $this->rowCount;
 	 	}
@@ -490,6 +531,7 @@
 			if(!empty($this->value)){
 				$totelHoldPlace = 0; // ?占位符位置
 				foreach ($this->value as $paramVal) {
+
 					if($paramVal[0] === '?'){
 						if(is_array($paramVal[1]))
 							foreach ($paramVal[1] as $paramValEle) 
@@ -517,9 +559,9 @@
 	 		if( !isset($this->prepare)) Report::error('缺少预处理');
 		 	try{
 				Db::$link->beginTransaction(); 
+
 				// 绑定值
 				$this->setBindValue();
-
         $result             = $this->prepare->execute();
         $this->rowCount     = $this->prepare->rowCount();
         $this->lastInsertId = Db::$link->lastInsertId();
