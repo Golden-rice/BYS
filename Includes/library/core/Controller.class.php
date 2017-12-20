@@ -197,6 +197,7 @@ abstract class Controller {
 
 
     $result = $m->find($where, $orderby, $select, $distinct, $limit);
+
     if($return){
       if($result) return $result;
       // 当发生数据检查是，无数据则插入，这种时候总汇提示
