@@ -105,7 +105,7 @@ abstract class Controller {
     elseif(REQUEST_METHOD == 'POST')
       $var = $_POST;
     else
-      Report::error('请求方法错误，缺少必要参数');
+      Report::error('请求方法错误，缺少必要参数 From Controller::assignAction');
     
     // 显示执行方法
     if(isset($var['action']) && $action = $var['action']){
@@ -127,12 +127,12 @@ abstract class Controller {
             }
           }
           else
-            Report::error("{$_GLOBAL['con']}无{$action}方法");
+            Report::error("{$_GLOBAL['con']}无{$action}方法 From Controller::assignAction");
         }
         else
-          Report::error("无{$_GLOBAL['con']}类");
+          Report::error("无{$_GLOBAL['con']}类 From Controller::assignAction");
       }else
-        Report::error('请求方法错误，使用隐式请求时，参数必须为一个');
+        Report::error('请求方法错误，使用隐式请求时，参数必须为一个 From Controller::assignAction');
     }
 
   }
@@ -205,11 +205,9 @@ abstract class Controller {
     }
     else{
       if($result){
-
         echo json_encode(array('result'=>$result, 'status'=>1, 'msg'=>Report::printLog()));
       }
       else{
-
         echo json_encode(array('result'=>$result, 'status'=>0, 'msg'=>Report::printLog()));
       }
     }
@@ -250,7 +248,7 @@ abstract class Controller {
         $where = $config['conditions'];
       }
     else
-      Report::error('缺少条件');
+      Report::error('缺少条件 From Controller::update');
 
     if(isset($config['values']))
       // 反序列化
@@ -260,7 +258,7 @@ abstract class Controller {
         $values = $config['values'];
       }
     else
-      Report::error('缺少更新数据');
+      Report::error('缺少更新数据 From Controller::update');
 
 
     $result = $m->update($values, $where, false);
@@ -307,7 +305,7 @@ abstract class Controller {
   public function updates($modelName = '', $config = array()){
     $m = model($modelName);
     if(empty($config)) {
-      \BYS\Report::error('数据为空');
+      \BYS\Report::error('数据为空 From Controller::updates');
       return;
     }
 
@@ -349,7 +347,7 @@ abstract class Controller {
         $where = $config['conditions'];
       }
     else
-      Report::error('缺少条件');
+      Report::error('缺少条件 From Controller::delete');
 
               $m->setWhere($where);
     $result = $m->delete();
@@ -397,7 +395,7 @@ abstract class Controller {
         $values = $config['values'];
       }
     else
-      Report::error('缺少新增的数据');
+      Report::error('缺少新增的数据 From Controller::add');
 
     $result = $m->addAll($values);
     

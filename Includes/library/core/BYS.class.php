@@ -35,6 +35,10 @@ class BYS {
 		if(APP_DEBUG == false)
 			error_reporting(E_ALL ^ E_NOTICE);
 
+		
+		ini_set('track_errors', 1); // 将最后的错误存储在变量中
+		ini_set('html_errors', 1); // 显示html
+
 		// 设置语言
 		header('Content-Type:text/html; charset=utf-8');
 		

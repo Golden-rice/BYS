@@ -93,10 +93,6 @@
 			return $this;
 	 	}
 
-	 	// **== 待完善 回填至 add 系列中
-	 	public function setAdd($data = array(), $setAttrName = false){
-
-	 	}
 
 	 	/**
 		 * 新增数据，返回最后添加的id
@@ -176,19 +172,23 @@
  			// foreach ($data as $index => $item) {
  			// 	$sql .= $this->add($item, true);	
  			// }
+	 		try{
+	 			Db::$link->beginTransaction(); 
 
- 			Db::$link->beginTransaction(); 
-
- 			// PDO 设置一次占位符
-	 		foreach ($data as $index => $item) {
-	 			$this->sql = $this->add($item, true);
-	 			$this->prepare($this->sql);
-	 			$this->setBindValue();
-	 			$this->prepare->execute();
-	 		}
-	 		$this->lastInsertId = Db::$link->lastInsertId();
-	 		Db::$link->commit();
- 			return $this->lastInsertId;
+	 			// PDO 设置一次占位符
+		 		foreach ($data as $index => $item) {
+		 			$this->sql = $this->add($item, true);
+		 			$this->prepare($this->sql);
+		 			$this->setBindValue();
+		 			$this->prepare->execute();
+		 		}
+		 		$this->lastInsertId = Db::$link->lastInsertId();
+		 		Db::$link->commit();
+	 			return $this->lastInsertId;
+ 			}catch(PDOException $e){
+	    	Db::$link->rollback();
+	      Report::error('错误是：'.$e->getMessage().' From Model::addAll');
+	    }
 	 	}
 
 	 	/**
@@ -231,8 +231,8 @@
 		 		$whereString = '';
 
 		 		foreach ($where as $whereAttr => $whereVal) {
-		 			// 过滤值为空的条件
-		 			if(empty($whereVal)) continue;
+		 			// 过滤值为空的条件，值为0，''时
+		 			// if(empty($whereVal)) continue;
 		 			// 设置一个条件多个参数时
 		 			if(is_array($whereVal)) {
 				 		// 将$where转化成sql语句
@@ -264,8 +264,12 @@
 			 			// 	$whereString .= " `{$whereAttr}` = ? AND"; // :{$whereAttr}
 			 			// 	$this->addBindValue(array("?", $whereVal, is_numeric($whereVal) ? \PDO::PARAM_INT : \PDO::PARAM_STR)); // :{$whereAttr}
 		 				// }
-
-		 				$whereString .= $setAttrName ? $this->setPlacehold(":{$whereAttr}", "`{$whereAttr}` = % AND", $whereVal) : $this->setPlacehold("?", "`{$whereAttr}` = % AND", $whereVal);
+		 				if(preg_match("/(<|>)(.*)?/", $whereVal, $whereValMatch)){
+		 					$whereVal     = isset($whereValMatch[2]) ? $whereValMatch[2] : $whereVal;
+		 					$whereString .= $setAttrName ? $this->setPlacehold(":{$whereAttr}", "`{$whereAttr}` {$whereValMatch[1]} % AND", $whereVal) : $this->setPlacehold("?", "`{$whereAttr}` {$whereValMatch[1]} % AND", $whereVal);
+		 				}
+		 				else
+		 					$whereString .= $setAttrName ? $this->setPlacehold(":{$whereAttr}", "`{$whereAttr}` = % AND", $whereVal) : $this->setPlacehold("?", "`{$whereAttr}` = % AND", $whereVal);
 		 			}
 		 		}
 		 		$whereString = rtrim($whereString, 'AND');
@@ -492,24 +496,30 @@
 	 	public function updates($datas){
 	 		// 清空
 	 		$this->reset();
-	 		if(empty($datas)) \BYS\Report::error('数据为空');
+	 		if(empty($datas)) \BYS\Report::error('数据为空'.' From Model::updates');
 	 		
 	 		$sql = '';
- 			Db::$link->beginTransaction(); 
- 			// PDO 设置一次占位符
-	 		foreach ($datas as $index => $dataVal) {
-	 			if(!isset($dataVal['where']) || !isset($dataVal['where'])) \BYS\Report::error('数据缺少参数');
-	 			$this->sql = $this->update($dataVal['value'], $dataVal['where'], true, true);
+	 		try{
+	 			Db::$link->beginTransaction(); 
+	 			// PDO 设置一次占位符
+		 		foreach ($datas as $index => $dataVal) {
+		 			if(!isset($dataVal['where']) || !isset($dataVal['where'])) \BYS\Report::error('数据缺少参数'.' From Model::updates');
+		 			$this->sql = $this->update($dataVal['value'], $dataVal['where'], true, true);
 
-	 			$this->prepare($this->sql);
-	 			$this->setBindValue();
-	 			$this->prepare->execute();
+		 			$this->prepare($this->sql);
+		 			$this->setBindValue();
+		 			$this->prepare->execute();
 
-	 		}
-	 		$this->rowCount  += $this->prepare->rowCount();
-	 		Db::$link->commit();
+		 		}
+		 		$this->rowCount  += $this->prepare->rowCount();
+		 		Db::$link->commit();
 
-	 		return $this->rowCount;
+		 		return $this->rowCount;
+
+		 	}catch(PDOException $e){
+	    	Db::$link->rollback();
+	      Report::error('错误是：'.$e->getMessage().' From Model::updates');
+	    }
 	 	}
 
 
@@ -518,6 +528,10 @@
 		 * @return mix 结果
 		 */	 	
 	 	public function delete(){
+ 			if(empty($this->where)) {
+ 				Report::log('缺少删除条件！'.' From Model::delete');
+ 				return;
+ 			}
  			$sql = "DELETE FROM {$this->tableName} ";
 	 		$sql = $sql.$this->where;
 
@@ -537,7 +551,7 @@
 	      $this->sql = $sql;
 	      $this->prepare = Db::$link->prepare($this->sql); // 返回类似于数组
 	    }catch(PDOException $e){
-	      Report::error('错误是：'.$e->getMessage());
+	      Report::error('错误是：'.$e->getMessage().' From Model::prepare');
 	    }
 	 	}
 
@@ -548,6 +562,14 @@
 		 * @param  string  $val        待绑定参数的值
 		 */
 	 	public function setPlacehold($placeHold = '?', $place, $val){
+	 		// 除了？相同占位符名时重命名
+	 		if($placeHold !== '?'){
+		 		foreach ($this->value as $value) {
+		 			if($value[0] === $placeHold){
+		 				$placeHold = $placeHold.time();
+		 			}
+		 		}
+	 		}
 	 		$this->addBindValue(array($placeHold, $val, is_numeric($val) ? \PDO::PARAM_INT : \PDO::PARAM_STR));
 	 		return preg_replace("/%/", $placeHold, $place);
 	 	}
@@ -584,9 +606,11 @@
 		 * @return array
 		 */
 	 	public function execute($returnArray = false){
-	 		if( !isset($this->prepare)) Report::error('缺少预处理');
+	 		if( !isset($this->prepare)) Report::error('缺少预处理, From Model::execute {$_SERVER["SCRIPT_NAME"]}');
 		 	try{
 				Db::$link->beginTransaction(); 
+				// 新增 Debug: 打印数据库执行
+				var_dump($this->sql, $this->value);
 				// ***
 				// 绑定值
 				$this->setBindValue();
@@ -611,7 +635,7 @@
         return $result;
 	    }catch(PDOException $e){
 	    	Db::$link->rollback();
-	      Report::error('错误是：'.$e->getMessage());
+	      Report::error('错误是：'.$e->getMessage().' From Model::execute');
 	    }
 	 	}
 

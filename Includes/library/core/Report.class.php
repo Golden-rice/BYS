@@ -2,14 +2,20 @@
 namespace BYS;
 
 class Report {
-	static public $log = array();
+	static public $log    = array(); // 各个过程的日志记录
+	static public $status = array(); // 各个过程的状态记录
 
 	static public function test(){
 		echo "Class Template config success!";
 	}
 
+	// 抛出错误
 	static public function error($words){
-		throw new \Exception($words);
+		try{
+			throw new \Exception($words);
+		}catch(\Exception $e){
+			echo 'Throw Error :'.$e->getMessage();
+		}
 		exit;
 	}
 
