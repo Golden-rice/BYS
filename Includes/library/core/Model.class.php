@@ -610,7 +610,7 @@
 		 	try{
 				Db::$link->beginTransaction(); 
 				// 新增 Debug: 打印数据库执行
-				var_dump($this->sql, $this->value);
+				// var_dump($this->sql, $this->value);
 				// ***
 				// 绑定值
 				$this->setBindValue();
