@@ -87,7 +87,7 @@ abstract class Controller {
           "airline": "UA"
         }, 
         "select": ['dep', 'arr'],
-        "orderby":[{"column":"gmtCreate","asc":"true"}]
+        "orderby":[{"name":"asc"}]
       }
     }
     语法（显式）：

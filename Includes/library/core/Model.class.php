@@ -382,7 +382,7 @@
 	 			// $orderbys 的key 是变量名， value 决定是生还是降
 	 			$orderString = '';
 	 			foreach ($orderbys as $orderName => $orderType) {
-	 				$orderString .= " {$orderName} ".($orderType === 'DESC' ? 'DESC' : 'ASC').',';
+	 				$orderString .= " {$orderName} ".(strtoupper($orderType) === 'DESC' ? 'DESC' : 'ASC').',';
 	 			}
 	 			$orderString = rtrim($orderString, ',');
 	 			$this->order($orderString);
@@ -464,7 +464,9 @@
 	 		if (count($data) <=0) return;
 
 	 		// 清空
-	 		$this->reset();
+	 		if(!empty($where)){
+		 		$this->reset();
+ 			}
 
  			$sql = "UPDATE {$this->tableName} SET ";
  			// foreach ($data as $attr => $val) {
@@ -475,6 +477,7 @@
  			// 	$sql .= $setAttrName ? $this->setPlacehold(":{$attr}", " `{$attr}` = % ,", $val) : $this->setPlacehold("?", " `{$attr}` = % ,", $val);
 
  			// }
+
 	 		$this->setWhere($where, $setAttrName);
 	 		// $sql = rtrim($sql, ',').$this->where;
 	 		$sql = $sql.$this->setUpdate($data, $setAttrName).$this->where;
@@ -499,6 +502,7 @@
 	 		if(empty($datas)) \BYS\Report::error('数据为空'.' From Model::updates');
 	 		
 	 		$sql = '';
+	 		$totleRowCount = 0; // 总影响行数
 	 		try{
 	 			Db::$link->beginTransaction(); 
 	 			// PDO 设置一次占位符
@@ -510,8 +514,9 @@
 		 			$this->setBindValue();
 		 			$this->prepare->execute();
 
+			 		$totleRowCount  += $this->prepare->rowCount();
 		 		}
-		 		$this->rowCount  += $this->prepare->rowCount();
+		 		$this->rowCount = $totleRowCount;
 		 		Db::$link->commit();
 
 		 		return $this->rowCount;
