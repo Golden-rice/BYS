@@ -31,14 +31,14 @@ index.php                # 入口文件
 * `core`属性：指向框架核心文件，用于更换框架核心。
 * `vender` 属性：默认加载/vender目录中的库，格式：
 ```json
-框架名（文件夹名）   => array(
-        // 应用配置
-        'path'    => 路径,
-        'config' => array( 
-          'file'   => 入口文件,
-          'path'   => 配置目录 // 一般是在/config目录，以config.php结尾
-        ),
-      )
+框架名（文件夹名）=> array(
+  // 应用配置
+  'path'    => 路径,
+  'config' => array( 
+    'file'   => 入口文件,
+    'path'   => 配置目录 // 一般是在/config目录，以config.php结尾
+  ),
+)
 ```
 
 ## 项目配置文件 Includes/config/config.php
@@ -47,61 +47,78 @@ index.php                # 入口文件
 * `TPL_VAR` 表示模板中替换的变量，例如在index.html中 __VAR__ 替换成 var。
 * `DB_CONFIG_LIST` 允许多个数据库，`DEFAULT` 表示默认的数据库参数，其他参数以数据库名作为key值
 ```json
-      // 数据库设置
-      'DB_CONFIG_LIST' => array(
-        'db_1'=>array(                              // 默认连接
-          'DB_TYPE'   => 'mysql',                   // 数据库类型
-          'DB_HOST'   => 'localhost',               // 服务器地址
-          'DB_NAME'   => 'localhost',               // 数据库名
-          'DB_USER'   => 'root',                    // 用户名
-          'DB_PWD'    => 'root',                    // 密码
-          'DB_PORT'   => 3305,                      // 端口
-          'DB_CHARSET'=> 'utf8',                    // 字符集
-        )
-        'DEFAULT' => array(                         // 默认连接
-          'DB_TYPE'   => 'mysql',                   // 数据库类型
-          'DB_HOST'   => 'localhost',               // 服务器地址
-          'DB_NAME'   => 'localhost',               // 数据库名
-          'DB_USER'   => 'root',                    // 用户名
-          'DB_PWD'    => 'root',                    // 密码
-          'DB_PORT'   => 3306,                      // 端口
-          'DB_CHARSET'=> 'utf8',                    // 字符集
-        )
-      )
+// 数据库设置
+'DB_CONFIG_LIST' => array(
+  'db_1'=>array(                              // 默认连接
+    'DB_TYPE'   => 'mysql',                   // 数据库类型
+    'DB_HOST'   => 'localhost',               // 服务器地址
+    'DB_NAME'   => 'localhost',               // 数据库名
+    'DB_USER'   => 'root',                    // 用户名
+    'DB_PWD'    => 'root',                    // 密码
+    'DB_PORT'   => 3305,                      // 端口
+    'DB_CHARSET'=> 'utf8',                    // 字符集
+  )
+  'DEFAULT' => array(                         // 默认连接
+    'DB_TYPE'   => 'mysql',                   // 数据库类型
+    'DB_HOST'   => 'localhost',               // 服务器地址
+    'DB_NAME'   => 'localhost',               // 数据库名
+    'DB_USER'   => 'root',                    // 用户名
+    'DB_PWD'    => 'root',                    // 密码
+    'DB_PORT'   => 3306,                      // 端口
+    'DB_CHARSET'=> 'utf8',                    // 字符集
+  )
+)
 ```
 
 
 ## 全局函数 Includes/common/function.php
+
 * model()  应用模板，支持 C语言风格的表名（下划线）和JAVA风格的表名（驼峰输入法）
+
 ```
 // 数据表模型
 $m = model('table_name');
 ```
+
 * import() 引用第三方类库，起引用地址指向 `Includes/libaray`
+
 ```
 // 临时引用第三方类库，如长期引用可以在配置文件中配置
 // 语法：import(String $path);
 import('vender/chart/app.php');
 ```
+
 * reflect() 跨控制器引用，参数即为控制器名
+
 ```
 // 引用其他控制器，仅取控制器名即可，后面即可使用该方法
 // 语法：reflect(String $controllerName);
 $user = reflect('user'); // userController 
 $user->login(); // userController->login()
 ```
+
 * connect() 链接某个数据库，例如 connect('db_1')，后面的数据库操作均可以指向这个数据库，切换原DEFAULT数据库，使用函数 reset_connect()
+
 ```
 // 语法：connect(String $dbName);
 // 语法：reset_connect();
-    connect('db_1');
-     $result = $this->query('table_1', array('conditions'=>array('id'=>1)));
-     reset_connect();
+connect('db_1');
+$result = $this->query('table_1', array('conditions'=>array('id'=>1)));
+reset_connect();
 ```
 
 * cookie() 存储cookie，对原生的cookie做封装，主要解决跨控制器cookie无法共享问题。
+
 ```
-// 语法：cookie(String $coockieName, String $coockieValue, [mix $options])
+// 语法：cookie(String $coockieName, String $coockieValue, [mix $options]);
+```
+
+* redirect() 重定向，指定一定时间后跳转
+
+```
+// redirect( String $url [, Number $time = 0, String $msg = ''] )
+redirect('login.php', 3, '登录');
+redirect('login.php'); 
 ```
 
 ## 核心功能
@@ -121,21 +138,27 @@ class IndexController extends Controller {
 }
 
 ```
+
 	* display 模板渲染
+
 ```
 // 自动寻找view层对应的位置：例如上例找寻 /admin/Index/index.html
 $this->display();
 // 也可以指定其他模板，后面可以省略html后缀
 $this->display('User/login'); // 模板为 /admin/User/login.html
 ```
+
 	* assign 变量分配
+
 ```
 $this->assign('path', APP_PATH);
 // 在模板*.html中就可以使用该变量，例如此处配置左右边界符为"<{","}>"
 <{path}>
 ```
+
 	* display assgin 均继承自 smarty，因此配饰smarty.config.php 即可生成相应配置
 	* query 表查询
+
 ```
 // 语法：$this->query(String $modelName, Array $config, Bool $return);
 /*
@@ -152,7 +175,9 @@ $this->assign('path', APP_PATH);
 */
 $this->query('table_1', array('conditions'=>array('Id'=1), 'select'=>array('Name'), 'orderby'=>array('time'=>'ASC'),'limit'=>10), true);
 ```
+
   * update 表更新
+
 ```
 // 语法：$this->update(String $modelName, Array $config, Bool $return);
 /*
@@ -166,7 +191,9 @@ $this->query('table_1', array('conditions'=>array('Id'=1), 'select'=>array('Name
 */
 $this->update('table_1', array('conditions'=>array('time'=>'<'.time()), 'values'=>array('status'=>0)));
 ```
+
   * updates 对同一表批量更新
+
 ```
 // 语法：$this->updates(String $modelName, Array $config, Bool $return);
 /*
@@ -186,7 +213,9 @@ $this->updates('table_1', array(
   array('where'=>array('Id'=>'1'), 'value'=>array('status'=>0)), 
 ), true);
 ```
+
   * add 批量新增数据
+
 ```
 // 语法：$this->add(String $modelName, Array $config, Bool $return);
 /*
@@ -205,7 +234,9 @@ $this->add('table_1', array('values'=>array(
   array('id'=>2, 'name'=>'bb'),
 )), ture);
 ```
+
   * delete 删除数据
+
 ```
 // 语法：$this->delete(String $modelName, Array $config, Bool $return);
 /*
@@ -218,6 +249,7 @@ $this->add('table_1', array('values'=>array(
 */
 $this->delete('table_1', array('conditions'=>array('time'=>'<'.time()), ture);
 ```
+
 * Report
   * Report::log()
   * Report::printLog()
@@ -293,18 +325,16 @@ $this->delete('table_1', array('conditions'=>array('time'=>'<'.time()), ture);
 ```
 
 ## 其他
-* 目前仅支持对服务器POST,GET请求
+* 目前对服务器限制为POST, GET的http请求
 
 
 ## 未完成功能：
-* 前端数据表隐式书写
 * 调整默认文件样式
 * 调整文件夹及文件名大小写，适配Linux系统
 * 内置一套UI框架
-* 一套CMS系统模板
+* 内置一套js框架
+* 内置一套CMS系统
 * 压缩html？
-* 公共方法：functin.class.php 定义
 * 去除index.php后nginx的适配
 * trace模式
-* 控制器常用的操作：可以直接使用smarty框架
 * 404内置
