@@ -4,6 +4,7 @@ namespace BYS;
  * 控制器基类 
  */
 abstract class Controller {
+  protected $model;
 
 	// 重构控制器类
   public function __construct() {
@@ -47,8 +48,7 @@ abstract class Controller {
       $this->drive->support( $tpl.$ext );
       $this->smarty->display( $r );
     }else{
-      echo $tpl.$ext;
-      Report::error('没有模板');
+      Report::error($tpl.$ext.'没有模板');
     }
   }
 
@@ -160,7 +160,8 @@ abstract class Controller {
   // 根据查询结果设置返回值
   protected function setReturn( $result, $return = false ){
     if($return){
-      if($result) return $result;
+      // 不做数据筛选，返回查询结果
+      return $result;
       // 当发生数据检查是，无数据则插入，这种时候总汇提示
       // else Report::log("{$modelName} 查询无数据");
     }
@@ -180,7 +181,7 @@ abstract class Controller {
    */
   public function query($modelName = '', $config = array(), $return = false){
     $m = model($modelName);
-
+    $this->model = $m;
     // 条件
     $where    = $this->parseConfig( $config, 'conditions' );
     // 去重字段
@@ -196,7 +197,7 @@ abstract class Controller {
       $limit = 1000;
 
     $result = $m->find($where, $orderby, $select, $distinct, $limit);
-    var_dump($m->testSql());
+
     return $this->setReturn($result, $return);
   }
 
@@ -355,4 +356,11 @@ abstract class Controller {
     return $this->setReturn($result, $return);
   }
 
+
+  // 重复上一次SQL动作
+  public function reActSQL(){
+    if( $this->model )
+      return $this->model->lastSQL(true);
+    return false;
+  }
 }

@@ -34,7 +34,10 @@ class Report {
 	}
 
 	static public function log($words){
-		array_push(self::$log, $words);
+		if( is_string($words) )
+			array_push(self::$log, $words);
+		else
+			array_push(self::$log, 'Wrong Log Type');
 	}
 
 	static public function printLog(){
@@ -45,4 +48,5 @@ class Report {
 			}
 		return $log;
 	}
+
 }

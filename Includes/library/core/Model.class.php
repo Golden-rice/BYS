@@ -228,7 +228,7 @@
 		 */	
 	 	public function setWhere($where, $setAttrName = false){
 	 		if(!empty($where)){
-		 		$whereString = '';
+		 		$whereString   = '';
 		 		$whereRelation = 'AND';
 		 		foreach ($where as $whereAttr => $whereVal) {
 	 				// 匹配字段关系 OR 
@@ -335,11 +335,13 @@
 		 * 查看sql语句
 		 * @return string
 		 */	 	
-	  public function testSql(){
-	  	if($this->sql != '')
-	  		return $this->sql;
-	  	else
-	  		return 'No Sql';
+	  public function testSQL(){
+	 		if( !empty($this->sql) ) 
+	 			return $this->sql;
+	 		return;
+	 		// else {
+	 		// 	return ('No SQL Return!');
+	 		// }
 	  }
 
 	  /**
@@ -677,7 +679,7 @@
 		}
 		
 	 	/** 
-		 封装的SQL事件
+		 SQL 动作
 		 */
 
 	 	/**
@@ -703,6 +705,20 @@
 		 	$this->setLimit($limit);
 
 	 		return $this->select(implode($select, ','));
+	 	}
+
+	 	/**
+	 	 * 返回上次查询的sql语句
+	 	 * @return mix 有sql语句时，返回语句，否则返回 undefined
+	 	 */
+	 	public function lastSQL( $returnArray = false ){
+
+	 		if( $this->testSQL() ) {
+	 			return $this->execute( $returnArray );
+	 		}
+
+	 		\BYS\Report::error('No SQL Execute!');
+	 		return;
 	 	}
 
 	 	/** 
