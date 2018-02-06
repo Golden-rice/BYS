@@ -39,9 +39,11 @@ class BYS {
 		ini_set('track_errors', 1); // 将最后的错误存储在变量中
 		ini_set('html_errors', 1); // 显示html
 
-		// 设置语言
-		header('Content-Type:text/html; charset=utf-8');
-		
+		// 头设置
+		header('Content-Type:text/html; charset=utf-8');               // 设置语言及返回形式
+		header('Access-Control-Allow-Methods: POST,GET');              // 设置请求方式
+		header('Access-Control-Allow-Origin: '.$_SERVER['HTTP_HOST']); // 同源策略
+
 		// 加载框架基础配置
 		self::$default = $default = include INCLUDES.'default.php';
 
@@ -54,10 +56,14 @@ class BYS {
 		// 读取核心类库
 		self::autoReadClass( $default["core"], constant('NAMESPACE')."\\" );
 
-		// 加载smarty扩展
-		if( isset($default['vender']) && isset($default['vender']['smarty']) ){
+		// 加载vender扩展
+		if( isset($default['vender'])){
 			// 读取smarty核心类库
-			self::autoReadClass( $default['vender']['smarty'] );
+			// if(isset($default['vender']['smarty']))
+			// 	self::autoReadClass( $default['vender']['smarty'] );
+			foreach ($default['vender'] as $library => $libraryConfig) {
+				self::autoReadClass( $libraryConfig );
+			}
 		}	
 
 		// Report::p(self::$map);

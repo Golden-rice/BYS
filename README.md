@@ -157,6 +157,20 @@ $this->assign('path', APP_PATH);
 ```
 
 	* display assgin 均继承自 smarty，因此配饰smarty.config.php 即可生成相应配置
+
+  * controller 的CURD条件模块
+```
+/*
+  $modelName 数据表名
+  $config 配置
+    conditions: 条件，Array类型，Key为字段，值对应着条件，其中值如果想匹配范围（<或>，不包括<=和>=）则在值中添加相应符号即可，例如 'conditions'=>array("time"=> "<".time())。
+*/
+$this->query('table_1', array('conditions'=>array('Id'=>1), 'select'=>array('Name'), 'orderby'=>array('time'=>'ASC'),'limit'=>10), true);
+
+// 如果在conditions 的匹配字段中修改带有匹配关系的字段例如 OR，则代表与后面部分为 OR 关系，
+$this->query('table_1', array('conditions'=>array('Id OR'=>1, 'time'=>'110'));
+```
+
 	* query 表查询
 
 ```

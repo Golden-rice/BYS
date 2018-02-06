@@ -2,7 +2,6 @@
 namespace BYS;
 
 class App {
-	static public $COOKIE = array();
 	public $siteMap = array();
 	static public 	$Controller   =   '<?php
 namespace [MODULE]\Controller;
@@ -109,7 +108,6 @@ class [MODEL]Model extends Model {
 		// 启用控制器基类
 		( isset(BYS::$_GLOBAL['con_path']) && BYS::$_GLOBAL['con_path'] != null) ? self::activeController() : Report::error("无控制器");
 
-
 		// 安全过滤 $_GET $_POST $_REQUEST
 
 		// URL调度结束标签
@@ -129,7 +127,7 @@ class [MODEL]Model extends Model {
 		$controller = BYS::$_GLOBAL['app']."\\Controller\\".BYS::$_GLOBAL['con'].'Controller';
 
 		// 方法
-		if(class_exists($controller)) self::invokeControllerAction(new $controller, BYS::$_GLOBAL['act']);
+		if(class_exists($controller)) self::invokeControllerAction( new $controller, BYS::$_GLOBAL['act']);
 		else Report::error('没有该控制器');
 	}
 

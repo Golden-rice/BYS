@@ -229,8 +229,17 @@
 	 	public function setWhere($where, $setAttrName = false){
 	 		if(!empty($where)){
 		 		$whereString = '';
-
+		 		$whereRelation = 'AND';
 		 		foreach ($where as $whereAttr => $whereVal) {
+	 				// 匹配字段关系 OR 
+	 				if(preg_match("/^(.*)\s+(or|OR)$/", $whereAttr, $whereRelationMatch)){
+	 					$whereRelation = $whereRelationMatch[2];
+	 					$whereAttr     = $whereRelationMatch[1];
+	 				}else{
+	 					// 重置
+	 					$whereRelation = 'AND';
+	 				}
+
 		 			// 过滤值为空的条件，值为0，''时
 		 			// if(empty($whereVal)) continue;
 		 			// 设置一个条件多个参数时
@@ -247,8 +256,7 @@
 			 			// $whereString .= " `{$whereAttr}` IN (".implode(",", array_fill(0, count($whereVal), '?')).") AND";
 			 			// $this->addBindValue(array("?", $whereVal, is_numeric($whereVal) ? \PDO::PARAM_INT : \PDO::PARAM_STR));
 
-			 			$whereString .= $this->setPlacehold("?", " `{$whereAttr}` IN (".implode(",", array_fill(0, count($whereVal), '%')).") AND", $whereVal);
-
+			 			$whereString .= $this->setPlacehold("?", " `{$whereAttr}` IN (".implode(",", array_fill(0, count($whereVal), '%')).") {$whereRelation}", $whereVal);
 		 			}
 	 				// 设置一般条件
 		 			else{
@@ -264,17 +272,18 @@
 			 			// 	$whereString .= " `{$whereAttr}` = ? AND"; // :{$whereAttr}
 			 			// 	$this->addBindValue(array("?", $whereVal, is_numeric($whereVal) ? \PDO::PARAM_INT : \PDO::PARAM_STR)); // :{$whereAttr}
 		 				// }
+
+		 				// 范围判断
 		 				if(preg_match("/(<|>)(.*)?/", $whereVal, $whereValMatch)){
 		 					$whereVal     = isset($whereValMatch[2]) ? $whereValMatch[2] : $whereVal;
-		 					$whereString .= $setAttrName ? $this->setPlacehold(":{$whereAttr}", "`{$whereAttr}` {$whereValMatch[1]} % AND", $whereVal) : $this->setPlacehold("?", "`{$whereAttr}` {$whereValMatch[1]} % AND", $whereVal);
+		 					$whereString .= $setAttrName ? $this->setPlacehold(":{$whereAttr}", " `{$whereAttr}` {$whereValMatch[1]} % {$whereRelation}", $whereVal) : $this->setPlacehold("?", " `{$whereAttr}` {$whereValMatch[1]} % {$whereRelation}", $whereVal);
 		 				}
 		 				else
-		 					$whereString .= $setAttrName ? $this->setPlacehold(":{$whereAttr}", "`{$whereAttr}` = % AND", $whereVal) : $this->setPlacehold("?", "`{$whereAttr}` = % AND", $whereVal);
+		 					$whereString .= $setAttrName ? $this->setPlacehold(":{$whereAttr}", " `{$whereAttr}` = % {$whereRelation}", $whereVal) : $this->setPlacehold("?", " `{$whereAttr}` = % {$whereRelation}", $whereVal);
 		 			}
 		 		}
 		 		$whereString = rtrim($whereString, 'AND');
 		 		$this->where($whereString);
-
 	 		} 
 	 		return $this;
 	 	}
@@ -446,7 +455,6 @@
 
  				// PDO 绑定
  				$sql .= $setAttrName ? $this->setPlacehold(":{$attr}", " `{$attr}` = % ,", $val) : $this->setPlacehold("?", " `{$attr}` = % ,", $val);
-
  			}
 	 		return rtrim($sql, ',');
 	 	}
@@ -474,7 +482,7 @@
  				// $sql .= "`{$attr}` = ".(is_string($val)? "'{$val}'" : (int)$val).',';
 
  				// PDO 绑定
- 			// 	$sql .= $setAttrName ? $this->setPlacehold(":{$attr}", " `{$attr}` = % ,", $val) : $this->setPlacehold("?", " `{$attr}` = % ,", $val);
+ 				// $sql .= $setAttrName ? $this->setPlacehold(":{$attr}", " `{$attr}` = % ,", $val) : $this->setPlacehold("?", " `{$attr}` = % ,", $val);
 
  			// }
 
@@ -575,7 +583,13 @@
 		 			}
 		 		}
 	 		}
-	 		$this->addBindValue(array($placeHold, $val, is_numeric($val) ? \PDO::PARAM_INT : \PDO::PARAM_STR));
+	 		if( is_array($val) ){
+	 			foreach ( $val as $k => $v ) {
+			 		$this->addBindValue(array($placeHold, $v, is_numeric($v) ? \PDO::PARAM_INT : \PDO::PARAM_STR));
+	 			}
+	 		}else{
+	 			$this->addBindValue(array($placeHold, $val, is_numeric($val) ? \PDO::PARAM_INT : \PDO::PARAM_STR));
+	 		}
 	 		return preg_replace("/%/", $placeHold, $place);
 	 	}
 

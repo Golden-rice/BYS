@@ -28,6 +28,9 @@ abstract class Controller {
    * @param  string $tpl 模板名
    */
   protected function display($tpl = ""){
+    // 设置语言
+    header('Content-Type:text/html; charset=utf-8');
+
     // 模板后缀
     $ext          = preg_match('/\.html$/', $tpl) ? "" : constant('VIEW_EXD');
     $default_path = BYS::$_GLOBAL['view_path'];
@@ -113,7 +116,6 @@ abstract class Controller {
     }
     // 隐式执行方法
     else{
-
       if(count($var) === 1 && current($var)){
         $action     = key($var);
         $controller = BYS::$_GLOBAL['app']."\\Controller\\".BYS::$_GLOBAL['con'].'Controller';
@@ -137,67 +139,26 @@ abstract class Controller {
 
   }
 
-
-  /**
-   * 数据查询
-   * @access public
-   */
-  public function query($modelName = '', $config = array(), $return = false){
-    $m = model($modelName);
-
+  // 根据 name 解析 config
+  private function parseConfig($config, $name, $isMust = false){
     // 条件
-    if(isset($config['conditions']))
+    if(isset($config[$name]))
       // 反序列化
-      if(is_string($config['conditions'])){
-        $where = json_decode($config['conditions'], true);
+      if(is_string($config[$name])){
+        return json_decode($config[$name], true);
       }else{
-        $where = $config['conditions'];
+        return $config[$name];
       }
-    else
-      $where = array();
-
-    // 去重字段
-    if(isset($config['distinct']))
-      // 反序列化
-      if(is_string($config['distinct'])){
-        $distinct = json_decode($config['distinct'], true);
-      }else{
-        $distinct = $config['distinct'];
+    else{
+      if( $isMust ){
+        Report::error("缺少{$name} From Controller::update");
       }
-    else
-      $distinct = array();
+      return array();
+    }
+  }
 
-    // 查询字段
-    if(isset($config['select']))
-      // 反序列化
-      if(is_string($config['select'])){
-        $select = json_decode($config['select'], true);
-      }else{
-        $select = $config['select'];
-      }
-    else
-      $select = array();
-
-    // 排序
-    if(isset($config['orderby']))
-      // 反序列化
-      if(is_string($config['orderby'])){
-        $orderby = json_decode($config['orderby'], true);
-      }else{
-        $orderby = $config['orderby'];
-      }
-    else
-      $orderby = array();
-
-    // 限制数据量
-    if(isset($config['limit']))
-      $limit = $config['limit'];
-    else
-      $limit = 1000;
-
-
-    $result = $m->find($where, $orderby, $select, $distinct, $limit);
-
+  // 根据查询结果设置返回值
+  protected function setReturn( $result, $return = false ){
     if($return){
       if($result) return $result;
       // 当发生数据检查是，无数据则插入，这种时候总汇提示
@@ -211,7 +172,32 @@ abstract class Controller {
         echo json_encode(array('result'=>$result, 'status'=>0, 'msg'=>Report::printLog()));
       }
     }
-    
+  }
+
+  /**
+   * 数据查询
+   * @access public
+   */
+  public function query($modelName = '', $config = array(), $return = false){
+    $m = model($modelName);
+
+    // 条件
+    $where    = $this->parseConfig( $config, 'conditions' );
+    // 去重字段
+    $distinct = $this->parseConfig( $config, 'distinct' );
+    // 查询字段
+    $select   = $this->parseConfig( $config, 'select' );
+    // 排序
+    $orderby  = $this->parseConfig( $config, 'orderby' );
+    // 限制数据量
+    if(isset($config['limit']))
+      $limit = $config['limit'];
+    else
+      $limit = 1000;
+
+    $result = $m->find($where, $orderby, $select, $distinct, $limit);
+    var_dump($m->testSql());
+    return $this->setReturn($result, $return);
   }
 
 
@@ -239,38 +225,16 @@ abstract class Controller {
   public function update($modelName = '', $config = array(), $return = false){
     $m = model($modelName);
 
-    // 必须
-    if(isset($config['conditions']))
-      // 反序列化
-      if(is_string($config['conditions'])){
-        $where = json_decode($config['conditions'], true);
-      }else{
-        $where = $config['conditions'];
-      }
-    else
-      Report::error('缺少条件 From Controller::update');
-
-    if(isset($config['values']))
-      // 反序列化
-      if(is_string($config['values'])){
-        $values = json_decode($config['values'], true);
-      }else{
-        $values = $config['values'];
-      }
-    else
-      Report::error('缺少更新数据 From Controller::update');
-
+    // 清空
+    $m->reset();
+    // 条件 必须
+    $where    = $this->parseConfig( $config, 'conditions', true );
+    // 更新值
+    $values   = $this->parseConfig( $config, 'values', true );
 
     $result = $m->update($values, $where, false);
 
-    if($return)
-      return $result;
-    else{
-      if($result)
-        echo json_encode(array('result'=>$result, 'status'=>1, 'msg'=>Report::printLog()));
-      else
-        echo json_encode(array('result'=>$result, 'status'=>0, 'msg'=>Report::printLog()));
-    }
+    return $this->setReturn($result, $return);
   }
 
   /**
@@ -302,13 +266,13 @@ abstract class Controller {
       }
 
     */
-  public function updates($modelName = '', $config = array()){
-    $m = model($modelName);
-    if(empty($config)) {
-      \BYS\Report::error('数据为空 From Controller::updates');
-      return;
-    }
+  public function updates($modelName = '', $config = array(), $return = true){
+    if(empty($config)) 
+      return \BYS\Report::error('数据为空 From Controller::updates');
 
+    $m = model($modelName);
+    // 清空
+    $m->reset();
     // 反序列化
     if(is_string($config)){
       $datas = json_decode($config, true);
@@ -316,7 +280,9 @@ abstract class Controller {
       $datas = $config;
     }
 
-    return $m->updates($datas);
+    $result = $m->updates($datas);
+    
+    return $this->setReturn($result, $return);
   }
 
   /**
@@ -337,29 +303,15 @@ abstract class Controller {
     */
   public function delete($modelName = '', $config = array(), $return = false){
     $m = model($modelName);
-
-    // 必须
-    if(isset($config['conditions']))
-      // 反序列化
-      if(is_string($config['conditions'])){
-        $where = json_decode($config['conditions'], true);
-      }else{
-        $where = $config['conditions'];
-      }
-    else
-      Report::error('缺少条件 From Controller::delete');
+    // 清空
+    $m->reset();
+    // 条件 必须
+    $where   = $this->parseConfig( $config, 'conditions', true );
 
               $m->setWhere($where);
     $result = $m->delete();
 
-    if($return)
-      return $result;
-    else{
-      if($result)
-        echo json_encode(array('result'=>$result, 'status'=>1, 'msg'=>Report::printLog()));
-      else
-        echo json_encode(array('result'=>$result, 'status'=>0, 'msg'=>Report::printLog()));
-    }
+    return $this->setReturn($result, $return);
   }
 
   /**
@@ -385,7 +337,8 @@ abstract class Controller {
     */
   public function add($modelName = '', $config = array(), $return = false){
     $m = model($modelName);
-
+    // 清空
+    $m->reset();
     // 必须
     if(isset($config['values']))
       // 反序列化
@@ -399,14 +352,7 @@ abstract class Controller {
 
     $result = $m->addAll($values);
     
-    if($return)
-      return $result;
-    else{
-      if($result)
-        echo json_encode(array('result'=>$result, 'status'=>1, 'msg'=>Report::printLog()));
-      else
-        echo json_encode(array('result'=>$result, 'status'=>0, 'msg'=>Report::printLog()));
-    }
+    return $this->setReturn($result, $return);
   }
 
 }
