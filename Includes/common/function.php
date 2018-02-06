@@ -95,6 +95,7 @@ function reflect($controller, $module = 'Controller'){
     else
         echo 'no file reflect target;';
     $class = BYS\BYS::$_GLOBAL['app']."\\{$module}\\".ucfirst($controller).$module;
+
     return new $class;
 }
 
@@ -138,6 +139,64 @@ function cookie($name = '', $value = '', $options = null){
     // 设置
     setcookie($name, $value, $config['expire'], $config['path'], $config['domain'], $config['secure'], $config['httponly']);
 }
+
+// 利用对象来控制 file
+class File{
+    public $file;
+    public $content = '';
+    /** 
+     * 本地存储
+     * @access public 
+     * @param $string $mode 存储模式
+     * @param $string $path 路径
+     * @param $string $name 文件名
+     * @param $string $ext  文件类型
+     */ 
+    public function __construct( $mode = 'w', $path = './',$name = 'log', $ext = '.txt' ){
+        $this->file = fopen( $path.$name.$ext, $mode );
+    }
+
+    /** 
+     * 写文件
+     * @access public 
+     * @param $string $content 存储文本
+     * @param $string $add     附加文本
+     * @param $string $addType 存储方式
+     */ 
+    public function write( $content , $add = false, $addType = '' ){
+        if( $add ){
+            switch( $addType ){
+                case 'TIME':
+                    $content = '['.date('Y-m-d H:i:s',time()).']:'.$content;
+                    break;
+                case 'BEFORE':
+                    $content = $add.$content;
+                    break;
+                case 'AFTER':
+                    $content = $content.$add;
+                    break;
+                default:
+                    $content = $add.$content;
+                    break;
+            }
+            
+        }
+        $this->content = $content;
+        fwrite( $this->file , $content );
+    }
+
+    // 关闭文件IO
+    public function close(){
+        fclose( $this->file );
+    }
+
+    // 打印上次存储内容
+    public function printFile(){
+        echo $this->content;
+    }
+} 
+
+
 
 /**
  * URL重定向

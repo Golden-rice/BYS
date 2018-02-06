@@ -121,6 +121,16 @@ redirect('login.php', 3, '登录');
 redirect('login.php'); 
 ```
 
+$ File() 文件对象，用于存储本地文件
+```
+  $logFile = new \File('a','./file', 'logFiles', '.txt');
+  $logFile->write('download',true, 'TIME');
+  // 打印上一次的存储内容
+  logFile->printFile();
+  $logFile->close();
+
+```
+
 ## 核心功能
 * Model，通过model()方法实例化了表单后就可以使用其中的方法
   * prepare
