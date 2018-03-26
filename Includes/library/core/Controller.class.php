@@ -16,8 +16,8 @@ abstract class Controller {
     $this->smarty = BYS::callVender( 'Smarty',  BYS::callConfig( 'smarty', 'vender' ) );
    
     // 装载应用的驱动
-    $this->drive = BYS::callClass( 'Drive', BYS::callConfig() );
-
+    // $this->drive = BYS::callClass( 'Drive', BYS::callConfig() );
+    Drive::init(BYS::readConfig( BYS::$default ));
   }
 
   // 当尝试以调用函数的方式调用一个对象时
@@ -41,11 +41,13 @@ abstract class Controller {
     // 模板初始地址为以APP命名为准
     $tpl = $default_tpl = $tpl == "" ? "{$default_path}{$default_app}/{$default_con}/{$default_act}" : "{$default_path}{$default_app}/{$tpl}";
     if( is_file($tpl.$ext) ) {
-      $this->drive->supportSmartyTpl($tpl.$ext);
+      // $this->drive->supportSmartyTpl($tpl.$ext);
+      Drive::supportSmartyTpl($tpl.$ext);
       // 生成路由缓存
       $r = Cache::router();
       // 执行驱动
-      $this->drive->support( $tpl.$ext );
+      // $this->drive->support( $tpl.$ext );
+      Drive::support( $tpl.$ext );
       $this->smarty->display( $r );
     }else{
       Report::error($tpl.$ext.'没有模板');

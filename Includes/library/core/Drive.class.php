@@ -5,31 +5,38 @@ namespace BYS;
  */
 class Drive {
 	// 设置
-	public $set = array();
+	static public $set = array();
 
 	/**
    * @param  $config    用户配置
    */
-	function __construct ($config, $filePath = ''){
+	static public function init ($config, $filePath = ''){
+
 		if(!isset($config)) {
 			Report::error('没有配置');
 			return;
 		}
 
-		// 公共配置
+		// 加载公共配置
 		if(isset($config['COMMON'])){
-			$this->commoning($config['COMMON']);
+			self::commoning($config['COMMON']);
 		}
 
-		// 各个应用配置
+		// 加载各个应用的配置
 		foreach ($config as $name => $set) {
 			if( preg_match("/^APP_(.*)?/", $name, $str) )
-				$this->privating($set, $str[1] ? $str[1] : "");
+				self::privating($set, $str[1] ? $str[1] : "");
 		}
+
+		// ** 每次调用 controller 会重新声明个 drive 
+		// 读取应用的 Drive 至 map
+		// nameDrive.class.php
+		self::autoload(APP_PATH.BYS::$_GLOBAL['app'].'/Drive/');
 
 		// 数据库模块驱动
 		// 多个数据库连接
-		if( isset($this->set['DB_CONFIG_LIST']) && Db::connect($this->set['DB_CONFIG_LIST']['DEFAULT'])){
+		if( isset(self::$set['DB_CONFIG_LIST']) && Db::connect(self::$set['DB_CONFIG_LIST']['DEFAULT']) ){
+			
 			// 通过系统函数获得数据表对象实例
 
 			// 扩展数据表动作
@@ -37,9 +44,27 @@ class Drive {
 		}
 	}
 
+	/** 
+	 * 自动加载map中的类库和用户自定义类库
+	 * @access public 
+	 * @param  classObject $class 待加载类名
+   * @return void
+	 */
+	static public function autoload($path){
+		if( is_dir($path) && $handle = opendir($path) ){
+			while( ($file = readdir($handle)) !== false ){
+				if( $file!='.' && $file!='..' ){
+					preg_match("/^(\w+)\.class\.php/", $file, $className);
+					// 注册至 map 中
+					if( isset($className[1]) ) include_once $path.$file;
+				}
+			}
+		}
+	}
+
 	// COMMON 配置应用
-	public function commoning($set = array()){
-		$this->set = $set; 
+	static public function commoning($set = array()){
+		self::$set = $set; 
 	}
 
 	/**
@@ -49,11 +74,11 @@ class Drive {
    * @param  $appName  应用名
    * @return void
    */
-	public function privating($set = array(), $appName = ""){
+	static public function privating($set = array(), $appName = ""){
 		if(BYS::$_GLOBAL['app'] == $appName){
-			$this->set = array_merge($this->set, $set); 
+			self::$set = array_merge(self::$set, $set); 
 		}else{
-			$this->commoning($set);
+			self::commoning($set);
 		}
 	}
 
@@ -62,9 +87,9 @@ class Drive {
    * @access public
    * @param  $filePath   模板文件路径
    */
-	public function support( $filePath ){
+	static public function support( $filePath ){
 		// 替换文本
-		$content = $this->replaceVarContent( $filePath );
+		$content = self::replaceVarContent( $filePath );
 		file_put_contents( Cache::$runtime_path , $content);
 	}
 
@@ -74,9 +99,9 @@ class Drive {
    * @param  $filePath   模板文件
    * @return string      替换模板后的结果
    */
-	public function replaceVarContent($filePath){
-		if (!isset($this->set['TPL_VAR']) || !is_file($filePath)) return;
-		$replace = $this->set['TPL_VAR'];
+	static public function replaceVarContent($filePath){
+		if (!isset(self::$set['TPL_VAR']) || !is_file($filePath)) return;
+		$replace = self::$set['TPL_VAR'];
 		return str_replace( array_keys($replace), array_values($replace), file_get_contents($filePath) );
 	}
 
@@ -85,52 +110,52 @@ class Drive {
    * 支持smarty模板引擎的继承功能，将相应文件复制至缓存文件夹中
    * @access public
    */
-	public function supportSmartyTpl($filePath){
+	static public function supportSmartyTpl($filePath){
 		if($filePath && !is_file($filePath)) return;
 
 		$content = file_get_contents($filePath);
 		$path    = dirname($filePath);
 
 		// 查找 extend 仅匹配一次
-		if( $this->hasTags( $content, 'extends') && $extendMatches = $this->hasTags( $content, 'extends') ){
+		if( self::hasTags( $content, 'extends') && $extendMatches = self::hasTags( $content, 'extends') ){
 
-				$extendFile = $this -> parseExtend( $extendMatches );
-				$extendPath = $this -> camparePath( $extendFile , $path );
+				$extendFile = self::parseExtend( $extendMatches );
+				$extendPath = self::camparePath( $extendFile , $path );
 				$runtime_path = Cache::cache($extendPath);
 
 				if($runtime_path){
 					// 支持文字替换
-					$this->support( $extendPath );
+					self::support( $extendPath );
 				}
 
-				$this->supportSmartyTpl($extendPath);
+				self::supportSmartyTpl($extendPath);
 			
 		}
 
 		// 查找所有的 include 
-		if( $this->hasTags( $content, 'include') && $includeMatches = $this->hasTags( $content, 'include')){
+		if( self::hasTags( $content, 'include') && $includeMatches = self::hasTags( $content, 'include')){
 
 			$i = 0;
 			while( isset($includeMatches[$i]) && $includeMatches[$i] !== NULL ){
 
-			$includeFile = $this -> parseInclude( $includeMatches[$i++] ); 
-			$includePath = $this -> camparePath( $includeFile , $path );
+			$includeFile = self::parseInclude( $includeMatches[$i++] ); 
+			$includePath = self::camparePath( $includeFile , $path );
 
 			$runtime_path = Cache::cache($includePath);
 
 			if($runtime_path){
 				// 支持文字替换
-				$this->support( $includePath );
+				self::support( $includePath );
 			}
 
-			$this->supportSmartyTpl($includePath);
+			self::supportSmartyTpl($includePath);
 
 			}
 		}
 
 	}
 
-	private function camparePath($targetPath, $curPath){
+	static private function camparePath($targetPath, $curPath){
 		$targetPathArr = explode ('/', $targetPath);
 		$curPathArr    = explode ('/', $curPath);
 
@@ -157,7 +182,7 @@ class Drive {
 	 * @param  $tag      标签
 	 * @return mix
 	 */
-	private function hasTags($content, $tag){
+	static private function hasTags($content, $tag){
 		// 获取smarty配置
 		$config     =   BYS::callConfig( 'smarty', 'vender' );
 
@@ -180,8 +205,8 @@ class Drive {
  * @param  $content  模板内容
  * @return array
  */
-	private function parseExtend($matches) {
-    	$attrs = $this->parseXmlAttrs($matches[0]);
+	static private function parseExtend($matches) {
+    	$attrs = self::parseXmlAttrs($matches[0]);
 	  	return $attrs['file'];
   }
 
@@ -191,7 +216,7 @@ class Drive {
  * @param  $content  模板内容
  * @return array
  */
-	private function parseInclude($matches) {
+	static private function parseInclude($matches) {
 	   return preg_replace('/[\'|\"]/', '', $matches);
   }
 
@@ -202,7 +227,7 @@ class Drive {
    * @param  string $attrs  XML属性字符串
    * @return array
    */
-  private function parseXmlAttrs($attrs) {
+  static private function parseXmlAttrs($attrs) {
       $xml        =   '<tpl><tag '.$attrs.' /></tpl>';
       $xml        =   simplexml_load_string($xml);
       if(!$xml)

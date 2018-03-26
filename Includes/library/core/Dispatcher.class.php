@@ -31,6 +31,8 @@ class Dispatcher {
 
 		if ($_SERVER['PATH_INFO'] != ""){
 			$paths      = explode("/", $_SERVER['PATH_INFO']);
+			// 过滤掉 index.php
+			if($paths[0] === 'index.php'){ array_shift($paths);}
 			// 加载应用
 			$app        = $paths[0];
 			// 加载控制器

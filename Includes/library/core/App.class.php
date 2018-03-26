@@ -2,6 +2,7 @@
 namespace BYS;
 
 class App {
+
 	public $siteMap = array();
 	static public 	$Controller   =   '<?php
 namespace [MODULE]\Controller;
@@ -26,6 +27,7 @@ class [MODEL]Model extends Model {
    * @return void
 	 */
 	public function __construct($app){
+
 		// 文件夹
 		$defaultMap = array(
 			$app['name'] =>APP_PATH.$app['name']."/",
@@ -107,6 +109,7 @@ class [MODEL]Model extends Model {
 
 		// 启用控制器基类
 		( isset(BYS::$_GLOBAL['con_path']) && BYS::$_GLOBAL['con_path'] != null) ? self::activeController() : Report::error("无控制器");
+	
 
 		// 安全过滤 $_GET $_POST $_REQUEST
 

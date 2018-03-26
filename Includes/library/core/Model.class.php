@@ -406,6 +406,7 @@
 		  	$this->limit = ' LIMIT '.$limit;
 		  else 
 		  	$this->limit = '';
+
 	  	return $this;
 	  }
 

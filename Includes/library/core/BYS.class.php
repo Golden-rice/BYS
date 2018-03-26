@@ -94,7 +94,7 @@ class BYS {
 	 */
 	static private function autoload($class){
 		if(isset(self::$map[$class])) {
-        include self::$map[$class];
+        include_once self::$map[$class];
     }
 	}
 
@@ -177,17 +177,18 @@ class BYS {
 	 * @param  $namespace 命名空间
    * @return void
 	 */
-	static private function autoReadClass($config, $namespace = ""){
+	static public function autoReadClass($config, $namespace = ""){
 		if( is_dir($config['path']) && $handle = opendir($config['path']) ){
 			while( ($file = readdir($handle)) !== false ){
 				if( $file!='.' && $file!='..' ){
 					preg_match("/^(\w+)\.class\.php/", $file, $className);
+					// 注册至 map 中
 					if( isset($className[1]) ) self::registerMap( "$namespace$className[1]", $config['path'].$file );
 				}
 			}
 		}else{
 			// 报错: 没有该类库
-			Report::error("没有该类库");
+			Report::error("没有类库可加载 from BYS::readClass");
 		}
 	}
 
