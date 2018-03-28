@@ -5,27 +5,25 @@
  * @param string $name 资源地址，格式：[模块/]模型
  * @return BYS\Model
  */
-function model($name='', $level = 1) {
+function model($name='', $prefix = '') {
     // if(empty($name)) BYS\Report::error('没有该模型');
 
-    if(strpos($name,'/') && substr_count($name, '/')>=$level){ 
+    if(strpos($name,'/') && substr_count($name, '/')>=1){ 
         list($app, $className) =  explode('/',$name, 2);
     }else{
         $app =    BYS\BYS::$_GLOBAL['app'] ;
-        $className = parse_name($name, 1);
+        $className = parse_name($prefix.$name, 1);
     }
 
-    import( $className.'Model.class.php', APP_PATH.$app.'/Model/');
-
-    // 实例化 
-    $class = "{$app}\Model\\".$className.'Model';
-
-    // 相对路径
-    if(class_exists($class)) {
+    // 是否有特殊声明
+    if( file_exists( APP_PATH.(BYS\BYS::$_GLOBAL['app']).'/Model/'.$className.'Model.class.php' ) ){
+        import( $className.'Model.class.php', APP_PATH.$app.'/Model/');
+        $class = "{$app}\Model\\".(parse_name($name, 1)).'Model';
         $model      =   new $class($className);
-    }else {
-        BYS\Report::error('无该模型');
+    }else{
+        $model      =   new \BYS\Model($className);
     }
+
     return $model;
 }
 
@@ -140,6 +138,85 @@ function cookie($name = '', $value = '', $options = null){
     setcookie($name, $value, $config['expire'], $config['path'], $config['domain'], $config['secure'], $config['httponly']);
 }
 
+
+/**
+* 替换数组key
+* @param array  $array        待替换数组
+* @param array  $replace_keys 替换数组的key，其 key 值与 $array 一致，value 为新的key
+* @param string $type         替换方式，FLITER 过滤模式， DEFAULT 默认模式(默认)
+* @param string $clk          回调函数，第一个参数为待替换数组的value，第二个参数为待替换数组的key
+*/
+function array_replace_keys( $array, $replace_keys, $type = 'DEFAULT', $clk = null ){
+    // 过滤模式 FLITER：仅保留 replace_keys 有的字段
+    $copy = array();
+    if( $type === 'FLITER' ){
+      foreach ($replace_keys as $nKey => $nVal) {
+        if( isset($array[$nKey]) ){
+          $copy[$nVal] = is_callable ( $clk ) ? $clk( $array[$nKey], $nKey ) : $array[$nKey];
+        }
+      }
+    }
+    // 默认模式 DEFAULT：替换存在的key 不存在的key仍然保留
+    else{
+      foreach ($array as $oKey => $oVal) {
+        if( isset($replace_keys[$oKey]) ){
+          $copy[ $replace_keys[$oKey] ] = is_callable ( $clk ) ? $clk( $oVal, $oKey ) : $oVal;
+        }else{
+          $copy[$oKey] = is_callable ( $clk ) ? $clk( $oVal, $oKey ) : $oVal;
+        }
+      }
+    }
+    return $copy;
+}
+
+
+/**
+ * URL重定向
+ * @param  string  $url  重定向的URL地址
+ * @param  integer $time 重定向的等待时间（秒）
+ * @param  string  $msg  重定向前的提示信息
+ * @return void
+ */
+function redirect($url, $time=0, $msg='') {
+    //多行URL地址支持
+    $url        = str_replace(array("\n", "\r"), '', $url);
+    if (empty($msg))
+        $msg    = "系统将在{$time}秒之后自动跳转到{$url}！";
+    if (!headers_sent()) {
+        // redirect
+        if (0 === $time) {
+            header('Location: ' . $url);
+        } else {
+            header("refresh:{$time};url={$url}");
+            echo($msg);
+        }
+        exit();
+    } else {
+        $str    = "<meta http-equiv='Refresh' content='{$time};URL={$url}'>";
+        if ($time != 0)
+            $str .= $msg;
+        exit($str);
+    }
+}
+
+/**
+ * 字符串命名风格转换
+ * type 0 将Java风格转换为C的风格 1 将C风格转换为Java的风格 (驼峰输入法)
+ * @param string $name 字符串
+ * @param integer $type 转换类型
+ * @return string
+ */
+function parse_name($name, $type=0) {
+    // #1
+    if ($type) {
+        return ucfirst(preg_replace_callback('/_([a-zA-Z])/', function($match){return strtoupper($match[1]);}, $name));
+    } 
+    // #0
+    else {
+        return strtolower(trim(preg_replace("/[A-Z]/", "_\\0", $name), "_"));
+    }
+}
+
 // 利用对象来控制 file
 class File{
     public $file;
@@ -197,50 +274,3 @@ class File{
 } 
 
 
-
-/**
- * URL重定向
- * @param  string  $url  重定向的URL地址
- * @param  integer $time 重定向的等待时间（秒）
- * @param  string  $msg  重定向前的提示信息
- * @return void
- */
-function redirect($url, $time=0, $msg='') {
-    //多行URL地址支持
-    $url        = str_replace(array("\n", "\r"), '', $url);
-    if (empty($msg))
-        $msg    = "系统将在{$time}秒之后自动跳转到{$url}！";
-    if (!headers_sent()) {
-        // redirect
-        if (0 === $time) {
-            header('Location: ' . $url);
-        } else {
-            header("refresh:{$time};url={$url}");
-            echo($msg);
-        }
-        exit();
-    } else {
-        $str    = "<meta http-equiv='Refresh' content='{$time};URL={$url}'>";
-        if ($time != 0)
-            $str .= $msg;
-        exit($str);
-    }
-}
-
-/**
- * 字符串命名风格转换
- * type 0 将Java风格转换为C的风格 1 将C风格转换为Java的风格 (驼峰输入法)
- * @param string $name 字符串
- * @param integer $type 转换类型
- * @return string
- */
-function parse_name($name, $type=0) {
-    // #1
-    if ($type) {
-        return ucfirst(preg_replace_callback('/_([a-zA-Z])/', function($match){return strtoupper($match[1]);}, $name));
-    } 
-    // #0
-    else {
-        return strtolower(trim(preg_replace("/[A-Z]/", "_\\0", $name), "_"));
-    }
-}
