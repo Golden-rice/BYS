@@ -181,8 +181,8 @@ abstract class Controller {
    * 数据查询
    * @access public
    */
-  public function query($modelName = '', $config = array(), $return = false){
-    $m = model($modelName);
+  public function query($modelName = '', $config = array(), $return = false, $prefix = ''){
+    $m = model($modelName, $prefix);
     $this->model = $m;
     // 条件
     $where    = $this->parseConfig( $config, 'conditions' );
@@ -225,8 +225,8 @@ abstract class Controller {
         }
       }
     */
-  public function update($modelName = '', $config = array(), $return = false){
-    $m = model($modelName);
+  public function update($modelName = '', $config = array(), $return = false, $prefix = ''){
+    $m = model($modelName, $prefix);
 
     // 清空
     $m->reset();
@@ -269,11 +269,11 @@ abstract class Controller {
       }
 
     */
-  public function updates($modelName = '', $config = array(), $return = true){
+  public function updates($modelName = '', $config = array(), $return = true, $prefix = ''){
     if(empty($config)) 
       return \BYS\Report::error('数据为空 From Controller::updates');
 
-    $m = model($modelName);
+    $m = model($modelName, $prefix);
     // 清空
     $m->reset();
     // 反序列化
@@ -304,8 +304,8 @@ abstract class Controller {
         }
       }
     */
-  public function delete($modelName = '', $config = array(), $return = false){
-    $m = model($modelName);
+  public function delete($modelName = '', $config = array(), $return = false, $prefix = ''){
+    $m = model($modelName, $prefix);
     // 清空
     $m->reset();
     // 条件 必须
@@ -338,8 +338,8 @@ abstract class Controller {
         }
       }
     */
-  public function add($modelName = '', $config = array(), $return = false){
-    $m = model($modelName);
+  public function add($modelName = '', $config = array(), $return = false, $prefix = ''){
+    $m = model($modelName, $prefix);
     // 清空
     $m->reset();
     // 必须

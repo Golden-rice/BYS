@@ -1,9 +1,9 @@
 <?php
 	namespace BYS;
 	/**
-	 * 模型基类 抽象类
+	 * 模型基类 
 	 */
-	 abstract class Model {
+	 class Model {
 
 	 	// 表单前缀
 	 	protected $tablePrefix      =   '';
@@ -39,6 +39,8 @@
 	 	  }
 		 	// 统一表单名风格
 		 	$this->tableName = $className == '' ? '' : $this->tablePrefix.$this->parse_name($className, 0);
+
+
 	 	}
 
 	 	/**
@@ -276,10 +278,13 @@
 		 				// 范围判断
 		 				if(preg_match("/(<|>)(.*)?/", $whereVal, $whereValMatch)){
 		 					$whereVal     = isset($whereValMatch[2]) ? $whereValMatch[2] : $whereVal;
-		 					$whereString .= $setAttrName ? $this->setPlacehold(":{$whereAttr}", " `{$whereAttr}` {$whereValMatch[1]} % {$whereRelation}", $whereVal) : $this->setPlacehold("?", " `{$whereAttr}` {$whereValMatch[1]} % {$whereRelation}", $whereVal);
+		 					$matchSign    = $whereValMatch[1];
+		 					$whereString .= $setAttrName ? $this->setPlacehold(":{$whereAttr}", " `{$whereAttr}` {$matchSign} % {$whereRelation}", $whereVal) : $this->setPlacehold("?", " `{$whereAttr}` {$matchSign} % {$whereRelation}", $whereVal);
 		 				}
-		 				else
-		 					$whereString .= $setAttrName ? $this->setPlacehold(":{$whereAttr}", " `{$whereAttr}` = % {$whereRelation}", $whereVal) : $this->setPlacehold("?", " `{$whereAttr}` = % {$whereRelation}", $whereVal);
+		 				else{
+		 					$matchSign    = is_null($whereVal) ? 'IS' : "=";
+		 					$whereString .= $setAttrName ? $this->setPlacehold(":{$whereAttr}", " `{$whereAttr}` {$matchSign} % {$whereRelation}", $whereVal) : $this->setPlacehold("?", " `{$whereAttr}` {$matchSign} % {$whereRelation}", $whereVal);
+		 				}
 		 			}
 		 		}
 		 		$whereString = rtrim($whereString, 'AND');

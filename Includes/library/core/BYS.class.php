@@ -32,8 +32,10 @@ class BYS {
 		// 设置中国时区
 		date_default_timezone_set('PRC');
 
-		if(APP_DEBUG == false)
-			error_reporting(E_ALL ^ E_NOTICE);
+		if(APP_DEBUG == false){
+		  error_reporting(E_ERROR | E_PARSE);
+			// error_reporting(E_ALL ^ E_NOTICE);
+		}
 
 		
 		ini_set('track_errors', 1); // 将最后的错误存储在变量中
