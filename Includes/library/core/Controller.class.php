@@ -48,11 +48,19 @@ abstract class Controller {
       // 执行驱动
       // $this->drive->support( $tpl.$ext );
       Drive::support( $tpl.$ext );
+      $this->__before_display();
       $this->smarty->display( $r );
     }else{
       Report::error($tpl.$ext.'没有模板');
     }
   }
+
+  /**
+   * 扩展smarty的display，表示在display前执行的方法
+   * @access protected
+   */
+  protected function __before_display(){}
+
 
   /**
    * 扩展smarty的assign方法: 为空则以当前方法位命名
