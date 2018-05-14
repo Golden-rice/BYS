@@ -19,7 +19,15 @@ define('VEND_PATH', LIB_PATH.'vender/');  // 第三方应用目录
 define('COMMON_PATH', INCLUDES.'common/');// 公共系统函数目录
 define('VIEW_TYPE', 'public');            // view 视图模式：public/private
 define('VIEW_EXD',  '.html');             // view 模板
-define('COOKIE_EXP',  3600);              // COOKIE 过期时间
+define('COOKIE_EXP', 3600);               // COOKIE 过期时间 3600
+
+// 定义当前请求的系统常量
+define('NOW_TIME',      $_SERVER['REQUEST_TIME']);
+define('REQUEST_METHOD',$_SERVER['REQUEST_METHOD']);
+define('IS_GET',        REQUEST_METHOD =='GET' ? true : false);
+define('IS_POST',       REQUEST_METHOD =='POST' ? true : false);
+define('IS_PUT',        REQUEST_METHOD =='PUT' ? true : false);
+define('IS_DELETE',     REQUEST_METHOD =='DELETE' ? true : false);
 
 // 定义当前请求的系统常量
 define('TIME',      $_SERVER['REQUEST_TIME']);
