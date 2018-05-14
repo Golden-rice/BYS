@@ -207,8 +207,12 @@ abstract class Controller {
       $limit = 1000;
 
     $result = $m->find($where, $orderby, $select, $distinct, $limit);
+    
+    $this->sql = $m->testSql();
 
-    return $this->setReturn($result, $return);
+    $result = $this->setReturn($result, $return);
+    if( $return ) return $result;
+    else return $this;
   }
 
 
@@ -245,7 +249,11 @@ abstract class Controller {
 
     $result = $m->update($values, $where, false);
 
-    return $this->setReturn($result, $return);
+    $this->sql = $m->testSql();
+
+    $result = $this->setReturn($result, $return);
+    if( $return ) return $result;
+    else return $this;
   }
 
   /**
@@ -293,7 +301,11 @@ abstract class Controller {
 
     $result = $m->updates($datas);
     
-    return $this->setReturn($result, $return);
+    $this->sql = $m->testSql();
+
+    $result = $this->setReturn($result, $return);
+    if( $return ) return $result;
+    else return $this;
   }
 
   /**
@@ -322,7 +334,11 @@ abstract class Controller {
               $m->setWhere($where);
     $result = $m->delete();
 
-    return $this->setReturn($result, $return);
+    $this->sql = $m->testSql();
+
+    $result = $this->setReturn($result, $return);
+    if( $return ) return $result;
+    else return $this;
   }
 
   /**
@@ -363,7 +379,11 @@ abstract class Controller {
 
     $result = $m->addAll($values);
     
-    return $this->setReturn($result, $return);
+    $this->sql = $m->testSql();
+
+    $result = $this->setReturn($result, $return);
+    if( $return ) return $result;
+    else return $this;
   }
 
 
