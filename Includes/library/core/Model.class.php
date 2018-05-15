@@ -181,6 +181,7 @@
 		 		foreach ($data as $index => $item) {
 		 			$this->sql = $this->add($item, true);
 		 			$this->prepare($this->sql);
+		 			// var_dump($this->sql, $this->value);
 		 			$this->setBindValue();
 		 			$this->prepare->execute();
 		 		}
@@ -494,9 +495,11 @@
 
  			// }
 
-	 		$this->setWhere($where, $setAttrName);
+	 		
 	 		// $sql = rtrim($sql, ',').$this->where;
-	 		$sql = $sql.$this->setUpdate($data, $setAttrName).$this->where;
+	 		$sql = $sql.$this->setUpdate($data, $setAttrName);
+	 		$this->setWhere($where, $setAttrName);
+	 		$sql .= $this->where;
 	 		$this->sql = $sql;
 
 	 		if($return) return $this->sql;
@@ -638,6 +641,7 @@
 				Db::$link->beginTransaction(); 
 				// 新增 Debug: 打印数据库执行
 				// var_dump($this->sql, $this->value);
+				// return;
 				// ***
 				// 绑定值
 				$this->setBindValue();

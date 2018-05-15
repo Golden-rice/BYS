@@ -246,8 +246,8 @@ abstract class Controller {
     $where    = $this->parseConfig( $config, 'conditions', true );
     // 更新值
     $values   = $this->parseConfig( $config, 'values', true );
-
-    $result = $m->update($values, $where, false);
+    // 默认提交事务以属性名作为索引
+    $result = $m->update($values, $where, false, isset( $config['__set_attr'] ) ? $config['__set_attr'] : true );
 
     $this->sql = $m->testSql();
 
@@ -342,7 +342,7 @@ abstract class Controller {
   }
 
   /**
-   * 新增数据
+   * 批量新增数据
    * @access public
    */
     /*
@@ -386,6 +386,11 @@ abstract class Controller {
     else return $this;
   }
 
+
+  public function say(){
+    \BYS\Report::log( $this->sql."\r" );
+    return $this;
+  }
 
   // 重复上一次SQL动作
   public function reActSQL(){
