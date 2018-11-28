@@ -25,6 +25,33 @@
 /View                    # 默认模板路径
 index.php                # 入口文件
 ```
+## 全局结构
+- 配置文件
+在根目录/Includes 下
+框架set.php，针对本项目的一些常量，目录文件等，默认可不修改
+项目配置 default.php，配置该项目使用的路径
+
+- 路由
+按照目录及方法区分路由
+例如 项目名/模块名/控制器名/方法名，例如 http://localhost/admin/index/index
+实际访问的是admin模块下/Controller文件夹下的IndexController的index方法
+
+- 数据库
+链接数据表
+在 模块/Model 目录，生成表的类，例如 /admin/Model/Table1SourceModel.class.php
+其中 $tablePrefix 代表的是表前缀，例如 Table1Model.class.php。其中表的声明类属性 $tablePrefix = "prefix_" 选择的表就是 prefix_table1，另外还有 $_validate = array(); 里面的字段代表的是表字段，填入 TIME 则会自动回填当前时间戳，例如  $_validate = array( 'GmtCreate' => 'TIME'); 
+```
+<?php
+namespace admin\Model;
+use BYS\Model;
+class Table1Model extends Model {
+  protected $tablePrefix = "prefix_";
+  protected $_validate = array(
+    'GmtCreate' => 'TIME'
+  );
+}
+```
+
 
 ## 框架配置文件 Includes/default.php
 * `default`属性：配置默认APP`app`、控制器`controller`、方法`action`
@@ -43,10 +70,15 @@ index.php                # 入口文件
 
 ## 项目配置文件 Includes/config/config.php
 * 项目默认加载 `config.php` 如果没有则会报错
-* `COMMON` 表示所有项目均可使用的配置。如果仅需要在admin下使用，则相关配置移至`APP_admin`。
+* `COMMON` 表示所有项目均可使用的配置。如果仅需要在admin下使用，则相关配置移至`APP_admin`，其他APP，则用APP_前缀区分相关项目。
 * `TPL_VAR` 表示模板中替换的变量，例如在index.html中 __VAR__ 替换成 var。
 * `DB_CONFIG_LIST` 允许多个数据库，`DEFAULT` 表示默认的数据库参数，其他参数以数据库名作为key值
 ```json
+// 模板替换，到模板中，例如 <script src='__PUBLIC__'> 会变成 <script src='public/'>
+'TPL_VAR' => array( 
+  '__PUBLIC__' => 'public/',
+),
+
 // 数据库设置
 'DB_CONFIG_LIST' => array(
   'db_1'=>array(                              // 默认连接
@@ -68,9 +100,24 @@ index.php                # 入口文件
     'DB_CHARSET'=> 'utf8',                    // 字符集
   )
 )
+
 ```
 
-
+此时如果全部都可以用则
+```
+return array(
+  'COMMON'=> array(
+    'TPL_VAR' => array( 
+      '__PUBLIC__' => 'public/',
+    ),
+  ),
+  'APP_home'=>array(
+    'TPL_VAR' => array( 
+      '__PRIVATE__' => 'private/',
+    ),
+  )
+)
+```
 ## 全局函数 Includes/common/function.php
 
 * model()  应用模板，支持 C语言风格的表名（下划线）和JAVA风格的表名（驼峰输入法）
@@ -121,7 +168,7 @@ redirect('login.php', 3, '登录');
 redirect('login.php'); 
 ```
 
-$ File() 文件对象，用于存储本地文件
+* File() 文件对象，用于存储本地文件
 ```
   $logFile = new \File('a','./file', 'logFiles', '.txt');
   $logFile->write('download',true, 'TIME');
@@ -136,6 +183,11 @@ $ File() 文件对象，用于存储本地文件
   * prepare
   * execute
 
+在方法中使用
+```
+$table = model('table_name');
+```
+
 * Controller
 ```
 // App名：admin，Controller控制器：Index ，action方法：index 
@@ -149,7 +201,7 @@ class IndexController extends Controller {
 
 ```
 
-	* display 模板渲染
+  - display 模板渲染
 
 ```
 // 自动寻找view层对应的位置：例如上例找寻 /admin/Index/index.html
@@ -158,7 +210,7 @@ $this->display();
 $this->display('User/login'); // 模板为 /admin/User/login.html
 ```
 
-	* assign 变量分配
+  - assign 变量分配
 
 ```
 $this->assign('path', APP_PATH);
@@ -166,7 +218,7 @@ $this->assign('path', APP_PATH);
 <{path}>
 ```
 
-	* display assgin 均继承自 smarty，因此配饰smarty.config.php 即可生成相应配置
+	- display assgin 均继承自 smarty，因此配饰smarty.config.php 即可生成相应配置
 
   * controller 的CURD条件模块
 ```
@@ -181,7 +233,7 @@ $this->query('table_1', array('conditions'=>array('Id'=>1), 'select'=>array('Nam
 $this->query('table_1', array('conditions'=>array('Id OR'=>1, 'time'=>'110'));
 ```
 
-	* query 表查询
+	- query 表查询
 
 ```
 // 语法：$this->query(String $modelName, Array $config, Bool $return);
@@ -200,7 +252,7 @@ $this->query('table_1', array('conditions'=>array('Id OR'=>1, 'time'=>'110'));
 $this->query('table_1', array('conditions'=>array('Id'=1), 'select'=>array('Name'), 'orderby'=>array('time'=>'ASC'),'limit'=>10), true);
 ```
 
-  * update 表更新
+  - update 表更新
 
 ```
 // 语法：$this->update(String $modelName, Array $config, Bool $return);
@@ -216,7 +268,7 @@ $this->query('table_1', array('conditions'=>array('Id'=1), 'select'=>array('Name
 $this->update('table_1', array('conditions'=>array('time'=>'<'.time()), 'values'=>array('status'=>0)));
 ```
 
-  * updates 对同一表批量更新
+  - updates 对同一表批量更新
 
 ```
 // 语法：$this->updates(String $modelName, Array $config, Bool $return);
@@ -238,7 +290,7 @@ $this->updates('table_1', array(
 ), true);
 ```
 
-  * add 批量新增数据
+  - add 批量新增数据
 
 ```
 // 语法：$this->add(String $modelName, Array $config, Bool $return);
@@ -259,7 +311,7 @@ $this->add('table_1', array('values'=>array(
 )), ture);
 ```
 
-  * delete 删除数据
+  - delete 删除数据
 
 ```
 // 语法：$this->delete(String $modelName, Array $config, Bool $return);
@@ -352,13 +404,3 @@ $this->delete('table_1', array('conditions'=>array('time'=>'<'.time()), ture);
 * 目前对服务器限制为POST, GET的http请求
 
 
-## 未完成功能：
-* 调整默认文件样式
-* 调整文件夹及文件名大小写，适配Linux系统
-* 内置一套UI框架
-* 内置一套js框架
-* 内置一套CMS系统
-* 压缩html？
-* 去除index.php后nginx的适配
-* trace模式
-* 404内置

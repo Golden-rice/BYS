@@ -44,7 +44,7 @@ class Report {
 		$log = '';
 		if(!empty(self::$log))
 			foreach (self::$log as $words) {
-				$log .= $words."\r";
+				$log .= $words."\n\r";
 			}
 		return $log;
 	}

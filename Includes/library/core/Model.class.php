@@ -594,11 +594,13 @@
 		 			}
 		 		}
 	 		}
-	 		if( is_array($val) ){
+
+	 		if( is_array($val) && !empty($val)){
 	 			foreach ( $val as $k => $v ) {
 			 		$this->addBindValue(array($placeHold, $v, is_numeric($v) ? \PDO::PARAM_INT : \PDO::PARAM_STR));
 	 			}
 	 		}else{
+	 			// 若 $val 为空数组，则设置成字符型
 	 			$this->addBindValue(array($placeHold, $val, is_numeric($val) ? \PDO::PARAM_INT : \PDO::PARAM_STR));
 	 		}
 	 		return preg_replace("/%/", $placeHold, $place);
@@ -611,7 +613,6 @@
 			if(!empty($this->value)){
 				$totelHoldPlace = 0; // ?占位符位置
 				foreach ($this->value as $paramVal) {
-
 					if($paramVal[0] === '?'){
 						if(is_array($paramVal[1]))
 							foreach ($paramVal[1] as $paramValEle) 
